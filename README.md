@@ -1,6 +1,9 @@
 # Day of Music
 
 React web app for turning music release info into a weekly calendar image.
+The repo also contains a sibling **iOS / Android app** under [`mobile/`](./mobile/),
+built with Expo + Expo Router. It follows the same data model as the web app.
+See [`mobile/README.md`](./mobile/README.md) for dev and TestFlight instructions.
 
 ## Stack
 

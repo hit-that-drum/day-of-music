@@ -1,6 +1,25 @@
 import { create } from "zustand";
 
-import type { MusicBoardSettings, MusicEntry } from "@/types/music";
+export type MusicEntry = {
+  id: string;
+  day: number;
+  weekday: string;
+  title: string;
+  artist: string;
+  releaseType: string;
+  releaseDate: string;
+  genre: string;
+  label: string;
+  coverUrl?: string;
+  accent: string;
+  background: string;
+};
+
+export type MusicBoardSettings = {
+  monthLabel: string;
+  weekLabel: string;
+  title: string;
+};
 
 const demoEntries: MusicEntry[] = [
   {
@@ -106,6 +125,7 @@ type MusicBoardStore = {
   entries: MusicEntry[];
   selectedEntryId: string;
   settings: MusicBoardSettings;
+  addEntry: (entry: MusicEntry) => void;
   selectEntry: (entryId: string) => void;
   updateEntry: (entryId: string, entry: Partial<MusicEntry>) => void;
   updateSettings: (settings: Partial<MusicBoardSettings>) => void;
@@ -116,6 +136,11 @@ export const useMusicBoardStore = create<MusicBoardStore>((set) => ({
   entries: demoEntries,
   selectedEntryId: demoEntries[0].id,
   settings: demoSettings,
+  addEntry: (entry) =>
+    set((state) => ({
+      entries: [...state.entries, entry],
+      selectedEntryId: entry.id,
+    })),
   selectEntry: (entryId) => set({ selectedEntryId: entryId }),
   updateEntry: (entryId, entry) =>
     set((state) => ({

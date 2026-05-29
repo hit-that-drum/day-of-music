@@ -1,5 +1,5 @@
-import { MusicCalendarWorkspace } from "@/components/music-calendar-workspace";
+import { DayOfMusicApp } from "@/components/day-of-music/day-of-music-app";
 
 export default function Home() {
-  return <MusicCalendarWorkspace />;
+  return <DayOfMusicApp />;
 }
