@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { addDays, startOfWeek, type Album } from "@/lib/day-of-music/data";
+import { addDays, fmtDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useAuth } from "@/components/day-of-music/auth-provider";
@@ -25,10 +25,9 @@ import { WeeklyGrid } from "@/components/day-of-music/weekly-grid";
 
 export type ScreenId = "week" | "month" | "search" | "profile";
 
-// The sample dataset covers Jan 5–18, 2026, so — like the reference prototype —
-// "today" is pinned to Jan 8, 2026 and the view opens on that week. Swap these for
-// `new Date()` / `startOfWeek(new Date())` once real journal data is wired up.
-const TODAY = new Date(2026, 0, 8);
+// Real current date. (The sample catalog covers Jan 5–18, 2026 — navigate back
+// to that week to see the demo data.) Evaluated client-side per page load.
+const TODAY = new Date();
 
 export function DayOfMusicApp() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -41,7 +40,7 @@ export function DayOfMusicApp() {
     showJournal: true,
   });
   const [screen, setScreen] = useState<ScreenId>("week");
-  const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date(2026, 0, 5)));
+  const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(TODAY));
   const [openAlbum, setOpenAlbum] = useState<Album | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -174,7 +173,17 @@ export function DayOfMusicApp() {
       {openAlbum && (
         <DayDetail album={openAlbum} onClose={() => setOpenAlbum(null)} onUpdate={handleUpdate} />
       )}
-      {showAdd && <AddFlow onClose={() => setShowAdd(false)} onSave={handleSave} />}
+      {showAdd && (
+        <AddFlow
+          onClose={() => setShowAdd(false)}
+          onSave={handleSave}
+          weekStart={weekStart}
+          // Preselect today when it falls inside the viewed week.
+          defaultDate={
+            days.some((d) => fmtDate(d) === fmtDate(TODAY)) ? fmtDate(TODAY) : undefined
+          }
+        />
+      )}
       {showShare && (
         <ShareCard weekStart={weekStart} days={days} onClose={() => setShowShare(false)} />
       )}

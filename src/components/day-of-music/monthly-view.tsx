@@ -1,9 +1,12 @@
 // monthly-view.tsx — Monthly Overview: editorial calendar with featured picks.
 
+import dayjs from "dayjs";
+
 import {
   DOW,
   DOW_KO,
   MONTHS,
+  MONTHS_LONG,
   addDays,
   fmtDate,
   parseDate,
@@ -21,20 +24,21 @@ export function MonthlyView({
   onOpen: (album: Album) => void;
 }) {
   const { albums, albumsByDate } = useJournal();
-  const year = 2026;
-  const month = 0; // January — the month covered by the sample dataset.
+  // The month being viewed follows `today`.
+  const current = dayjs(today);
+  const year = current.year();
+  const month = current.month();
 
   // Mon-start month grid (5–6 rows).
-  const firstOfMonth = new Date(year, month, 1);
-  const calStart = startOfWeek(firstOfMonth);
-  const lastOfMonth = new Date(year, month + 1, 0);
-  const numWeeks = Math.ceil(((lastOfMonth.getTime() - calStart.getTime()) / 86_400_000 + 1) / 7);
+  const lastOfMonth = current.endOf("month");
+  const calStart = startOfWeek(current.startOf("month").toDate());
+  const numWeeks = Math.ceil((lastOfMonth.diff(dayjs(calStart), "day") + 1) / 7);
   const totalDays = numWeeks * 7;
   const days = Array.from({ length: totalDays }, (_, i) => addDays(calStart, i));
 
   const monthAlbums = albums.filter((a) => {
-    const d = parseDate(a.date);
-    return d.getMonth() === month && d.getFullYear() === year;
+    const d = dayjs(a.date);
+    return d.month() === month && d.year() === year;
   });
 
   const featured = monthAlbums.filter((a) => a.rating === 5);
@@ -42,17 +46,19 @@ export function MonthlyView({
   const restFeatured = featured.slice(1, 4);
 
   const totalLogged = monthAlbums.length;
-  const completion = Math.round((totalLogged / lastOfMonth.getDate()) * 100);
+  const completion = Math.round((totalLogged / lastOfMonth.date()) * 100);
   const genreCount = new Set(monthAlbums.map((a) => a.genre)).size;
 
   return (
     <div className="dom-month">
       <div className="dom-month-hd">
         <div className="dom-month-hd-left">
-          <span className="dom-eyebrow">한 달의 청음 · january in listening</span>
+          <span className="dom-eyebrow">
+            한 달의 청음 · {MONTHS_LONG[month].toLowerCase()} in listening
+          </span>
           <h1 className="dom-month-h1">
-            <span className="dom-month-h1-name">January</span>
-            <span className="dom-month-h1-year">2026</span>
+            <span className="dom-month-h1-name">{MONTHS_LONG[month]}</span>
+            <span className="dom-month-h1-year">{year}</span>
           </h1>
         </div>
         <div className="dom-month-hd-right">

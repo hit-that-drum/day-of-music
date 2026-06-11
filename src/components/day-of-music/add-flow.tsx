@@ -37,14 +37,16 @@ function useDebounced(value: string, delayMs: number): string {
 type AddFlowProps = {
   onClose: () => void;
   onSave: (entry: NewEntry) => void;
+  /** First day of the week the picker offers (the week being viewed). */
+  weekStart: Date;
   defaultDate?: string;
 };
 
-export function AddFlow({ onClose, onSave, defaultDate }: AddFlowProps) {
+export function AddFlow({ onClose, onSave, weekStart, defaultDate }: AddFlowProps) {
   const [step, setStep] = useState(1);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<Album | null>(null);
-  const [date, setDate] = useState(defaultDate ?? fmtDate(new Date(2026, 0, 19)));
+  const [date, setDate] = useState(defaultDate ?? fmtDate(weekStart));
   const [rating, setRating] = useState(0);
   const [note, setNote] = useState("");
 
@@ -77,8 +79,8 @@ export function AddFlow({ onClose, onSave, defaultDate }: AddFlowProps) {
   const searching = debouncedQuery.length >= 2 && search.isFetching;
 
   const weekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(new Date(2026, 0, 12), i)),
-    [],
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart],
   );
 
   return (

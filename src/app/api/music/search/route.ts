@@ -7,6 +7,7 @@
 // The iTunes catalog IDs are Apple Music catalog IDs, so this can later be
 // swapped for the (paid) Apple Music API without changing the client.
 
+import dayjs from "dayjs";
 import { z } from "zod";
 
 const searchParamsSchema = z.object({
@@ -61,7 +62,7 @@ function mapResult(r: ITunesResult): MusicSearchResult | null {
     title,
     artist: r.artistName ?? "",
     genre: r.primaryGenreName ?? "—",
-    year: releaseDate ? new Date(releaseDate).getFullYear() : 0,
+    year: releaseDate ? dayjs(releaseDate).year() : 0,
     releaseDate,
     // Artwork URLs are templated; request a sharper 600x600 variant.
     artworkUrl: r.artworkUrl100?.replace("100x100bb", "600x600bb") ?? "",

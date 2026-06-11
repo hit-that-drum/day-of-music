@@ -2,6 +2,11 @@
 // Covers are styled in code (typographic tiles), not bitmap reproductions of
 // real album artwork. See components/day-of-music/cover.tsx for the renderer.
 
+import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
+
+dayjs.extend(isoWeek);
+
 export type CoverStyle =
   | "stack"
   | "diag"
@@ -470,34 +475,28 @@ export const GENRES = [
   "Alt Rock", "Folk", "Latin · Reggaeton", "R&B · Dance",
 ] as const;
 
+// ── Date helpers (dayjs-backed) ─────────────────────────────────────────────
+// Signatures stay Date/string based so call sites don't depend on dayjs.
+
 export function parseDate(s: string): Date {
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(y, m - 1, d);
+  return dayjs(s).toDate();
 }
 
 export function fmtDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return dayjs(d).format("YYYY-MM-DD");
 }
 
 export function addDays(d: Date, n: number): Date {
-  const x = new Date(d);
-  x.setDate(x.getDate() + n);
-  return x;
+  return dayjs(d).add(n, "day").toDate();
 }
 
-// Week starts Monday (like the reference design).
+// Week starts Monday (like the reference design) — ISO week.
 export function startOfWeek(d: Date): Date {
-  const x = new Date(d);
-  const day = (x.getDay() + 6) % 7; // 0 = Mon
-  x.setDate(x.getDate() - day);
-  return x;
+  return dayjs(d).startOf("isoWeek").toDate();
 }
 
 export function weekOfMonth(d: Date): number {
-  const first = new Date(d.getFullYear(), d.getMonth(), 1);
-  const offset = (first.getDay() + 6) % 7;
-  return Math.ceil((d.getDate() + offset) / 7);
+  const date = dayjs(d);
+  const mondayOffset = (date.startOf("month").day() + 6) % 7;
+  return Math.ceil((date.date() + mondayOffset) / 7);
 }
