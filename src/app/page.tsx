@@ -1,5 +1,5 @@
-import { DayOfMusicApp } from "@/components/day-of-music/day-of-music-app";
+import { HomeLanding } from "@/components/day-of-music/home-landing";
 
-export default function Home() {
-  return <DayOfMusicApp />;
+export default function HomePage() {
+  return <HomeLanding />;
 }

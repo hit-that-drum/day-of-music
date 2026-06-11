@@ -12,7 +12,6 @@ import { addDays, startOfWeek, type Album } from "@/lib/day-of-music/data";
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useAuth } from "@/components/day-of-music/auth-provider";
-import { SignIn } from "@/components/day-of-music/sign-in";
 import { AddFlow, type NewEntry } from "@/components/day-of-music/add-flow";
 import { DayDetail } from "@/components/day-of-music/day-detail";
 import { JournalRail } from "@/components/day-of-music/journal-rail";
@@ -123,11 +122,9 @@ export function DayOfMusicApp() {
     [logEntry, addAlbum, getAlbum],
   );
 
-  // Auth gate: when Supabase is configured, require a session. (When it isn't,
-  // the app runs as a single shared journal.)
-  if (configured && !authLoading && !user) {
-    return <SignIn />;
-  }
+  // Everyone can use the board. Guests (configured auth, no session) work
+  // in-memory only: their edits vanish when they leave the page.
+  const isGuest = configured && !authLoading && !user;
 
   return (
     <div className="dom-stage">
@@ -142,7 +139,15 @@ export function DayOfMusicApp() {
           onScreen={setScreen}
           onAdd={() => setShowAdd(true)}
           account={configured && user ? { email: user.email ?? "", onSignOut: signOut } : null}
+          showAuthLinks={isGuest}
         />
+
+        {isGuest && (
+          <div className="dom-guest-banner" role="status">
+            Guest mode — your edits live only in this tab and reset when you leave.{" "}
+            <a href="/signup">Sign up to keep your journal</a>.
+          </div>
+        )}
 
         <main className="dom-main">
           {screen === "week" && (

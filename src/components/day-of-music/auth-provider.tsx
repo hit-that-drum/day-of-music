@@ -17,12 +17,15 @@ import type { Session, User } from "@supabase/supabase-js";
 
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
+type AuthResult = { error: string | null };
+
 type AuthContextValue = {
   configured: boolean;
   loading: boolean;
   user: User | null;
   accessToken: string | null;
-  signInWithOtp: (email: string) => Promise<{ error: string | null }>;
+  signUpWithPassword: (email: string, password: string) => Promise<AuthResult>;
+  signInWithPassword: (email: string, password: string) => Promise<AuthResult>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -56,22 +59,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signInWithOtp = useCallback(async (email: string) => {
+  const signUpWithPassword = useCallback(async (email: string, password: string) => {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return { error: "Supabase is not configured." };
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signUp({
       email,
-      options: { emailRedirectTo: window.location.origin },
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/week` },
     });
+    return { error: error?.message ?? null };
+  }, []);
+
+  const signInWithPassword = useCallback(async (email: string, password: string) => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return { error: "Supabase is not configured." };
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error?.message ?? null };
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
+    // detectSessionInUrl picks the session up when Google redirects back.
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: `${window.location.origin}/week` },
     });
   }, []);
 
@@ -88,11 +100,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       user: session?.user ?? null,
       accessToken: session?.access_token ?? null,
-      signInWithOtp,
+      signUpWithPassword,
+      signInWithPassword,
       signInWithGoogle,
       signOut,
     }),
-    [configured, loading, session, signInWithOtp, signInWithGoogle, signOut],
+    [configured, loading, session, signUpWithPassword, signInWithPassword, signInWithGoogle, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

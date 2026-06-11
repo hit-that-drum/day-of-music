@@ -116,11 +116,14 @@ function writeCustomAlbums(albums: Album[]): void {
   }
 }
 
-// Tiny external store for user-added albums (from music search), backed by
-// localStorage. Read lazily on the client; the server snapshot is empty, so
-// hydration stays consistent and React re-renders with local data after mount.
+// Tiny external store for user-added albums (from music search).
+// Two buckets: a localStorage-backed one (signed-in / unconfigured shared mode)
+// and an in-memory one for guests, which resets when the page is left.
+// The server snapshot is empty, so hydration stays consistent and React
+// re-renders with local data after mount.
 const EMPTY_ALBUMS: Album[] = [];
 let customAlbumsCache: Album[] | null = null;
+let guestAlbums: Album[] = EMPTY_ALBUMS;
 const customAlbumsListeners = new Set<() => void>();
 
 function getCustomAlbums(): Album[] {
@@ -128,14 +131,22 @@ function getCustomAlbums(): Album[] {
   return customAlbumsCache;
 }
 
+function getGuestAlbums(): Album[] {
+  return guestAlbums;
+}
+
 function subscribeCustomAlbums(listener: () => void): () => void {
   customAlbumsListeners.add(listener);
   return () => customAlbumsListeners.delete(listener);
 }
 
-function upsertCustomAlbum(album: Album): void {
-  customAlbumsCache = [...getCustomAlbums().filter((a) => a.id !== album.id), album];
-  writeCustomAlbums(customAlbumsCache);
+function upsertCustomAlbum(album: Album, persist: boolean): void {
+  if (persist) {
+    customAlbumsCache = [...getCustomAlbums().filter((a) => a.id !== album.id), album];
+    writeCustomAlbums(customAlbumsCache);
+  } else {
+    guestAlbums = [...guestAlbums.filter((a) => a.id !== album.id), album];
+  }
   for (const listener of customAlbumsListeners) listener();
 }
 
@@ -152,6 +163,11 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   const { configured, user, accessToken } = useAuth();
   const queryKey = useMemo(() => ["journal", user?.id ?? "anon"] as const, [user?.id]);
 
+  // Guest = auth is configured but nobody is signed in. Guests work entirely
+  // in-memory (query cache only): no fetch, no localStorage, no server writes —
+  // so leaving the page resets everything to the initial catalog.
+  const guest = configured && !user;
+
   const query = useQuery({
     queryKey,
     queryFn: () => fetchJournal(accessToken),
@@ -159,10 +175,10 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     enabled: !configured || Boolean(user),
   });
 
-  // User-added albums (from music search), persisted to localStorage only.
+  // User-added albums (from music search). Guests get the in-memory bucket.
   const customAlbums = useSyncExternalStore(
     subscribeCustomAlbums,
-    getCustomAlbums,
+    guest ? getGuestAlbums : getCustomAlbums,
     () => EMPTY_ALBUMS,
   );
 
@@ -184,6 +200,9 @@ export function JournalProvider({ children }: { children: ReactNode }) {
 
   const upsert = useMutation({
     mutationFn: async (entry: JournalEntry) => {
+      // Guests never write to the server (the route would reject them anyway);
+      // the optimistic cache update in onMutate is their whole persistence.
+      if (guest) return { persisted: false };
       const res = await fetch("/api/journal", {
         method: "PUT",
         headers: authHeaders(accessToken),
@@ -203,7 +222,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
         entries: nextEntries,
         persisted: base.persisted,
       });
-      writeLocalEntries(nextEntries);
+      if (!guest) writeLocalEntries(nextEntries);
       return { previous };
     },
     onError: (_err, _entry, ctx) => {
@@ -237,11 +256,11 @@ export function JournalProvider({ children }: { children: ReactNode }) {
 
   const addAlbum = useCallback<JournalContextValue["addAlbum"]>(
     (album, { date, rating, note }) => {
-      upsertCustomAlbum(album);
+      upsertCustomAlbum(album, !guest);
       // Bypass applyPatch: the album isn't in albumById until the store updates.
       upsert.mutate({ albumId: album.id, date, rating, note, mood: album.mood });
     },
-    [upsert],
+    [upsert, guest],
   );
 
   const updateEntry = useCallback<JournalContextValue["updateEntry"]>(

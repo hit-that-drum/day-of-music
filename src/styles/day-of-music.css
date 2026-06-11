@@ -1909,3 +1909,84 @@
     justify-content: flex-end;
   }
 }
+
+/* ── Home landing & guest mode ──────────────────────────────────────────── */
+
+a.dom-brand,
+a.dom-signin-brand {
+  text-decoration: none;
+  color: inherit;
+}
+a.dom-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dom-btn-lg {
+  padding: 14px 24px;
+  font-size: 15px;
+}
+
+.dom-home-hero {
+  width: min(640px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 48px 24px;
+  text-align: left;
+}
+.dom-home-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(44px, 8vw, 72px);
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+  margin: 0;
+}
+.dom-home-sub {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--ink2);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 46ch;
+}
+.dom-home-covers {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+.dom-home-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.dom-home-note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+  margin: 0;
+}
+
+.dom-guest-banner {
+  grid-column: 1 / -1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ink2);
+  background-color: var(--chip);
+  border: 1px solid var(--line);
+  padding: 8px 14px;
+}
+.dom-guest-banner a {
+  color: var(--ink);
+}
+
+.dom-signin-sub a {
+  color: var(--ink);
+}

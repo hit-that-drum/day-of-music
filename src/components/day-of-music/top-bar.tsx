@@ -1,5 +1,7 @@
 // top-bar.tsx — brand + screen navigation + log-album action.
 
+import Link from "next/link";
+
 import type { ScreenId } from "@/components/day-of-music/day-of-music-app";
 
 const SCREENS: { id: ScreenId; label: string; ko: string }[] = [
@@ -16,19 +18,22 @@ export function TopBar({
   onScreen,
   onAdd,
   account = null,
+  showAuthLinks = false,
 }: {
   screen: ScreenId;
   onScreen: (id: ScreenId) => void;
   onAdd: () => void;
   account?: Account | null;
+  /** Show Sign in / Sign up links (guest mode). */
+  showAuthLinks?: boolean;
 }) {
   return (
     <header className="dom-topbar">
-      <div className="dom-brand">
+      <Link href="/" className="dom-brand">
         <span className="dom-brand-mark">●</span>
         <span className="dom-brand-name">Day of Music</span>
         <span className="dom-brand-ko">하루의 음악</span>
-      </div>
+      </Link>
       <nav className="dom-nav">
         {SCREENS.map((s) => (
           <button
@@ -52,6 +57,16 @@ export function TopBar({
               Sign out
             </button>
           </span>
+        )}
+        {showAuthLinks && (
+          <>
+            <Link href="/signin" className="dom-btn dom-btn-ghost">
+              Sign in
+            </Link>
+            <Link href="/signup" className="dom-btn dom-btn-ghost">
+              Sign up
+            </Link>
+          </>
         )}
         <button className="dom-btn" onClick={onAdd}>
           ＋ Log album
