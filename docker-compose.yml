@@ -1,0 +1,51 @@
+# docker-compose.yml — Day of Music: web app + local Postgres.
+#
+# Quick start:
+#   docker compose up --build -d
+#   DATABASE_URL=postgresql://postgres:postgres@localhost:5433/dayofmusic npm run db:push   # once, creates tables
+#   open http://localhost:3000
+#
+# Without Supabase keys the app runs in shared-journal mode (no sign-in) and
+# persists entries to the Postgres container. To enable auth, put your
+# NEXT_PUBLIC_SUPABASE_* values in .env and rebuild (they are build-time args).
+
+services:
+  web:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/dayofmusic
+      # Server-side Supabase (token verification) — optional, same as client keys.
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: dayofmusic
+    ports:
+      # Host port 5433 to avoid clashing with a local Postgres on 5432.
+      - "5433:5432"
+    volumes:
+      - dayofmusic-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dayofmusic"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  dayofmusic-pgdata:

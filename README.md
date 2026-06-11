@@ -47,6 +47,21 @@ npm run db:push
 npm run db:studio
 ```
 
+## Docker
+
+Run the whole stack (web app + Postgres) with Docker:
+
+```bash
+docker compose up --build -d
+# one-time: create tables in the container database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/dayofmusic npm run db:push
+```
+
+Then open [http://localhost:3000](http://localhost:3000). Without Supabase keys the app
+runs in shared-journal mode (no sign-in) persisting to the bundled Postgres. To enable
+auth, put `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` in a `.env` file
+next to `docker-compose.yml` and rebuild — they are inlined at build time.
+
 ## Notes
 
 The current PNG export is client-side through `html-to-image`. For production share links, add a server-side image route with `next/og` `ImageResponse`.
