@@ -33,7 +33,7 @@ const TODAY = new Date(2026, 0, 8);
 
 export function DayOfMusicApp() {
   const rootRef = useRef<HTMLDivElement>(null);
-  const { logEntry, updateEntry, getAlbum } = useJournal();
+  const { logEntry, addAlbum, updateEntry, getAlbum } = useJournal();
   const { configured, loading: authLoading, user, signOut } = useAuth();
 
   const [tweaks, setTweaks] = useState<Tweaks>({
@@ -100,18 +100,27 @@ export function DayOfMusicApp() {
 
   const handleSave = useCallback(
     (entry: NewEntry) => {
-      logEntry({
-        albumId: entry.id,
-        date: entry.date,
-        rating: entry.rating,
-        note: entry.note,
-      });
-      const album = getAlbum(entry.id);
-      toast.success(`Logged ${album?.title ?? "album"}`, {
+      if (entry.album) {
+        // Album came from music search — add it to the journal's catalog.
+        addAlbum(entry.album, {
+          date: entry.date,
+          rating: entry.rating,
+          note: entry.note,
+        });
+      } else {
+        logEntry({
+          albumId: entry.id,
+          date: entry.date,
+          rating: entry.rating,
+          note: entry.note,
+        });
+      }
+      const title = entry.album?.title ?? getAlbum(entry.id)?.title;
+      toast.success(`Logged ${title ?? "album"}`, {
         description: `${entry.date} · ${entry.rating || "—"}★`,
       });
     },
-    [logEntry, getAlbum],
+    [logEntry, addAlbum, getAlbum],
   );
 
   // Auth gate: when Supabase is configured, require a session. (When it isn't,

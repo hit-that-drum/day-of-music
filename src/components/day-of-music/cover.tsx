@@ -28,11 +28,25 @@ type StyleArgs = {
 };
 
 export function Cover({ album, size = 240 }: CoverProps) {
-  const { cover, title, artist } = album;
+  const { cover, title, artist, artworkUrl } = album;
   const { style, bg, fg, accent } = cover;
   const args: StyleArgs = { s: NATIVE, title, artist, fg, accent, bg };
 
-  const inner = renderStyle(style, args);
+  // Real artwork (e.g. iTunes search results) wins over the typographic tile.
+  const inner = artworkUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={artworkUrl}
+      alt={`${title} — ${artist}`}
+      width={NATIVE}
+      height={NATIVE}
+      // anonymous CORS keeps the canvas untainted for html-to-image export
+      crossOrigin="anonymous"
+      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+    />
+  ) : (
+    renderStyle(style, args)
+  );
   const useFluid = size === "100%";
 
   return (

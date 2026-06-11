@@ -16,10 +16,19 @@ export type JournalEntry = {
 export type JournalPatch = Partial<Omit<JournalEntry, "albumId">>;
 
 export const JOURNAL_STORAGE_KEY = "day-of-music:journal:v1";
+export const CUSTOM_ALBUMS_STORAGE_KEY = "day-of-music:custom-albums:v1";
 
-/** Overlay journal patches onto the static catalog, keyed by album id. */
-export function mergeAlbums(patches: Record<string, JournalPatch>): Album[] {
-  return ALBUMS.map((album) => {
+/**
+ * Overlay journal patches onto the catalog, keyed by album id.
+ * `customAlbums` are user-added albums (e.g. from music search) appended to
+ * the static catalog before patching.
+ */
+export function mergeAlbums(
+  patches: Record<string, JournalPatch>,
+  customAlbums: Album[] = [],
+): Album[] {
+  const base = [...ALBUMS, ...customAlbums];
+  return base.map((album) => {
     const patch = patches[album.id];
     return patch ? { ...album, ...patch } : album;
   });

@@ -11,12 +11,14 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { Album } from "@/lib/day-of-music/data";
 import {
+  CUSTOM_ALBUMS_STORAGE_KEY,
   JOURNAL_STORAGE_KEY,
   indexByDate,
   mergeAlbums,
@@ -41,6 +43,8 @@ type JournalContextValue = {
   albumsByDate: Record<string, Album>;
   getAlbum: (id: string) => Album | undefined;
   logEntry: (input: { albumId: string; date: string; rating: number; note: string }) => void;
+  /** Add an album outside the static catalog (e.g. a music search result) and log it. */
+  addAlbum: (album: Album, entry: { date: string; rating: number; note: string }) => void;
   updateEntry: (albumId: string, patch: JournalPatch) => void;
   persisted: boolean;
 };
@@ -93,6 +97,48 @@ async function fetchJournal(token: string | null): Promise<JournalResponse> {
   return { entries: readLocalEntries(), persisted: data.persisted };
 }
 
+function readCustomAlbums(): Album[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(CUSTOM_ALBUMS_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Album[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCustomAlbums(albums: Album[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(CUSTOM_ALBUMS_STORAGE_KEY, JSON.stringify(albums));
+  } catch {
+    /* ignore quota / privacy-mode errors */
+  }
+}
+
+// Tiny external store for user-added albums (from music search), backed by
+// localStorage. Read lazily on the client; the server snapshot is empty, so
+// hydration stays consistent and React re-renders with local data after mount.
+const EMPTY_ALBUMS: Album[] = [];
+let customAlbumsCache: Album[] | null = null;
+const customAlbumsListeners = new Set<() => void>();
+
+function getCustomAlbums(): Album[] {
+  if (customAlbumsCache === null) customAlbumsCache = readCustomAlbums();
+  return customAlbumsCache;
+}
+
+function subscribeCustomAlbums(listener: () => void): () => void {
+  customAlbumsListeners.add(listener);
+  return () => customAlbumsListeners.delete(listener);
+}
+
+function upsertCustomAlbum(album: Album): void {
+  customAlbumsCache = [...getCustomAlbums().filter((a) => a.id !== album.id), album];
+  writeCustomAlbums(customAlbumsCache);
+  for (const listener of customAlbumsListeners) listener();
+}
+
 function patchesFromEntries(entries: JournalEntry[]): PatchMap {
   const out: PatchMap = {};
   for (const e of entries) {
@@ -113,12 +159,22 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     enabled: !configured || Boolean(user),
   });
 
+  // User-added albums (from music search), persisted to localStorage only.
+  const customAlbums = useSyncExternalStore(
+    subscribeCustomAlbums,
+    getCustomAlbums,
+    () => EMPTY_ALBUMS,
+  );
+
   const queryData = query.data;
   const patches = useMemo(
     () => patchesFromEntries(queryData?.entries ?? []),
     [queryData],
   );
-  const albums = useMemo(() => mergeAlbums(patches), [patches]);
+  const albums = useMemo(
+    () => mergeAlbums(patches, customAlbums),
+    [patches, customAlbums],
+  );
   const albumsByDate = useMemo(() => indexByDate(albums), [albums]);
   const albumById = useMemo(() => {
     const map: Record<string, Album> = {};
@@ -179,6 +235,15 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     [applyPatch],
   );
 
+  const addAlbum = useCallback<JournalContextValue["addAlbum"]>(
+    (album, { date, rating, note }) => {
+      upsertCustomAlbum(album);
+      // Bypass applyPatch: the album isn't in albumById until the store updates.
+      upsert.mutate({ albumId: album.id, date, rating, note, mood: album.mood });
+    },
+    [upsert],
+  );
+
   const updateEntry = useCallback<JournalContextValue["updateEntry"]>(
     (albumId, patch) => applyPatch(albumId, patch),
     [applyPatch],
@@ -190,10 +255,11 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       albumsByDate,
       getAlbum: (id) => albumById[id],
       logEntry,
+      addAlbum,
       updateEntry,
       persisted: query.data?.persisted ?? false,
     }),
-    [albums, albumsByDate, albumById, logEntry, updateEntry, query.data?.persisted],
+    [albums, albumsByDate, albumById, logEntry, addAlbum, updateEntry, query.data?.persisted],
   );
 
   return <JournalContext.Provider value={value}>{children}</JournalContext.Provider>;

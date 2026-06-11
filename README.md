@@ -53,7 +53,7 @@ The current PNG export is client-side through `html-to-image`. For production sh
 
 Remote album artwork can fail browser-side PNG export when the image host blocks CORS. Cache or proxy album covers through your own route or Supabase Storage before exporting final images.
 
-The `/api/music/search` route is ready for Spotify Bearer tokens once PKCE auth is connected.
+The `/api/music/search` route proxies the free [iTunes Search API](https://performance-partners.apple.com/search-api) — no API key or auth required. Catalog IDs are Apple Music IDs, so it can later be swapped for the paid Apple Music API without client changes. Albums added from search are stored locally (localStorage) and overlaid on the static catalog.
 
 ## Installable App
 

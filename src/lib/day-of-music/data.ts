@@ -29,6 +29,9 @@ export type Album = {
   year: number;
   format: string;
   cover: CoverSpec;
+  /** Real artwork (e.g. from iTunes search). When set, Cover renders the
+   *  bitmap instead of the typographic tile. Catalog albums omit it. */
+  artworkUrl?: string;
   mood: string[];
   note: string;
   rating: number;

@@ -1,10 +1,17 @@
 // add-flow.tsx — Add / Log Album: a 3-step modal (find → pick day → rate + note).
+// Step 1 searches the static catalog locally and the wider music catalog via
+// /api/music/search (free iTunes Search API proxy).
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { ALBUMS, DOW, addDays, fmtDate, type Album } from "@/lib/day-of-music/data";
+import {
+  albumFromSearchResult,
+  searchMusic,
+} from "@/lib/day-of-music/music-search";
 import { Cover } from "@/components/day-of-music/cover";
 
 export type NewEntry = {
@@ -12,7 +19,20 @@ export type NewEntry = {
   date: string;
   rating: number;
   note: string;
+  /** Set when the picked album is not in the static catalog (search result). */
+  album?: Album;
 };
+
+const CATALOG_IDS = new Set(ALBUMS.map((a) => a.id));
+
+function useDebounced(value: string, delayMs: number): string {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(t);
+  }, [value, delayMs]);
+  return debounced;
+}
 
 type AddFlowProps = {
   onClose: () => void;
@@ -28,12 +48,33 @@ export function AddFlow({ onClose, onSave, defaultDate }: AddFlowProps) {
   const [rating, setRating] = useState(0);
   const [note, setNote] = useState("");
 
-  const results = useMemo(() => {
+  const debouncedQuery = useDebounced(query.trim(), 300);
+
+  const catalogResults = useMemo(() => {
     const q = query.toLowerCase();
     return ALBUMS.filter(
       (a) => a.title.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q),
-    ).slice(0, 6);
+    ).slice(0, 4);
   }, [query]);
+
+  const search = useQuery({
+    queryKey: ["music-search", debouncedQuery],
+    queryFn: () => searchMusic(debouncedQuery, { limit: 8 }),
+    enabled: debouncedQuery.length >= 2,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+
+  const results = useMemo(() => {
+    const remote = (search.data ?? [])
+      .filter((r) => !CATALOG_IDS.has(r.id))
+      .map(albumFromSearchResult);
+    const merged = [...catalogResults, ...remote];
+    const seen = new Set<string>();
+    return merged.filter((a) => (seen.has(a.id) ? false : (seen.add(a.id), true))).slice(0, 8);
+  }, [catalogResults, search.data]);
+
+  const searching = debouncedQuery.length >= 2 && search.isFetching;
 
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(new Date(2026, 0, 12), i)),
@@ -84,8 +125,16 @@ export function AddFlow({ onClose, onSave, defaultDate }: AddFlowProps) {
                   {picked?.id === a.id && <span className="dom-addflow-check">✓</span>}
                 </button>
               ))}
-              {query && !results.length && (
+              {searching && !results.length && (
+                <div className="dom-addflow-empty">Searching…</div>
+              )}
+              {query && !searching && !results.length && (
                 <div className="dom-addflow-empty">No matches. Try a different query.</div>
+              )}
+              {search.isError && (
+                <div className="dom-addflow-empty">
+                  Catalog search is unavailable right now.
+                </div>
               )}
             </div>
           </div>
@@ -165,7 +214,16 @@ export function AddFlow({ onClose, onSave, defaultDate }: AddFlowProps) {
             <button
               className="dom-btn"
               onClick={() => {
-                if (picked) onSave({ id: picked.id, date, rating, note });
+                if (picked) {
+                  onSave({
+                    id: picked.id,
+                    date,
+                    rating,
+                    note,
+                    // Pass the full album along when it's not in the catalog.
+                    album: CATALOG_IDS.has(picked.id) ? undefined : picked,
+                  });
+                }
                 onClose();
               }}
             >
