@@ -13,7 +13,7 @@ See [`mobile/README.md`](./mobile/README.md) for dev and TestFlight instructions
 - Tailwind CSS v4
 - Zustand for editor state
 - TanStack Query for server state
-- Supabase client, PostgreSQL, and Drizzle ORM
+- Supabase (auth + Postgres, queried directly via supabase-js with RLS)
 - lucide-react icons
 - html-to-image PNG export
 - Installable PWA support
@@ -33,7 +33,13 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 Copy `.env.example` to `.env.local` and fill in the values you need.
 
-Supabase and database values are only required once you start saving boards or running Drizzle commands.
+Auth and cross-device journal persistence need a Supabase project: set the two
+`NEXT_PUBLIC_SUPABASE_*` values, then run the SQL in
+[`supabase/migrations/0001_journal_entries.sql`](./supabase/migrations/0001_journal_entries.sql)
+once (Supabase Dashboard → SQL editor). The table is queried directly from the
+client with supabase-js; the RLS policies in that file are the authorization layer.
+
+Without Supabase keys the app runs unauthenticated and persists to localStorage.
 
 ## Scripts
 
@@ -42,25 +48,17 @@ npm run dev
 npm run build
 npm run lint
 npm run typecheck
-npm run db:generate
-npm run db:push
-npm run db:studio
 ```
 
 ## Docker
 
-Run the whole stack (web app + Postgres) with Docker:
-
 ```bash
 docker compose up --build -d
-# one-time: create tables in the container database
-DATABASE_URL=postgresql://postgres:postgres@localhost:5433/dayofmusic npm run db:push
 ```
 
-Then open [http://localhost:3000](http://localhost:3000). Without Supabase keys the app
-runs in shared-journal mode (no sign-in) persisting to the bundled Postgres. To enable
-auth, put `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` in a `.env` file
-next to `docker-compose.yml` and rebuild — they are inlined at build time.
+Then open [http://localhost:3000](http://localhost:3000). Supabase keys go in a `.env`
+file next to `docker-compose.yml` and require a rebuild when changed — they are
+inlined into the client bundle at build time.
 
 ## Notes
 

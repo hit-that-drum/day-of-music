@@ -1,8 +1,8 @@
 // use-journal.tsx — journal persistence layer.
-// The TanStack Query cache is the single source of truth. Entries load from
-// /api/journal (falling back to localStorage when no DB is configured), are
-// overlaid on the static catalog, and mutations update the cache optimistically
-// while writing through to localStorage and PUTting to the server.
+// The TanStack Query cache is the single source of truth. Signed-in users read
+// and write journal_entries directly via supabase-js (RLS scopes rows to the
+// user — see supabase/migrations/). Guests are purely in-memory. When Supabase
+// isn't configured at all (bare local dev), entries live in localStorage.
 
 "use client";
 
@@ -26,17 +26,21 @@ import {
   type JournalPatch,
 } from "@/lib/day-of-music/journal";
 import { useAuth } from "@/components/day-of-music/auth-provider";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type PatchMap = Record<string, JournalPatch>;
 type JournalResponse = { entries: JournalEntry[]; persisted: boolean };
 
-const JournalContext = createContext<JournalContextValue | null>(null);
+// Row shape of public.journal_entries (snake_case).
+type JournalRow = {
+  album_id: string;
+  date: string;
+  rating: number;
+  note: string;
+  mood: string[];
+};
 
-function authHeaders(token: string | null): HeadersInit {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers;
-}
+const JournalContext = createContext<JournalContextValue | null>(null);
 
 type JournalContextValue = {
   albums: Album[];
@@ -80,21 +84,30 @@ function writeLocalEntries(entries: JournalEntry[]): void {
   }
 }
 
-async function fetchJournal(token: string | null): Promise<JournalResponse> {
-  const res = await fetch("/api/journal", {
-    cache: "no-store",
-    headers: authHeaders(token),
-  });
-  const data: JournalResponse = res.ok
-    ? ((await res.json()) as JournalResponse)
-    : { entries: [], persisted: false };
+async function fetchJournal(userId: string | null): Promise<JournalResponse> {
+  const supabase = getSupabaseBrowserClient();
 
-  // Server wins when it has data; otherwise fall back to local edits.
-  if (data.persisted && data.entries.length) {
-    writeLocalEntries(data.entries);
-    return data;
+  // Unconfigured local dev: localStorage is the only persistence.
+  if (!supabase || !userId) {
+    return { entries: readLocalEntries(), persisted: false };
   }
-  return { entries: readLocalEntries(), persisted: data.persisted };
+
+  const { data, error } = await supabase
+    .from("journal_entries")
+    .select("album_id, date, rating, note, mood")
+    .order("date");
+  if (error) throw new Error(error.message);
+
+  return {
+    entries: (data as JournalRow[]).map((r) => ({
+      albumId: r.album_id,
+      date: r.date,
+      rating: r.rating,
+      note: r.note,
+      mood: r.mood ?? [],
+    })),
+    persisted: true,
+  };
 }
 
 function readCustomAlbums(): Album[] {
@@ -160,8 +173,9 @@ function patchesFromEntries(entries: JournalEntry[]): PatchMap {
 
 export function JournalProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const { configured, user, accessToken } = useAuth();
-  const queryKey = useMemo(() => ["journal", user?.id ?? "anon"] as const, [user?.id]);
+  const { configured, user } = useAuth();
+  const userId = user?.id ?? null;
+  const queryKey = useMemo(() => ["journal", userId ?? "anon"] as const, [userId]);
 
   // Guest = auth is configured but nobody is signed in. Guests work entirely
   // in-memory (query cache only): no fetch, no localStorage, no server writes —
@@ -170,8 +184,8 @@ export function JournalProvider({ children }: { children: ReactNode }) {
 
   const query = useQuery({
     queryKey,
-    queryFn: () => fetchJournal(accessToken),
-    // In auth mode, only load once signed in; in shared mode, always.
+    queryFn: () => fetchJournal(userId),
+    // In auth mode, only load once signed in; in unconfigured mode, always.
     enabled: !configured || Boolean(user),
   });
 
@@ -200,16 +214,24 @@ export function JournalProvider({ children }: { children: ReactNode }) {
 
   const upsert = useMutation({
     mutationFn: async (entry: JournalEntry) => {
-      // Guests never write to the server (the route would reject them anyway);
-      // the optimistic cache update in onMutate is their whole persistence.
-      if (guest) return { persisted: false };
-      const res = await fetch("/api/journal", {
-        method: "PUT",
-        headers: authHeaders(accessToken),
-        body: JSON.stringify(entry),
-      });
-      if (!res.ok) throw new Error("Failed to save entry");
-      return (await res.json()) as { persisted: boolean };
+      // Guests: the optimistic cache update in onMutate is their whole
+      // persistence. Unconfigured: localStorage write-through in onMutate.
+      const supabase = getSupabaseBrowserClient();
+      if (guest || !supabase || !userId) return { persisted: false };
+
+      const row = {
+        user_id: userId,
+        album_id: entry.albumId,
+        date: entry.date,
+        rating: entry.rating,
+        note: entry.note,
+        mood: entry.mood,
+      };
+      const { error } = await supabase
+        .from("journal_entries")
+        .upsert(row, { onConflict: "user_id,album_id" });
+      if (error) throw new Error(error.message);
+      return { persisted: true };
     },
     onMutate: (entry) => {
       const previous = queryClient.getQueryData<JournalResponse>(queryKey);
@@ -222,7 +244,8 @@ export function JournalProvider({ children }: { children: ReactNode }) {
         entries: nextEntries,
         persisted: base.persisted,
       });
-      if (!guest) writeLocalEntries(nextEntries);
+      // localStorage write-through only in unconfigured (no-Supabase) mode.
+      if (!configured) writeLocalEntries(nextEntries);
       return { previous };
     },
     onError: (_err, _entry, ctx) => {
