@@ -3,6 +3,20 @@
 
 .dom-stage {
   --font-body: "Spectral", Georgia, serif;
+  /* Editorial-theme defaults so pages/elements that don't run applyTheme
+     (auth cards, modals) still resolve every color var. applyTheme overrides
+     these inline per chosen theme. */
+  --bg: #efe6d2;
+  --panel: #f6efe0;
+  --ink: #1a1612;
+  --ink2: #564a36;
+  --ink3: #8a7a5d;
+  --line: #1a1612;
+  --lineSoft: rgba(26, 22, 18, 0.22);
+  --accent: #7a3b2e;
+  --chip: rgba(26, 22, 18, 0.06);
+  --coverShadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --coverRadius: 0px;
   background: #d8c9a8;
   min-height: 100vh;
   font-family: var(--font-body);

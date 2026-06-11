@@ -128,10 +128,11 @@ export function DayOfMusicApp() {
   const isGuest = configured && !authLoading && !user;
 
   return (
-    <div className="dom-stage">
+    // Theme vars are applied to the stage so the modals (scrim/add-flow/share),
+    // which render outside .dom-root, inherit them too.
+    <div className="dom-stage" ref={rootRef}>
       <div
         className="dom-root"
-        ref={rootRef}
         data-grid={tweaks.aesthetic === "editorial" || tweaks.aesthetic === "dark" ? "1" : "0"}
         data-rail={screen === "week" && tweaks.showJournal ? "1" : "0"}
       >
