@@ -17,6 +17,8 @@ type WeeklyGridProps = {
   weekStart: Date;
   today: Date;
   onOpen: (album: Album) => void;
+  /** Open the add-flow with this YYYY-MM-DD preselected. */
+  onAdd: (date: string) => void;
   onPrev: () => void;
   onNext: () => void;
   onShare: () => void;
@@ -27,6 +29,7 @@ export function WeeklyGrid({
   weekStart,
   today,
   onOpen,
+  onAdd,
   onPrev,
   onNext,
   onShare,
@@ -34,6 +37,7 @@ export function WeeklyGrid({
   const { albumsByDate } = useJournal();
   const monthLabel = MONTHS_LONG[weekStart.getMonth()];
   const weekNum = weekOfMonth(weekStart);
+  const weekEmpty = days.every((d) => !albumsByDate[fmtDate(d)]);
 
   return (
     <div className="dom-week">
@@ -44,6 +48,12 @@ export function WeeklyGrid({
         onNext={onNext}
         onShare={onShare}
       />
+      {weekEmpty && (
+        <div className="dom-week-hint" role="note">
+          이번 주는 아직 비어 있어요 — nothing logged this week yet. Tap a day, or hit{" "}
+          <em>＋ Log album</em> to search any album and start your journal.
+        </div>
+      )}
       <div className="dom-grid">
         {/* Label cell — only visible in the 2-column mobile grid. */}
         <div className="dom-grid-label">
@@ -65,6 +75,7 @@ export function WeeklyGrid({
               isToday={isToday}
               isFuture={isFuture}
               onOpen={onOpen}
+              onAdd={onAdd}
             />
           );
         })}
@@ -116,12 +127,14 @@ function DayCell({
   isToday,
   isFuture,
   onOpen,
+  onAdd,
 }: {
   date: Date;
   album: Album | undefined;
   isToday: boolean;
   isFuture: boolean;
   onOpen: (album: Album) => void;
+  onAdd: (date: string) => void;
 }) {
   const day = date.getDate();
   const dow = DOW[date.getDay()];
@@ -158,8 +171,17 @@ function DayCell({
             <MetaLine album={album} />
           </div>
         </button>
-      ) : (
+      ) : isFuture ? (
         <div className="dom-day-body dom-day-empty" />
+      ) : (
+        <button
+          className="dom-day-body dom-day-empty dom-day-add"
+          onClick={() => onAdd(fmtDate(date))}
+          aria-label={`Log an album for ${fmtDate(date)}`}
+        >
+          <span className="dom-day-add-mark">＋</span>
+          <span className="dom-day-add-lbl">log · 기록</span>
+        </button>
       )}
     </div>
   );

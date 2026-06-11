@@ -43,6 +43,8 @@ export function DayOfMusicApp() {
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(TODAY));
   const [openAlbum, setOpenAlbum] = useState<Album | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  // When set, the add-flow opens with this date preselected (empty-day click).
+  const [addDate, setAddDate] = useState<string | null>(null);
   const [showShare, setShowShare] = useState(false);
 
   const setTweak = useCallback(
@@ -136,7 +138,10 @@ export function DayOfMusicApp() {
         <TopBar
           screen={screen}
           onScreen={setScreen}
-          onAdd={() => setShowAdd(true)}
+          onAdd={() => {
+            setAddDate(null);
+            setShowAdd(true);
+          }}
           account={configured && user ? { email: user.email ?? "", onSignOut: signOut } : null}
           showAuthLinks={isGuest}
         />
@@ -155,6 +160,10 @@ export function DayOfMusicApp() {
               weekStart={weekStart}
               today={TODAY}
               onOpen={handleOpen}
+              onAdd={(date) => {
+                setAddDate(date);
+                setShowAdd(true);
+              }}
               onPrev={prevWeek}
               onNext={nextWeek}
               onShare={() => setShowShare(true)}
@@ -178,9 +187,10 @@ export function DayOfMusicApp() {
           onClose={() => setShowAdd(false)}
           onSave={handleSave}
           weekStart={weekStart}
-          // Preselect today when it falls inside the viewed week.
+          // Clicked day wins; otherwise preselect today when it's in view.
           defaultDate={
-            days.some((d) => fmtDate(d) === fmtDate(TODAY)) ? fmtDate(TODAY) : undefined
+            addDate ??
+            (days.some((d) => fmtDate(d) === fmtDate(TODAY)) ? fmtDate(TODAY) : undefined)
           }
         />
       )}
