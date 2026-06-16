@@ -5,7 +5,14 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { toast } from "sonner";
 
 import { addDays, fmtDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
@@ -29,27 +36,112 @@ export type ScreenId = "week" | "month" | "search" | "profile";
 // to that week to see the demo data.) Evaluated client-side per page load.
 const TODAY = new Date();
 
+// Tweaks are persisted client-side so the user's layout/theme choices survive
+// reloads. Bump the version suffix if the Tweaks shape changes incompatibly.
+const TWEAKS_KEY = "dom.tweaks.v1";
+
+const DEFAULT_TWEAKS: Tweaks = {
+  aesthetic: "editorial",
+  typography: "editorial",
+  showJournal: true,
+  weekSplit: false,
+};
+
+function loadTweaks(): Tweaks {
+  if (typeof window === "undefined") return DEFAULT_TWEAKS;
+  try {
+    const raw = window.localStorage.getItem(TWEAKS_KEY);
+    if (!raw) return DEFAULT_TWEAKS;
+    // Merge over defaults so older saved blobs missing newer keys still work.
+    return { ...DEFAULT_TWEAKS, ...(JSON.parse(raw) as Partial<Tweaks>) };
+  } catch {
+    return DEFAULT_TWEAKS;
+  }
+}
+
+// Tweaks live in a tiny external store so they can be read with
+// useSyncExternalStore — that loads the persisted value on the client without
+// a hydration mismatch (server renders defaults, client swaps in after mount)
+// and avoids calling setState inside an effect.
+let tweaksSnapshot: Tweaks | null = null;
+const tweaksListeners = new Set<() => void>();
+
+function getTweaksSnapshot(): Tweaks {
+  if (tweaksSnapshot === null) tweaksSnapshot = loadTweaks();
+  return tweaksSnapshot;
+}
+
+function getTweaksServerSnapshot(): Tweaks {
+  return DEFAULT_TWEAKS;
+}
+
+function subscribeTweaks(cb: () => void): () => void {
+  tweaksListeners.add(cb);
+  return () => tweaksListeners.delete(cb);
+}
+
+function writeTweaks(next: Tweaks): void {
+  tweaksSnapshot = next;
+  try {
+    window.localStorage.setItem(TWEAKS_KEY, JSON.stringify(next));
+  } catch {
+    /* storage unavailable (private mode / quota) — ignore */
+  }
+  tweaksListeners.forEach((l) => l());
+}
+
+// First and last day of the anchor's Mon–Sun week that still belong to the
+// anchor's month. Used by week nav in split mode to step just past the visible
+// segment without materialising the whole 7-day array.
+function monthSegmentBounds(anchor: Date): { first: Date; last: Date } {
+  const ws = startOfWeek(anchor);
+  const weekEnd = addDays(ws, 6);
+  const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+  const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+  return {
+    first: ws < monthStart ? monthStart : ws,
+    last: weekEnd > monthEnd ? monthEnd : weekEnd,
+  };
+}
+
 export function DayOfMusicApp() {
   const rootRef = useRef<HTMLDivElement>(null);
-  const { logEntry, addAlbum, updateEntry, getAlbum } = useJournal();
+  const { logEntry, addAlbum, updateEntry, removeEntry, getAlbum } = useJournal();
   const { configured, loading: authLoading, user, signOut } = useAuth();
 
-  const [tweaks, setTweaks] = useState<Tweaks>({
-    aesthetic: "editorial",
-    typography: "editorial",
-    showJournal: true,
-  });
+  // Persisted across reloads via localStorage (see the store helpers above).
+  const tweaks = useSyncExternalStore(
+    subscribeTweaks,
+    getTweaksSnapshot,
+    getTweaksServerSnapshot,
+  );
   const [screen, setScreen] = useState<ScreenId>("week");
-  const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(TODAY));
+  // `anchor` is any day inside the currently-viewed page. The Monday-based
+  // `weekStart` and the visible `days` are derived from it (see below).
+  const [anchor, setAnchor] = useState<Date>(() => TODAY);
   const [openAlbum, setOpenAlbum] = useState<Album | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   // When set, the add-flow opens with this date preselected (empty-day click).
   const [addDate, setAddDate] = useState<string | null>(null);
+  // When set, saving the add-flow replaces (removes) this album's entry.
+  const [replaceTarget, setReplaceTarget] = useState<string | null>(null);
   const [showShare, setShowShare] = useState(false);
+  const [showTweaks, setShowTweaks] = useState(false);
+
+  // Single place that dismisses every overlay + resets the transient add/replace
+  // state. Centralised so new overlays only have to be added here (and so the
+  // Esc handler can't drift out of sync with the individual onClose handlers).
+  const closeAll = useCallback(() => {
+    setOpenAlbum(null);
+    setShowAdd(false);
+    setShowShare(false);
+    setShowTweaks(false);
+    setReplaceTarget(null);
+  }, []);
 
   const setTweak = useCallback(
     <K extends keyof Tweaks>(key: K, value: Tweaks[K]) =>
-      setTweaks((prev) => ({ ...prev, [key]: value })),
+      writeTweaks({ ...getTweaksSnapshot(), [key]: value }),
     [],
   );
 
@@ -61,18 +153,51 @@ export function DayOfMusicApp() {
     applyTheme(rootRef.current, tweaks.aesthetic, tweaks.typography);
   }, [tweaks.aesthetic, tweaks.typography]);
 
-  const prevWeek = useCallback(() => setWeekStart((w) => addDays(w, -7)), []);
-  const nextWeek = useCallback(() => setWeekStart((w) => addDays(w, 7)), []);
+  // Monday of the anchor's ISO week, and the full Mon–Sun strip.
+  const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
+  const fullWeek = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart],
+  );
+
+  // The grid always shows the whole Mon–Sun week (7 cells). In split mode the
+  // cells belonging to the *other* month are blanked out by WeeklyGrid rather
+  // than removed, so the 7-column layout stays intact.
+  const days = fullWeek;
+
+  // Days that belong to the page's month. In split mode that's the subset
+  // matching the anchor's month; otherwise the whole week. Used for the label
+  // and the share card so they reflect only the labelled month.
+  const monthDays = useMemo(() => {
+    if (!tweaks.weekSplit) return fullWeek;
+    const m = anchor.getMonth();
+    const y = anchor.getFullYear();
+    return fullWeek.filter((d) => d.getMonth() === m && d.getFullYear() === y);
+  }, [fullWeek, anchor, tweaks.weekSplit]);
+
+  // The day whose month/week-number label the header shows: the first in-month
+  // day in split mode, otherwise the week's Monday.
+  const labelDate = monthDays[0] ?? weekStart;
+
+  const prevWeek = useCallback(() => {
+    setAnchor((a) =>
+      // Step to the day before the current segment's first visible day.
+      tweaks.weekSplit ? addDays(monthSegmentBounds(a).first, -1) : addDays(a, -7),
+    );
+  }, [tweaks.weekSplit]);
+
+  const nextWeek = useCallback(() => {
+    setAnchor((a) =>
+      // Step to the day after the current segment's last visible day.
+      tweaks.weekSplit ? addDays(monthSegmentBounds(a).last, 1) : addDays(a, 7),
+    );
+  }, [tweaks.weekSplit]);
 
   // Keyboard nav: Esc closes modal; ←/→ change week when nothing is open.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (openAlbum || showAdd || showShare) {
-        if (e.key === "Escape") {
-          setOpenAlbum(null);
-          setShowAdd(false);
-          setShowShare(false);
-        }
+      if (openAlbum || showAdd || showShare || showTweaks) {
+        if (e.key === "Escape") closeAll();
         return;
       }
       if (screen !== "week") return;
@@ -81,12 +206,7 @@ export function DayOfMusicApp() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openAlbum, showAdd, showShare, screen, prevWeek, nextWeek]);
-
-  const days = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart],
-  );
+  }, [openAlbum, showAdd, showShare, showTweaks, screen, prevWeek, nextWeek, closeAll]);
 
   const handleOpen = useCallback((album: Album) => setOpenAlbum(album), []);
 
@@ -97,6 +217,24 @@ export function DayOfMusicApp() {
     },
     [updateEntry],
   );
+
+  const handleRemove = useCallback(
+    (id: string) => {
+      removeEntry(id);
+      setOpenAlbum(null);
+      toast.success("Removed from your journal");
+    },
+    [removeEntry],
+  );
+
+  // Replace: reopen the add-flow on the same day; the old entry is dropped when
+  // the new album is saved (see handleSave).
+  const handleReplace = useCallback((album: Album) => {
+    setOpenAlbum(null);
+    setAddDate(album.date);
+    setReplaceTarget(album.id);
+    setShowAdd(true);
+  }, []);
 
   const handleSave = useCallback(
     (entry: NewEntry) => {
@@ -115,12 +253,18 @@ export function DayOfMusicApp() {
           note: entry.note,
         });
       }
+      // If this save is replacing an existing entry, drop the old one (unless
+      // the user re-picked the very same album).
+      const newId = entry.album?.id ?? entry.id;
+      if (replaceTarget && replaceTarget !== newId) removeEntry(replaceTarget);
+      setReplaceTarget(null);
+
       const title = entry.album?.title ?? getAlbum(entry.id)?.title;
       toast.success(`Logged ${title ?? "album"}`, {
         description: `${entry.date} · ${entry.rating || "—"}★`,
       });
     },
-    [logEntry, addAlbum, getAlbum],
+    [logEntry, addAlbum, getAlbum, replaceTarget, removeEntry],
   );
 
   // Everyone can use the board. Guests (configured auth, no session) work
@@ -143,6 +287,7 @@ export function DayOfMusicApp() {
             setAddDate(null);
             setShowAdd(true);
           }}
+          onTweaks={() => setShowTweaks((v) => !v)}
           account={configured && user ? { email: user.email ?? "", onSignOut: signOut } : null}
           showAuthLinks={isGuest}
         />
@@ -158,7 +303,8 @@ export function DayOfMusicApp() {
           {screen === "week" && (
             <WeeklyGrid
               days={days}
-              weekStart={weekStart}
+              labelDate={labelDate}
+              splitByMonth={tweaks.weekSplit}
               today={TODAY}
               onOpen={handleOpen}
               onAdd={(date) => {
@@ -167,6 +313,8 @@ export function DayOfMusicApp() {
               }}
               onPrev={prevWeek}
               onNext={nextWeek}
+              // Jump the week view to whatever date the user picks in the mini calendar.
+              onJump={setAnchor}
               onShare={() => setShowShare(true)}
             />
           )}
@@ -181,11 +329,20 @@ export function DayOfMusicApp() {
       </div>
 
       {openAlbum && (
-        <DayDetail album={openAlbum} onClose={() => setOpenAlbum(null)} onUpdate={handleUpdate} />
+        <DayDetail
+          album={openAlbum}
+          onClose={() => setOpenAlbum(null)}
+          onUpdate={handleUpdate}
+          onRemove={handleRemove}
+          onReplace={handleReplace}
+        />
       )}
       {showAdd && (
         <AddFlow
-          onClose={() => setShowAdd(false)}
+          onClose={() => {
+            setShowAdd(false);
+            setReplaceTarget(null);
+          }}
           onSave={handleSave}
           weekStart={weekStart}
           // Clicked day wins; otherwise preselect today when it's in view.
@@ -196,10 +353,15 @@ export function DayOfMusicApp() {
         />
       )}
       {showShare && (
-        <ShareCard weekStart={weekStart} days={days} onClose={() => setShowShare(false)} />
+        <ShareCard weekStart={labelDate} days={monthDays} onClose={() => setShowShare(false)} />
       )}
 
-      <TweaksPanel tweaks={tweaks} onChange={setTweak} />
+      <TweaksPanel
+        open={showTweaks}
+        onClose={() => setShowTweaks(false)}
+        tweaks={tweaks}
+        onChange={setTweak}
+      />
     </div>
   );
 }

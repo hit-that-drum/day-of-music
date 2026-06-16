@@ -19,19 +19,25 @@ export const JOURNAL_STORAGE_KEY = "day-of-music:journal:v1";
 export const CUSTOM_ALBUMS_STORAGE_KEY = "day-of-music:custom-albums:v1";
 
 /**
- * Overlay journal patches onto the catalog, keyed by album id.
- * `customAlbums` are user-added albums (e.g. from music search) appended to
- * the static catalog before patching.
+ * Build the user's board from their journal entries.
+ *
+ * Only albums the user has actually logged appear — an album shows up iff it
+ * has a journal patch (entry). The static ALBUMS catalog is NOT pre-placed on
+ * the calendar; it only serves as quick-pick suggestions in the add-flow
+ * search. `customAlbums` are user-added albums (e.g. from music search).
  */
 export function mergeAlbums(
   patches: Record<string, JournalPatch>,
   customAlbums: Album[] = [],
 ): Album[] {
   const base = [...ALBUMS, ...customAlbums];
-  return base.map((album) => {
+  // Single pass: look up each album's patch once, keep only the ones logged.
+  // acc is a fresh local array, so the in-place push is contained to this scope.
+  return base.reduce<Album[]>((acc, album) => {
     const patch = patches[album.id];
-    return patch ? { ...album, ...patch } : album;
-  });
+    if (patch) acc.push({ ...album, ...patch });
+    return acc;
+  }, []);
 }
 
 /** Index merged albums by their (possibly overridden) date. */

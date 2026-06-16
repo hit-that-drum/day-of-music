@@ -1,0 +1,40 @@
+# docker-compose.dev.yml — hot-reload development server (next dev).
+#
+#   docker compose -f docker-compose.dev.yml up
+#   open http://localhost:3000
+#
+# Edit any file (CSS, .tsx, …) and the browser updates in ~1s — no rebuild.
+# Stop with Ctrl+C. The first run builds the image and installs deps; later
+# runs are fast.
+#
+# How it stays live:
+#   - the project is bind-mounted at /app, so the container sees your edits
+#   - node_modules and .next are container-only volumes, so the host's macOS
+#     copies don't shadow the Linux-built dependencies / dev cache
+#
+# Next loads .env automatically from the bind-mounted project root, so the same
+# NEXT_PUBLIC_* vars used by the production compose apply here too. Without them
+# the app runs unauthenticated with localStorage persistence.
+
+# Separate project name so the dev stack is independent of the production one
+# (no "orphan containers" warnings, no shared state).
+name: day-of-music-dev
+
+services:
+  web-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    # Keep running across reboots / Docker Desktop restarts, so you start it
+    # once with `up -d` and never have to type the command again.
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_TELEMETRY_DISABLED: "1"
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
