@@ -150,19 +150,26 @@ export const TYPE_PAIRS: Record<TypeKey, TypePair> = {
   },
 };
 
+// The Google Fonts stylesheet URL covering every theme's families. Shared by
+// ensureFonts (runtime <link>) and the share-card export (fontEmbedCSS).
+export function googleFontsHref(): string {
+  const all = new Set<string>();
+  Object.values(TYPE_PAIRS).forEach((t) => t.googleFonts.forEach((g) => all.add(g)));
+  return (
+    "https://fonts.googleapis.com/css2?" +
+    Array.from(all)
+      .map((f) => `family=${f}`)
+      .join("&") +
+    "&display=swap"
+  );
+}
+
 // Inject Google fonts once (client-side).
 export function ensureFonts(): void {
   if (typeof document === "undefined") return;
   if (document.getElementById("dom-fonts")) return;
 
-  const all = new Set<string>();
-  Object.values(TYPE_PAIRS).forEach((t) => t.googleFonts.forEach((g) => all.add(g)));
-  const href =
-    "https://fonts.googleapis.com/css2?" +
-    Array.from(all)
-      .map((f) => `family=${f}`)
-      .join("&") +
-    "&display=swap";
+  const href = googleFontsHref();
 
   const pre1 = document.createElement("link");
   pre1.rel = "preconnect";

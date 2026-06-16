@@ -29,6 +29,65 @@ export async function searchMusic(
   return data.results;
 }
 
+// The Search API returns album metadata only — no tracks. To get the
+// tracklist (and to resolve a pasted Apple Music link) we hit the iTunes
+// *Lookup* API (entity=song) through this proxy.
+export type AlbumDetail = {
+  id: string;
+  title: string;
+  artist: string;
+  genre: string;
+  year: number;
+  releaseDate: string;
+  artworkUrl: string;
+  trackCount: number;
+  /** Track names in disc/track order. */
+  tracks: string[];
+};
+
+/** Fetch an album's full metadata + tracklist. `id` may be a bare iTunes
+ *  collectionId or the app's prefixed form ("itunes-123456"). Returns null on
+ *  any failure so callers can fall back gracefully. */
+export async function fetchAlbumDetail(
+  id: string,
+  opts: { country?: string } = {},
+): Promise<AlbumDetail | null> {
+  const params = new URLSearchParams({ id });
+  if (opts.country) params.set("country", opts.country);
+
+  try {
+    const res = await fetch(`/api/music/album?${params}`);
+    if (!res.ok) return null;
+    const data = (await res.json()) as { detail?: AlbumDetail };
+    return data.detail ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export type AppleMusicLink = { id: string; country: string };
+
+/** Parse a pasted Apple Music album URL into its collection id + storefront
+ *  country (e.g. https://music.apple.com/kr/album/<slug>/1860565513 → id
+ *  1860565513, country KR). The storefront matters: an album may only exist in
+ *  certain stores, so we must look it up in the right one. Also accepts a bare
+ *  numeric id (assumed US). Returns null if the input isn't one of those. */
+export function parseAppleMusicLink(input: string): AppleMusicLink | null {
+  const trimmed = input.trim();
+  if (/^\d{3,}$/.test(trimmed)) return { id: trimmed, country: "US" };
+  if (!/music\.apple\.com/i.test(trimmed)) return null;
+  // The album id is the last purely-numeric path segment (before any query).
+  const path = trimmed.split(/[?#]/)[0];
+  const numeric = path.split("/").filter((s) => /^\d+$/.test(s));
+  if (!numeric.length) return null;
+  // Storefront is the 2-letter segment right after the host.
+  const countryMatch = trimmed.match(/music\.apple\.com\/([a-z]{2})(?:\/|$)/i);
+  return {
+    id: numeric[numeric.length - 1],
+    country: countryMatch ? countryMatch[1].toUpperCase() : "US",
+  };
+}
+
 // ── Deterministic typographic cover for albums without a hand-made CoverSpec.
 // (Cover renders real artwork when artworkUrl is set; this is the fallback.)
 
@@ -74,9 +133,31 @@ export function albumFromSearchResult(r: MusicSearchResult): Album {
     format: "Digital",
     cover: coverFromSeed(r.id),
     artworkUrl: r.artworkUrl || undefined,
+    releaseDate: r.releaseDate || undefined,
     mood: [],
     note: "",
     rating: 0,
     tracks: [],
+  };
+}
+
+/** Build a journal-ready Album from a lookup detail (e.g. a pasted URL). */
+export function albumFromDetail(d: AlbumDetail): Album {
+  return {
+    id: d.id,
+    date: "",
+    title: d.title,
+    titleKo: "",
+    artist: d.artist,
+    genre: d.genre || "—",
+    year: d.year,
+    format: "Digital",
+    cover: coverFromSeed(d.id),
+    artworkUrl: d.artworkUrl || undefined,
+    releaseDate: d.releaseDate || undefined,
+    mood: [],
+    note: "",
+    rating: 0,
+    tracks: d.tracks ?? [],
   };
 }

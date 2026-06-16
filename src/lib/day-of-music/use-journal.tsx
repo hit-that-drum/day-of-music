@@ -50,6 +50,9 @@ type JournalContextValue = {
   /** Add an album outside the static catalog (e.g. a music search result) and log it. */
   addAlbum: (album: Album, entry: { date: string; rating: number; note: string }) => void;
   updateEntry: (albumId: string, patch: JournalPatch) => void;
+  /** Enrich a user-added album in place with extra catalog metadata (e.g. the
+   *  tracklist + release date fetched lazily from the iTunes Lookup API). */
+  enrichAlbum: (albumId: string, patch: Partial<Album>) => void;
   /** Remove an album's journal entry (and the album itself if user-added). */
   removeEntry: (albumId: string) => void;
   persisted: boolean;
@@ -334,6 +337,17 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     [applyPatch],
   );
 
+  const enrichAlbum = useCallback<JournalContextValue["enrichAlbum"]>(
+    (albumId, patch) => {
+      // Only user-added albums live in the mutable custom-album store; catalog
+      // albums already ship with their tracklist and need no enrichment.
+      const base = albumById[albumId];
+      if (!base || !albumId.startsWith("itunes-")) return;
+      upsertCustomAlbum({ ...base, ...patch }, !guest);
+    },
+    [albumById, guest],
+  );
+
   const removeEntry = useCallback<JournalContextValue["removeEntry"]>(
     (albumId) => {
       remove.mutate(albumId);
@@ -352,10 +366,11 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       logEntry,
       addAlbum,
       updateEntry,
+      enrichAlbum,
       removeEntry,
       persisted: query.data?.persisted ?? false,
     }),
-    [albums, albumsByDate, albumById, logEntry, addAlbum, updateEntry, removeEntry, query.data?.persisted],
+    [albums, albumsByDate, albumById, logEntry, addAlbum, updateEntry, enrichAlbum, removeEntry, query.data?.persisted],
   );
 
   return <JournalContext.Provider value={value}>{children}</JournalContext.Provider>;

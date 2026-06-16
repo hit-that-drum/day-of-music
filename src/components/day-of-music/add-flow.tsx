@@ -9,7 +9,10 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ALBUMS, DOW, addDays, fmtDate, type Album } from "@/lib/day-of-music/data";
 import {
+  albumFromDetail,
   albumFromSearchResult,
+  fetchAlbumDetail,
+  parseAppleMusicLink,
   searchMusic,
 } from "@/lib/day-of-music/music-search";
 import { Cover } from "@/components/day-of-music/cover";
@@ -52,6 +55,14 @@ export function AddFlow({ onClose, onSave, weekStart, defaultDate }: AddFlowProp
 
   const debouncedQuery = useDebounced(query.trim(), 300);
 
+  // Compact by default (8 results); "See all" fetches a larger batch and
+  // reveals it with infinite scroll. Reset whenever the query changes.
+  const COMPACT_COUNT = 8;
+  const ALL_LIMIT = 50;
+  const PAGE = 12;
+  const [showAll, setShowAll] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE);
+
   const catalogResults = useMemo(() => {
     const q = query.toLowerCase();
     return ALBUMS.filter(
@@ -59,24 +70,67 @@ export function AddFlow({ onClose, onSave, weekStart, defaultDate }: AddFlowProp
     ).slice(0, 4);
   }, [query]);
 
+  // If the query is an Apple Music album link (or bare catalog id), resolve it
+  // directly via the lookup API instead of running a text search.
+  const pastedLink = parseAppleMusicLink(debouncedQuery);
+
+  const limit = showAll ? ALL_LIMIT : COMPACT_COUNT;
   const search = useQuery({
-    queryKey: ["music-search", debouncedQuery],
-    queryFn: () => searchMusic(debouncedQuery, { limit: 8 }),
-    enabled: debouncedQuery.length >= 2,
+    queryKey: ["music-search", debouncedQuery, limit],
+    queryFn: () => searchMusic(debouncedQuery, { limit }),
+    enabled: debouncedQuery.length >= 2 && !pastedLink,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+    // Keep the current results visible while a larger batch loads.
+    placeholderData: (prev) => prev,
+  });
+
+  const urlAlbum = useQuery({
+    // Look the album up in the storefront the link points at (e.g. KR), since
+    // an album may not exist in the default US store.
+    queryKey: ["music-url", pastedLink?.id, pastedLink?.country],
+    queryFn: () => fetchAlbumDetail(pastedLink!.id, { country: pastedLink!.country }),
+    enabled: Boolean(pastedLink),
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
 
-  const results = useMemo(() => {
+  const allResults = useMemo(() => {
+    // Pasted-link mode: a single resolved album (or nothing yet).
+    if (pastedLink) {
+      return urlAlbum.data ? [albumFromDetail(urlAlbum.data)] : [];
+    }
     const remote = (search.data ?? [])
       .filter((r) => !CATALOG_IDS.has(r.id))
       .map(albumFromSearchResult);
     const merged = [...catalogResults, ...remote];
     const seen = new Set<string>();
-    return merged.filter((a) => (seen.has(a.id) ? false : (seen.add(a.id), true))).slice(0, 8);
-  }, [catalogResults, search.data]);
+    return merged.filter((a) => (seen.has(a.id) ? false : (seen.add(a.id), true)));
+  }, [pastedLink, urlAlbum.data, catalogResults, search.data]);
 
-  const searching = debouncedQuery.length >= 2 && search.isFetching;
+  const results = showAll
+    ? allResults.slice(0, visibleCount)
+    : allResults.slice(0, COMPACT_COUNT);
+
+  const searching =
+    debouncedQuery.length >= 2 && (pastedLink ? urlAlbum.isFetching : search.isFetching);
+  // A pasted link that resolved to nothing → invalid/unavailable.
+  const urlNotFound = Boolean(pastedLink) && !urlAlbum.isFetching && !urlAlbum.data;
+  // Offer "See all" when the compact search came back full (likely more exist).
+  const canSeeAll =
+    !pastedLink && !showAll && (search.data?.length ?? 0) >= COMPACT_COUNT && !searching;
+
+  // Infinite scroll: reveal more of the already-fetched batch near the bottom.
+  function handleResultsScroll(e: React.UIEvent<HTMLDivElement>) {
+    if (!showAll) return;
+    const el = e.currentTarget;
+    if (
+      el.scrollHeight - el.scrollTop - el.clientHeight < 80 &&
+      visibleCount < allResults.length
+    ) {
+      setVisibleCount((c) => Math.min(c + PAGE, allResults.length));
+    }
+  }
 
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -105,11 +159,16 @@ export function AddFlow({ onClose, onSave, weekStart, defaultDate }: AddFlowProp
             <input
               className="dom-input"
               autoFocus
-              placeholder="Title or artist…"
+              placeholder="Title, artist, or paste an Apple Music link…"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                // New query → back to the compact list.
+                setShowAll(false);
+                setVisibleCount(PAGE);
+              }}
             />
-            <div className="dom-addflow-results">
+            <div className="dom-addflow-results" onScroll={handleResultsScroll}>
               {results.map((a) => (
                 <button
                   key={a.id}
@@ -127,10 +186,32 @@ export function AddFlow({ onClose, onSave, weekStart, defaultDate }: AddFlowProp
                   {picked?.id === a.id && <span className="dom-addflow-check">✓</span>}
                 </button>
               ))}
-              {searching && !results.length && (
-                <div className="dom-addflow-empty">Searching…</div>
+              {canSeeAll && (
+                <button
+                  type="button"
+                  className="dom-addflow-seeall"
+                  onClick={() => {
+                    setShowAll(true);
+                    setVisibleCount(PAGE);
+                  }}
+                >
+                  See all results · 전체 보기
+                </button>
               )}
-              {query && !searching && !results.length && (
+              {showAll && search.isFetching && (
+                <div className="dom-addflow-empty">Loading more…</div>
+              )}
+              {searching && !results.length && (
+                <div className="dom-addflow-empty">
+                  {pastedLink ? "Reading link…" : "Searching…"}
+                </div>
+              )}
+              {urlNotFound && (
+                <div className="dom-addflow-empty">
+                  Couldn&apos;t read that link. Make sure it&apos;s an Apple Music album URL.
+                </div>
+              )}
+              {!pastedLink && query && !searching && !results.length && (
                 <div className="dom-addflow-empty">No matches. Try a different query.</div>
               )}
               {search.isError && (

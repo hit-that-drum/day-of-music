@@ -66,7 +66,7 @@ export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
                 <div className="dom-search-result-title">{a.title}</div>
                 <div className="dom-search-result-artist">
                   {a.artist}
-                  <span> · {a.titleKo}</span>
+                  {a.titleKo && <span> · {a.titleKo}</span>}
                 </div>
                 <MetaLine album={a} size={10} />
                 <div style={{ marginTop: 6 }}>

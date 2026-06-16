@@ -6,12 +6,36 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 
-import { ALBUMS } from "@/lib/day-of-music/data";
+import type { Album } from "@/lib/day-of-music/data";
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { Cover } from "@/components/day-of-music/cover";
 
-const SAMPLE_ALBUMS = ALBUMS.slice(0, 4);
+// Self-contained decorative covers for the hero — purely typographic tiles,
+// not real albums. (The seed catalog is intentionally empty; albums now come
+// only from iTunes search.)
+const HERO_COVERS: Album[] = (
+  [
+    { style: "stack", bg: "#b9a3d9", fg: "#1a1430", accent: "#f6e6ff", title: "side a" },
+    { style: "ring", bg: "#10243a", fg: "#dce9f5", accent: "#5fa8d3", title: "nocturne" },
+    { style: "split", bg: "#1d1a18", fg: "#f4d35e", accent: "#c75146", title: "reprise" },
+    { style: "block", bg: "#222a22", fg: "#d9e8d4", accent: "#8aa86e", title: "encore" },
+  ] as const
+).map((t, i) => ({
+  id: `hero-${i}`,
+  date: "",
+  title: t.title,
+  titleKo: "",
+  artist: "Day of Music",
+  genre: "",
+  year: 0,
+  format: "",
+  cover: { style: t.style, bg: t.bg, fg: t.fg, accent: t.accent },
+  mood: [],
+  note: "",
+  rating: 0,
+  tracks: [],
+}));
 
 export function HomeLanding() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -69,7 +93,7 @@ export function HomeLanding() {
             </p>
 
             <div className="dom-home-covers">
-              {SAMPLE_ALBUMS.map((a) => (
+              {HERO_COVERS.map((a) => (
                 <Cover key={a.id} album={a} size={120} />
               ))}
             </div>

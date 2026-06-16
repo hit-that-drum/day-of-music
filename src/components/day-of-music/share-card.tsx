@@ -1,22 +1,38 @@
 // share-card.tsx — Share Week: a shareable poster of the current week.
+// The poster body mirrors the Weekly Grid exactly (same .dom-grid/.dom-day
+// markup), so the saved image matches what the user sees on the week board.
 
 "use client";
 
 import { useRef } from "react";
-import { toPng } from "html-to-image";
-import { toast } from "sonner";
 
-import { MONTHS_LONG, fmtDate, weekOfMonth, type Album } from "@/lib/day-of-music/data";
+import {
+  DOW,
+  DOW_KO,
+  MONTHS_LONG,
+  fmtDate,
+  weekOfMonth,
+  type Album,
+} from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
+import { copyCurrentLink, saveCardAsImage } from "@/lib/day-of-music/save-card";
 import { Cover } from "@/components/day-of-music/cover";
+import { MetaLine } from "@/components/day-of-music/atoms";
 
 export function ShareCard({
   weekStart,
   days,
+  splitByMonth,
+  today,
   onClose,
 }: {
+  /** Day whose month + week-number label the header shows (the week's label day). */
   weekStart: Date;
+  /** The full Mon–Sun strip (7 days). */
   days: Date[];
+  /** When true, days outside the labelled month are blanked (split-by-month). */
+  splitByMonth: boolean;
+  today: Date;
   onClose: () => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -24,37 +40,32 @@ export function ShareCard({
 
   const monthLabel = MONTHS_LONG[weekStart.getMonth()];
   const weekNum = weekOfMonth(weekStart);
-  const week = days
-    .slice(0, 7)
-    .map((d) => albumsByDate[fmtDate(d)])
-    .filter((a): a is Album => Boolean(a));
+  const labelMonth = weekStart.getMonth();
+  const labelYear = weekStart.getFullYear();
 
+  const isOutOfMonth = (d: Date) =>
+    splitByMonth && (d.getMonth() !== labelMonth || d.getFullYear() !== labelYear);
+
+  // One entry per visible day, mirroring the weekly grid (album, blank, or
+  // out-of-month). Out-of-month days never carry an album.
+  const cells = days.slice(0, 7).map((d) => {
+    const outOfMonth = isOutOfMonth(d);
+    return { d, outOfMonth, album: outOfMonth ? undefined : albumsByDate[fmtDate(d)] };
+  });
+
+  // Footer stats only count albums that belong to the labelled month.
+  const week = cells.map((c) => c.album).filter((a): a is Album => Boolean(a));
   const genreCount = new Set(week.map((a) => a.genre)).size;
   const avg = week.length
     ? (week.reduce((s, a) => s + a.rating, 0) / week.length).toFixed(1)
     : "—";
 
-  async function handleCopyLink() {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      toast.success("Link copied");
-    } catch {
-      toast.error("Couldn't copy link");
-    }
-  }
-
-  async function handleSaveImage() {
+  function handleSaveImage() {
     if (!cardRef.current) return;
-    try {
-      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
-      const link = document.createElement("a");
-      link.download = `day-of-music-${monthLabel.toLowerCase()}-week-${weekNum}.png`;
-      link.href = dataUrl;
-      link.click();
-      toast.success("Image saved");
-    } catch {
-      toast.error("Couldn't save image");
-    }
+    void saveCardAsImage(
+      cardRef.current,
+      `day-of-music-${monthLabel.toLowerCase()}-week-${weekNum}.png`,
+    );
   }
 
   return (
@@ -73,17 +84,51 @@ export function ShareCard({
             </div>
             <div className="dom-share-meta">@listener</div>
           </div>
-          <div className="dom-share-grid">
-            {week.map((a) => (
-              <div key={a.id} className="dom-share-cell">
-                <div>
-                  <Cover album={a} size="100%" />
+
+          {/* Week grid — identical markup/classes to the weekly board. */}
+          <div className="dom-grid dom-share-week" style={{ ["--cols" as string]: cells.length }}>
+            {cells.map(({ d, outOfMonth, album }) => {
+              const isToday = fmtDate(d) === fmtDate(today);
+              return (
+                <div
+                  key={fmtDate(d)}
+                  className="dom-day"
+                  data-today={isToday && !outOfMonth ? "1" : "0"}
+                  data-empty={album ? "0" : "1"}
+                  data-outmonth={outOfMonth ? "1" : "0"}
+                >
+                  <div className="dom-day-hd">
+                    <span className="dom-day-num">{d.getDate()}</span>
+                    <span className="dom-day-bar">|</span>
+                    <span className="dom-day-dow">{DOW[d.getDay()]}</span>
+                    <span className="dom-day-dowKo">{DOW_KO[d.getDay()]}</span>
+                  </div>
+                  {outOfMonth ? (
+                    <div className="dom-day-body dom-day-empty dom-day-blank" aria-hidden="true" />
+                  ) : album ? (
+                    <div className="dom-day-body">
+                      <div className="dom-cover-wrap" style={{ maxWidth: 220 }}>
+                        <Cover album={album} size="100%" />
+                      </div>
+                      <div className="dom-day-meta">
+                        <div className="dom-title">{album.title}</div>
+                        <div className="dom-artist">
+                          {album.artist}
+                          {album.titleKo && (
+                            <span className="dom-artist-ko"> · {album.titleKo}</span>
+                          )}
+                        </div>
+                        <MetaLine album={album} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="dom-day-body dom-day-empty" />
+                  )}
                 </div>
-                <div className="dom-share-cell-title">{a.title}</div>
-                <div className="dom-share-cell-artist">{a.artist}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+
           <div className="dom-share-ft">
             <div>
               {week.length} albums · {genreCount} genres
@@ -92,7 +137,7 @@ export function ShareCard({
           </div>
         </div>
         <div className="dom-share-actions">
-          <button className="dom-btn dom-btn-ghost" onClick={handleCopyLink}>
+          <button className="dom-btn dom-btn-ghost" onClick={() => void copyCurrentLink()}>
             Copy link
           </button>
           <button className="dom-btn" onClick={handleSaveImage}>
