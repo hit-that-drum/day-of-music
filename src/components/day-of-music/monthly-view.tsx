@@ -17,17 +17,34 @@ import { useJournal } from "@/lib/day-of-music/use-journal";
 import { Cover } from "@/components/day-of-music/cover";
 
 export function MonthlyView({
+  anchor,
   today,
   onOpen,
+  onAdd,
+  onPrev,
+  onNext,
+  onJump,
+  onShare,
 }: {
+  /** Any day inside the month being viewed. */
+  anchor: Date;
   today: Date;
   onOpen: (album: Album) => void;
+  /** Open the add-flow with this YYYY-MM-DD preselected (empty in-month days). */
+  onAdd: (date: string) => void;
+  onPrev: () => void;
+  onNext: () => void;
+  onJump: (date: Date) => void;
+  /** Open the shareable image of this month. */
+  onShare: () => void;
 }) {
   const { albums, albumsByDate } = useJournal();
-  // The month being viewed follows `today`.
-  const current = dayjs(today);
+  // The month being viewed follows `anchor`; `today` is only for highlighting.
+  const current = dayjs(anchor);
   const year = current.year();
   const month = current.month();
+  const isCurrentMonth =
+    dayjs(today).month() === month && dayjs(today).year() === year;
 
   // Mon-start month grid (5–6 rows).
   const lastOfMonth = current.endOf("month");
@@ -60,6 +77,22 @@ export function MonthlyView({
             <span className="dom-month-h1-name">{MONTHS_LONG[month]}</span>
             <span className="dom-month-h1-year">{year}</span>
           </h1>
+          <div className="dom-month-nav">
+            <button className="dom-wp-nav" onClick={onPrev} aria-label="Previous month">
+              ←
+            </button>
+            <button className="dom-wp-nav" onClick={onNext} aria-label="Next month">
+              →
+            </button>
+            {!isCurrentMonth && (
+              <button className="dom-month-today" onClick={() => onJump(today)}>
+                this month · 이번 달
+              </button>
+            )}
+            <button className="dom-month-today" onClick={onShare}>
+              Share · 공유
+            </button>
+          </div>
         </div>
         <div className="dom-month-hd-right">
           <div className="dom-month-stat">
@@ -96,7 +129,8 @@ export function MonthlyView({
               <div className="dom-feature-eyebrow">★ pick of the month · 이달의 픽</div>
               <div className="dom-feature-title">{heroPick.title}</div>
               <div className="dom-feature-artist">
-                {heroPick.artist} <span>· {heroPick.titleKo}</span>
+                {heroPick.artist}
+                {heroPick.titleKo && <span> · {heroPick.titleKo}</span>}
               </div>
               <p className="dom-feature-note">&ldquo;{heroPick.note}&rdquo;</p>
               <div className="dom-feature-meta-line">
@@ -145,9 +179,15 @@ export function MonthlyView({
           style={{ gridTemplateRows: `repeat(${numWeeks}, minmax(140px, auto))` }}
         >
           {days.map((d, i) => {
-            const album = albumsByDate[fmtDate(d)];
             const inMonth = d.getMonth() === month;
+            // Days outside the viewed month are blacked out — no album, no
+            // date, nothing leaking in from the neighbouring month.
+            const album = inMonth ? albumsByDate[fmtDate(d)] : undefined;
             const isToday = fmtDate(d) === fmtDate(today);
+            const isFuture = d > today;
+            // Empty in-month days up to today get a "+ log" affordance, like the
+            // week view. Future days stay blank (can't log ahead).
+            const canAdd = inMonth && !album && !isFuture;
             return (
               <button
                 key={i}
@@ -155,23 +195,42 @@ export function MonthlyView({
                 data-inmonth={inMonth ? "1" : "0"}
                 data-today={isToday ? "1" : "0"}
                 data-empty={album ? "0" : "1"}
-                onClick={() => album && onOpen(album)}
-                disabled={!album}
+                data-add={canAdd ? "1" : "0"}
+                onClick={() => {
+                  if (album) onOpen(album);
+                  else if (canAdd) onAdd(fmtDate(d));
+                }}
+                disabled={!album && !canAdd}
               >
-                <div className="dom-month-cal-date">
-                  <span className="dom-month-cal-num">{d.getDate()}</span>
-                  {isToday && <span className="dom-month-cal-today">TODAY</span>}
-                </div>
-                {album && (
-                  <div className="dom-month-cal-cover">
-                    <Cover album={album} size="100%" />
-                  </div>
-                )}
-                {album && (
-                  <div className="dom-month-cal-info">
-                    <div className="dom-month-cal-title">{album.title}</div>
-                    <div className="dom-month-cal-artist">{album.artist}</div>
-                  </div>
+                {inMonth && (
+                  <>
+                    <div className="dom-month-cal-date">
+                      <span className="dom-month-cal-num">{d.getDate()}</span>
+                      {isToday && <span className="dom-month-cal-today">TODAY</span>}
+                    </div>
+                    {album && (
+                      <div className="dom-month-cal-cover">
+                        <Cover album={album} size="100%" />
+                      </div>
+                    )}
+                    {album && (
+                      <div className="dom-month-cal-info">
+                        <div className="dom-month-cal-title">{album.title}</div>
+                        <div className="dom-month-cal-artist">
+                          {album.artist}
+                          {album.titleKo && (
+                            <span className="dom-month-cal-artist-ko"> · {album.titleKo}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {canAdd && (
+                      <div className="dom-month-cal-add">
+                        <span className="dom-month-cal-add-mark">＋</span>
+                        <span className="dom-month-cal-add-lbl">log · 기록</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </button>
             );

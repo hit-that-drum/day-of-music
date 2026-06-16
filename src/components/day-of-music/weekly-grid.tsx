@@ -103,7 +103,7 @@ export function WeeklyGrid({
         <div className="dom-grid-label">
           <div className="dom-grid-label-inner">
             <div className="dom-month-name">{monthLabel.toUpperCase()}</div>
-            <div className="dom-month-sub">— Week {weekNum}</div>
+            <div className="dom-month-sub">· Week {weekNum}</div>
             <div className="dom-month-tag">{labelDate.getFullYear()} · 큐레이션</div>
           </div>
         </div>
@@ -166,7 +166,7 @@ function WeekHeader({
                 <span key={s.key}>
                   {i > 0 && <span className="dom-week-title-sep"> / </span>}
                   {s.monthLabel}
-                  <span className="dom-week-title-break"> — Week {s.weekNum}</span>
+                  <span className="dom-week-title-break"> · Week {s.weekNum}</span>
                 </span>
               ))}
             </h1>
@@ -251,7 +251,7 @@ function DayCell({
             <div className="dom-title">{album.title}</div>
             <div className="dom-artist">
               {album.artist}
-              <span className="dom-artist-ko"> · {album.titleKo}</span>
+              {album.titleKo && <span className="dom-artist-ko"> · {album.titleKo}</span>}
             </div>
             <MetaLine album={album} />
           </div>

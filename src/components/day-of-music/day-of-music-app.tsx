@@ -26,6 +26,7 @@ import { MonthlyView } from "@/components/day-of-music/monthly-view";
 import { ProfileStats } from "@/components/day-of-music/profile-stats";
 import { SearchView } from "@/components/day-of-music/search-view";
 import { ShareCard } from "@/components/day-of-music/share-card";
+import { MonthShareCard } from "@/components/day-of-music/month-share-card";
 import { TopBar } from "@/components/day-of-music/top-bar";
 import { TweaksPanel, type Tweaks } from "@/components/day-of-music/tweaks-panel";
 import { WeeklyGrid } from "@/components/day-of-music/weekly-grid";
@@ -106,7 +107,7 @@ function monthSegmentBounds(anchor: Date): { first: Date; last: Date } {
 
 export function DayOfMusicApp() {
   const rootRef = useRef<HTMLDivElement>(null);
-  const { logEntry, addAlbum, updateEntry, removeEntry, getAlbum } = useJournal();
+  const { logEntry, addAlbum, updateEntry, enrichAlbum, removeEntry, getAlbum } = useJournal();
   const { configured, loading: authLoading, user, signOut } = useAuth();
 
   // Persisted across reloads via localStorage (see the store helpers above).
@@ -126,6 +127,7 @@ export function DayOfMusicApp() {
   // When set, saving the add-flow replaces (removes) this album's entry.
   const [replaceTarget, setReplaceTarget] = useState<string | null>(null);
   const [showShare, setShowShare] = useState(false);
+  const [showMonthShare, setShowMonthShare] = useState(false);
   const [showTweaks, setShowTweaks] = useState(false);
 
   // Single place that dismisses every overlay + resets the transient add/replace
@@ -135,6 +137,7 @@ export function DayOfMusicApp() {
     setOpenAlbum(null);
     setShowAdd(false);
     setShowShare(false);
+    setShowMonthShare(false);
     setShowTweaks(false);
     setReplaceTarget(null);
   }, []);
@@ -193,20 +196,35 @@ export function DayOfMusicApp() {
     );
   }, [tweaks.weekSplit]);
 
+  // Month nav (Monthly view). Anchor on the 1st of the target month; native
+  // Date handles year rollover (month -1 / +12).
+  const prevMonth = useCallback(() => {
+    setAnchor((a) => new Date(a.getFullYear(), a.getMonth() - 1, 1));
+  }, []);
+
+  const nextMonth = useCallback(() => {
+    setAnchor((a) => new Date(a.getFullYear(), a.getMonth() + 1, 1));
+  }, []);
+
   // Keyboard nav: Esc closes modal; ←/→ change week when nothing is open.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (openAlbum || showAdd || showShare || showTweaks) {
+      if (openAlbum || showAdd || showShare || showMonthShare || showTweaks) {
         if (e.key === "Escape") closeAll();
         return;
       }
-      if (screen !== "week") return;
-      if (e.key === "ArrowLeft") prevWeek();
-      if (e.key === "ArrowRight") nextWeek();
+      // ←/→ step the week on the Week board and the month on the Month view.
+      if (screen === "week") {
+        if (e.key === "ArrowLeft") prevWeek();
+        if (e.key === "ArrowRight") nextWeek();
+      } else if (screen === "month") {
+        if (e.key === "ArrowLeft") prevMonth();
+        if (e.key === "ArrowRight") nextMonth();
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openAlbum, showAdd, showShare, showTweaks, screen, prevWeek, nextWeek, closeAll]);
+  }, [openAlbum, showAdd, showShare, showMonthShare, showTweaks, screen, prevWeek, nextWeek, prevMonth, nextMonth, closeAll]);
 
   const handleOpen = useCallback((album: Album) => setOpenAlbum(album), []);
 
@@ -216,6 +234,16 @@ export function DayOfMusicApp() {
       setOpenAlbum((prev) => (prev && prev.id === id ? { ...prev, ...patch } : prev));
     },
     [updateEntry],
+  );
+
+  // Lazily-fetched album metadata (tracklist, release date) from iTunes Lookup.
+  // Persist it on the album and reflect it in the open modal immediately.
+  const handleEnrich = useCallback(
+    (id: string, patch: Partial<Album>) => {
+      enrichAlbum(id, patch);
+      setOpenAlbum((prev) => (prev && prev.id === id ? { ...prev, ...patch } : prev));
+    },
+    [enrichAlbum],
   );
 
   const handleRemove = useCallback(
@@ -318,7 +346,21 @@ export function DayOfMusicApp() {
               onShare={() => setShowShare(true)}
             />
           )}
-          {screen === "month" && <MonthlyView today={TODAY} onOpen={handleOpen} />}
+          {screen === "month" && (
+            <MonthlyView
+              anchor={anchor}
+              today={TODAY}
+              onOpen={handleOpen}
+              onAdd={(date) => {
+                setAddDate(date);
+                setShowAdd(true);
+              }}
+              onPrev={prevMonth}
+              onNext={nextMonth}
+              onJump={setAnchor}
+              onShare={() => setShowMonthShare(true)}
+            />
+          )}
           {screen === "search" && <SearchView onOpen={handleOpen} />}
           {screen === "profile" && <ProfileStats onOpen={handleOpen} />}
         </main>
@@ -333,6 +375,7 @@ export function DayOfMusicApp() {
           album={openAlbum}
           onClose={() => setOpenAlbum(null)}
           onUpdate={handleUpdate}
+          onEnrich={handleEnrich}
           onRemove={handleRemove}
           onReplace={handleReplace}
         />
@@ -353,7 +396,20 @@ export function DayOfMusicApp() {
         />
       )}
       {showShare && (
-        <ShareCard weekStart={labelDate} days={monthDays} onClose={() => setShowShare(false)} />
+        <ShareCard
+          weekStart={labelDate}
+          days={days}
+          splitByMonth={tweaks.weekSplit}
+          today={TODAY}
+          onClose={() => setShowShare(false)}
+        />
+      )}
+      {showMonthShare && (
+        <MonthShareCard
+          anchor={anchor}
+          today={TODAY}
+          onClose={() => setShowMonthShare(false)}
+        />
       )}
 
       <TweaksPanel

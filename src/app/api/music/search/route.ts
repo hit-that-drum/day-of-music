@@ -13,7 +13,7 @@ import { z } from "zod";
 const searchParamsSchema = z.object({
   q: z.string().trim().min(1),
   type: z.enum(["album", "artist", "track"]).default("album"),
-  limit: z.coerce.number().int().min(1).max(20).default(12),
+  limit: z.coerce.number().int().min(1).max(200).default(12),
   country: z
     .string()
     .regex(/^[a-zA-Z]{2}$/, "country must be a 2-letter code")
@@ -94,6 +94,8 @@ export async function GET(request: Request) {
   itunesUrl.searchParams.set("entity", ENTITY_BY_TYPE[type]);
   itunesUrl.searchParams.set("limit", String(limit));
   itunesUrl.searchParams.set("country", country.toUpperCase());
+  // Normalize text (e.g. genre names) to English regardless of storefront.
+  itunesUrl.searchParams.set("lang", "en_us");
 
   let response: Response;
   try {

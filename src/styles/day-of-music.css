@@ -608,6 +608,16 @@
   flex-direction: column;
   gap: 4px;
   padding-top: 4px;
+  /* A little breathing room below the genre/year so it isn't flush to the
+     cell's bottom border. */
+  padding-bottom: 10px;
+  /* Fill the space under the cover so the artist + genre/year sit at the bottom
+     (title stays just under the artwork). No min-height:0 — the box must keep
+     its content height so a long title can't overflow onto the artist. */
+  flex: 1;
+}
+.dom-day-meta .dom-artist {
+  margin-top: auto;
 }
 .dom-title {
   font-family: var(--font-display);
@@ -645,14 +655,15 @@
   filter: grayscale(0.1);
 }
 
-/* Split-by-month: cells from the adjacent month are blanked out. The header
-   stays (so the 7-day grid still reads), but the day is dimmed and inert. */
+/* Split-by-month: cells from the adjacent month blend into the page entirely —
+   no date, no preview. opacity:0 (not display:none) keeps the column height so
+   the 7-day grid stays aligned. */
 .dom-day[data-outmonth="1"] .dom-day-hd {
-  opacity: 0.32;
+  opacity: 0;
 }
 .dom-day-blank {
   flex: 1;
-  background-color: color-mix(in oklab, var(--ink) 3%, transparent);
+  background-color: var(--bg);
 }
 
 /* ── Journal rail (right sidebar) ───────────────────────────────────────── */
@@ -805,6 +816,26 @@
   font-family: var(--font-mono);
   letter-spacing: 0.05em;
   font-weight: 400;
+}
+.dom-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.dom-month-today {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.dom-month-today:hover {
+  background-color: var(--chip);
 }
 .dom-month-hd-right {
   display: flex;
@@ -1017,7 +1048,9 @@
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
-.dom-month-cal-cell {
+/* Scoped under the grid so these beat the global `.dom-root button` reset
+   (which would otherwise zero out the cell borders + padding). */
+.dom-month-cal-grid .dom-month-cal-cell {
   border-bottom: 1px solid var(--line);
   border-right: 1px solid var(--line);
   padding: 10px 12px 12px;
@@ -1034,9 +1067,10 @@
 .dom-month-cal-cell:not(:disabled):hover {
   background-color: var(--chip);
 }
+/* Days outside the viewed month blend into the page (no faded preview). */
 .dom-month-cal-cell[data-inmonth="0"] {
-  opacity: 0.35;
-  background-color: transparent;
+  background-color: var(--bg);
+  cursor: default;
 }
 .dom-month-cal-cell[data-today="1"] {
   background-color: color-mix(in oklab, var(--accent) 12%, transparent);
@@ -1048,6 +1082,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  width: 100%;
 }
 .dom-month-cal-num {
   font-family: var(--font-display);
@@ -1063,39 +1098,73 @@
   color: var(--accent);
   font-weight: 600;
 }
+/* Cover bleeds to the cell edges — negative margins cancel the cell's
+   10px/12px padding so only the date + text stay inset. */
 .dom-month-cal-cover {
-  width: 100%;
-  max-width: 110px;
-  margin: auto;
-  box-shadow: var(--coverShadow);
+  width: auto;
+  max-width: none;
+  margin: 0 -12px;
   transition: transform 0.2s ease;
 }
 .dom-month-cal-cell:hover .dom-month-cal-cover {
   transform: translateY(-2px);
 }
+/* Match the weekly day-card: cover, title under it, artist pushed to the
+   bottom of the cell. */
 .dom-month-cal-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding-bottom: 6px;
+  flex: 1;
+}
+.dom-month-cal-info .dom-month-cal-artist {
   margin-top: auto;
 }
 .dom-month-cal-title {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.15;
 }
 .dom-month-cal-artist {
   font-family: var(--font-display);
-  font-size: 10.5px;
-  opacity: 0.7;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 11px;
+  opacity: 0.8;
+  line-height: 1.2;
+}
+.dom-month-cal-artist-ko {
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+}
+/* Empty in-month day: "+ log · 기록" affordance, mirroring the week view. */
+.dom-month-cal-add {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--ink3);
+  transition: color 0.12s ease;
+}
+.dom-month-cal-cell[data-add="1"]:hover .dom-month-cal-add {
+  color: var(--ink);
+}
+.dom-month-cal-add-mark {
+  font-size: 22px;
+  line-height: 1;
+}
+.dom-month-cal-add-lbl {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 /* ── Profile / Year in Listening ───────────────────────────────────────── */
@@ -1350,9 +1419,13 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  /* Allow the overlay to scroll when a modal is taller than the viewport, and
+     fall back to top-alignment (`safe`) so the top + bottom (e.g. the Save
+     image button) stay reachable instead of being clipped off-screen. */
+  align-items: safe center;
+  justify-content: safe center;
   padding: 24px;
+  overflow-y: auto;
   animation: dom-fade 0.2s ease;
 }
 @keyframes dom-fade {
@@ -1546,6 +1619,9 @@
 }
 .dom-addflow {
   width: min(560px, 100%);
+  /* Fixed size: the modal stays put while only its inner content changes
+     (search results scroll internally instead of resizing the modal). */
+  height: min(620px, 86vh);
   background-color: var(--panel);
   border: 1px solid var(--line);
   padding: 32px 36px;
@@ -1584,7 +1660,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: 240px;
+  flex: 1;
+  min-height: 0;
 }
 .dom-addflow-label {
   font-family: var(--font-mono);
@@ -1597,7 +1674,8 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 280px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 .dom-addflow-result {
@@ -1636,6 +1714,24 @@
   font-family: var(--font-mono);
   font-size: 11px;
   padding: 14px 4px;
+}
+.dom-addflow-seeall {
+  margin-top: 4px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  flex: none;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.dom-addflow-seeall:hover {
+  background-color: var(--chip);
+  color: var(--ink);
 }
 .dom-addflow-datestack {
   display: grid;
@@ -1693,6 +1789,7 @@
   justify-content: space-between;
   gap: 8px;
   padding-top: 6px;
+  margin-top: auto;
 }
 
 /* ── Share Week card ────────────────────────────────────────────────────── */
@@ -1705,7 +1802,7 @@
   animation: dom-rise 0.25s ease;
 }
 .dom-share-card {
-  width: min(540px, 100%);
+  width: min(960px, 96vw);
   background-color: var(--panel);
   border: 1px solid var(--line);
   padding: 28px;
@@ -1713,6 +1810,51 @@
   flex-direction: column;
   gap: 16px;
   box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.3);
+}
+/* Month poster is wider to fit the full 7-column calendar grid. */
+.dom-share-card-month {
+  width: min(1180px, 96vw);
+}
+/* The poster grid always shows the full 7-day week, overriding the responsive
+   column counts the weekly board uses at narrow widths. */
+.dom-share-card .dom-grid.dom-share-week {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.dom-share-card .dom-grid.dom-share-week > * {
+  min-height: 0;
+}
+.dom-share-card .dom-grid.dom-share-week .dom-day-blank {
+  background-color: var(--bg);
+}
+/* Cover bleeds to the cell edges (no margin); only the date header + text
+   stay inset, matching the calendar look. */
+.dom-share-card .dom-share-week .dom-day-body {
+  padding: 0;
+  gap: 0;
+}
+.dom-share-card .dom-share-week .dom-cover-wrap {
+  width: 100%;
+  max-width: none;
+  box-shadow: none;
+}
+.dom-share-card .dom-share-week .dom-day-meta {
+  padding: 12px 12px 14px;
+}
+/* Fixed header height so every day's bottom border lands on the same line —
+   otherwise the export's fallback font gives headers uneven heights and the
+   divider looks stepped. */
+.dom-share-card .dom-share-week .dom-day-hd {
+  height: 44px;
+  align-items: center;
+  box-sizing: border-box;
+}
+/* The PNG export falls back from Spectral to a system serif. Georgia uses
+   old-style figures (the "3" drops below the baseline and looks misaligned),
+   so fall back to a lining-figure serif and force lining numerals. On screen
+   Spectral is present, so this is export-only. */
+.dom-share-card .dom-share-title {
+  font-family: "Spectral", "Times New Roman", Times, serif;
+  font-variant-numeric: lining-nums;
 }
 .dom-share-hd {
   display: flex;
@@ -1733,6 +1875,9 @@
   font-weight: 500;
   letter-spacing: -0.02em;
   margin-top: 4px;
+  /* Keep "Month · Week N" on one line — the PNG export falls back to a wider
+     serif, which otherwise wraps the number onto the divider below. */
+  white-space: nowrap;
 }
 .dom-share-meta {
   font-family: var(--font-mono);

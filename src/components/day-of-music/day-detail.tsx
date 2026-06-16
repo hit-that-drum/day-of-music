@@ -4,8 +4,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dayjs from "dayjs";
 
 import { DOW, parseDate, type Album } from "@/lib/day-of-music/data";
+import { fetchAlbumDetail } from "@/lib/day-of-music/music-search";
 import { Cover } from "@/components/day-of-music/cover";
 
 type Tab = "tracklist" | "journal" | "info";
@@ -14,6 +16,8 @@ type DayDetailProps = {
   album: Album;
   onClose: () => void;
   onUpdate: (id: string, patch: Partial<Album>) => void;
+  /** Persist lazily-fetched catalog metadata (tracklist, release date). */
+  onEnrich: (id: string, patch: Partial<Album>) => void;
   /** Delete this entry from the day. */
   onRemove: (id: string) => void;
   /** Swap which album is logged on this day (reopens search, keeps the date). */
@@ -28,7 +32,14 @@ function trackTime(i: number, seed: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export function DayDetail({ album, onClose, onUpdate, onRemove, onReplace }: DayDetailProps) {
+// "2024-10-14T07:00:00Z" → "October 14, 2024". Format from the date portion
+// only so the local timezone can't shift it off the catalog release day.
+function formatReleased(album: Album): string {
+  if (!album.releaseDate) return String(album.year);
+  return dayjs(album.releaseDate.slice(0, 10)).format("MMMM D, YYYY");
+}
+
+export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onReplace }: DayDetailProps) {
   const [tab, setTab] = useState<Tab>("tracklist");
   const [note, setNote] = useState(album.note);
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -40,6 +51,28 @@ export function DayDetail({ album, onClose, onUpdate, onRemove, onReplace }: Day
   const date = parseDate(album.date);
   const seed = album.tracks.length;
   const noteDirty = note !== album.note;
+
+  // iTunes albums arrive from Search with no tracklist (Search returns album
+  // metadata only). The first time such an album is opened, pull its tracks +
+  // release date from the Lookup API and persist them onto the album.
+  useEffect(() => {
+    if (!album.id.startsWith("itunes-")) return;
+    const needsTracks = album.tracks.length === 0;
+    const needsDate = !album.releaseDate;
+    if (!needsTracks && !needsDate) return;
+
+    let cancelled = false;
+    fetchAlbumDetail(album.id).then((detail) => {
+      if (cancelled || !detail) return;
+      const patch: Partial<Album> = {};
+      if (needsTracks && detail.tracks.length) patch.tracks = detail.tracks;
+      if (needsDate && detail.releaseDate) patch.releaseDate = detail.releaseDate;
+      if (Object.keys(patch).length) onEnrich(album.id, patch);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [album.id, album.tracks.length, album.releaseDate, onEnrich]);
 
   // Rating commits immediately, so render straight from the album prop (single
   // source of truth) rather than mirroring it in local state that could drift.
@@ -108,16 +141,24 @@ export function DayDetail({ album, onClose, onUpdate, onRemove, onReplace }: Day
           </div>
 
           {tab === "tracklist" && (
-            <ol className="dom-tracklist">
-              {/* Tracklist order is fixed for a given album, so the index is a stable key. */}
-              {album.tracks.map((name, i) => (
-                <li key={i}>
-                  <span className="dom-track-num">{String(i + 1).padStart(2, "0")}</span>
-                  <span className="dom-track-name">{name}</span>
-                  <span className="dom-track-time">{trackTime(i, seed)}</span>
-                </li>
-              ))}
-            </ol>
+            album.tracks.length > 0 ? (
+              <ol className="dom-tracklist">
+                {/* Tracklist order is fixed for a given album, so the index is a stable key. */}
+                {album.tracks.map((name, i) => (
+                  <li key={i}>
+                    <span className="dom-track-num">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="dom-track-name">{name}</span>
+                    <span className="dom-track-time">{trackTime(i, seed)}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <div className="dom-addflow-empty">
+                {album.id.startsWith("itunes-")
+                  ? "Loading tracklist…"
+                  : "No tracklist for this album."}
+              </div>
+            )
           )}
 
           {tab === "journal" && (
@@ -176,7 +217,7 @@ export function DayDetail({ album, onClose, onUpdate, onRemove, onReplace }: Day
 
           {tab === "info" && (
             <div>
-              <InfoRow label="Released" value={String(album.year)} />
+              <InfoRow label="Released" value={formatReleased(album)} />
               <InfoRow label="Genre" value={album.genre} />
               <InfoRow label="Format" value={album.format} />
               <InfoRow label="Tracks" value={String(album.tracks.length)} />
