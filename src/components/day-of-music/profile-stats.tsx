@@ -10,7 +10,11 @@ import { Stars } from "@/components/day-of-music/atoms";
 export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
   const { albums } = useJournal();
   const total = albums.length;
-  const avgRating = (albums.reduce((s, a) => s + a.rating, 0) / total).toFixed(2);
+  // Keep the numeric mean around so we don't parseFloat the display string back.
+  const avgRatingNum = total
+    ? albums.reduce((s, a) => s + a.rating, 0) / total
+    : 0;
+  const avgRating = total ? avgRatingNum.toFixed(2) : "—";
 
   const byGenre: Record<string, number> = {};
   albums.forEach((a) => {
@@ -51,13 +55,15 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
           <div className="dom-stat-label">average rating</div>
           <div className="dom-stat-num">{avgRating}</div>
           <div className="dom-stat-sub">
-            <Stars value={Math.round(parseFloat(avgRating))} size={14} />
+            <Stars value={Math.round(avgRatingNum)} size={14} />
           </div>
         </div>
         <div className="dom-stat">
           <div className="dom-stat-label">five-star picks</div>
           <div className="dom-stat-num">{fives.length}</div>
-          <div className="dom-stat-sub">{Math.round((fives.length / total) * 100)}% of catalog</div>
+          <div className="dom-stat-sub">
+            {total ? Math.round((fives.length / total) * 100) : 0}% of catalog
+          </div>
         </div>
         <div className="dom-stat dom-stat-wide">
           <div className="dom-stat-label">top genres</div>

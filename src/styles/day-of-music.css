@@ -196,6 +196,24 @@
 .dom-btn-ghost:hover {
   background-color: var(--chip);
 }
+.dom-btn-sm {
+  padding: 7px 12px;
+  font-size: 12px;
+}
+.dom-btn-danger {
+  background-color: #a3342a;
+  color: #fff;
+  border-color: #a3342a;
+}
+.dom-btn-danger:hover {
+  background-color: #8c2c23;
+}
+.dom-btn-danger-ghost {
+  color: #a3342a;
+}
+.dom-btn-danger-ghost:hover {
+  background-color: color-mix(in oklab, #a3342a 12%, transparent);
+}
 .dom-iconbtn {
   width: 36px;
   height: 36px;
@@ -232,6 +250,52 @@
   resize: vertical;
   min-height: 90px;
   font-family: var(--font-body);
+}
+
+/* Day-detail edit controls (rating/note/date/remove/replace). */
+.dom-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dom-edit-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-note-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.dom-note-saved {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+}
+.dom-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--lineSoft);
+  flex-wrap: wrap;
+}
+.dom-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.dom-confirm-q {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink2);
 }
 .dom-chip {
   padding: 6px 12px;
@@ -288,9 +352,172 @@
   align-items: center;
 }
 
+/* ── Week title → mini calendar picker ──────────────────────────────────── */
+.dom-week-title-anchor {
+  position: relative;
+}
+.dom-week-title-btn {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+}
+.dom-week-title-btn h1 {
+  transition: opacity 0.12s ease;
+}
+.dom-week-title-btn:hover h1 {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+.dom-week-title-sep {
+  color: var(--ink3);
+  font-weight: 400;
+  margin: 0 0.1em;
+}
+.dom-week-title-caret {
+  font-size: 18px;
+  color: var(--ink3);
+  transform: translateY(-2px);
+}
+.dom-week-title-btn[aria-expanded="true"] .dom-week-title-caret {
+  color: var(--ink);
+}
+
+.dom-wp-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+.dom-wp {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 71;
+  width: 280px;
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+  padding: 14px;
+  font-family: var(--font-mono);
+}
+.dom-wp-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.dom-wp-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+.dom-wp-nav {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink2);
+  width: 26px;
+  height: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.dom-wp-nav:hover {
+  background-color: var(--chip);
+}
+.dom-wp-dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+.dom-wp-dow-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  color: var(--ink3);
+}
+.dom-wp-dow-ko {
+  font-style: normal;
+  font-size: 7px;
+  opacity: 0.7;
+}
+.dom-wp-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dom-wp-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  border-radius: 4px;
+}
+/* Selection is week-based: hovering or activating any day lights the row. */
+.dom-wp-row:hover {
+  background-color: var(--chip);
+}
+.dom-wp-row[data-active="1"] {
+  background-color: color-mix(in oklab, var(--accent) 16%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.dom-wp-day {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
+  padding: 7px 0;
+  position: relative;
+}
+.dom-wp-day[data-inmonth="0"] {
+  color: var(--ink3);
+  opacity: 0.55;
+}
+.dom-wp-day[data-today="1"] {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* Dot marks days that already have a logged album. */
+.dom-wp-day[data-logged="1"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: var(--accent, #4b9a86);
+  transform: translateX(-50%);
+}
+.dom-wp-today-btn {
+  width: 100%;
+  margin-top: 12px;
+  background-color: var(--ink);
+  color: var(--bg);
+  border: 1px solid var(--ink);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 8px;
+  cursor: pointer;
+}
+
 .dom-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  /* --cols is the number of visible day cells (7 normally; fewer when a
+     split week is clipped to a single month). Falls back to 7. */
+  grid-template-columns: repeat(var(--cols, 7), minmax(0, 1fr));
   border-top: 1px solid var(--line);
   border-left: 1px solid var(--line);
 }
@@ -416,6 +643,16 @@
 }
 .dom-day[data-future="1"][data-empty="0"] .dom-day-body {
   filter: grayscale(0.1);
+}
+
+/* Split-by-month: cells from the adjacent month are blanked out. The header
+   stays (so the 7-day grid still reads), but the day is dimmed and inert. */
+.dom-day[data-outmonth="1"] .dom-day-hd {
+  opacity: 0.32;
+}
+.dom-day-blank {
+  flex: 1;
+  background-color: color-mix(in oklab, var(--ink) 3%, transparent);
 }
 
 /* ── Journal rail (right sidebar) ───────────────────────────────────────── */
@@ -1626,36 +1863,43 @@
 
 /* ── Tweaks panel ───────────────────────────────────────────────────────── */
 
-.dom-tweaks {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 60;
-  font-family: var(--font-mono);
-}
-.dom-tweaks-toggle {
-  background-color: var(--ink, #1a1612);
-  color: var(--bg, #efe6d2);
-  border: 1px solid var(--ink, #1a1612);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  padding: 10px 14px;
-}
+/* Panel drops down from the header Tweaks button (top-right). */
 .dom-tweaks-panel {
-  position: absolute;
-  right: 0;
-  bottom: 48px;
-  width: 250px;
+  position: fixed;
+  top: 92px;
+  right: 28px;
+  z-index: 60;
+  width: 260px;
   background-color: var(--panel, #f6efe0);
   border: 1px solid var(--line, #1a1612);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-height: 70vh;
+  max-height: 75vh;
   overflow-y: auto;
+  font-family: var(--font-mono);
+}
+.dom-tweaks-panel-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dom-tweaks-panel-title {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.dom-tweaks-close {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink2);
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 8px;
+}
+.dom-tweaks-close:hover {
+  background-color: var(--chip);
 }
 .dom-tweak-section {
   font-family: var(--font-mono);

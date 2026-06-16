@@ -50,6 +50,8 @@ type JournalContextValue = {
   /** Add an album outside the static catalog (e.g. a music search result) and log it. */
   addAlbum: (album: Album, entry: { date: string; rating: number; note: string }) => void;
   updateEntry: (albumId: string, patch: JournalPatch) => void;
+  /** Remove an album's journal entry (and the album itself if user-added). */
+  removeEntry: (albumId: string) => void;
   persisted: boolean;
 };
 
@@ -163,6 +165,16 @@ function upsertCustomAlbum(album: Album, persist: boolean): void {
   for (const listener of customAlbumsListeners) listener();
 }
 
+function removeCustomAlbum(albumId: string, persist: boolean): void {
+  if (persist) {
+    customAlbumsCache = getCustomAlbums().filter((a) => a.id !== albumId);
+    writeCustomAlbums(customAlbumsCache);
+  } else {
+    guestAlbums = guestAlbums.filter((a) => a.id !== albumId);
+  }
+  for (const listener of customAlbumsListeners) listener();
+}
+
 function patchesFromEntries(entries: JournalEntry[]): PatchMap {
   const out: PatchMap = {};
   for (const e of entries) {
@@ -256,6 +268,37 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const remove = useMutation({
+    mutationFn: async (albumId: string) => {
+      const supabase = getSupabaseBrowserClient();
+      if (guest || !supabase || !userId) return { persisted: false };
+      const { error } = await supabase
+        .from("journal_entries")
+        .delete()
+        .eq("user_id", userId)
+        .eq("album_id", albumId);
+      if (error) throw new Error(error.message);
+      return { persisted: true };
+    },
+    onMutate: (albumId) => {
+      const previous = queryClient.getQueryData<JournalResponse>(queryKey);
+      const base = previous ?? { entries: [], persisted: false };
+      const nextEntries = base.entries.filter((e) => e.albumId !== albumId);
+      queryClient.setQueryData<JournalResponse>(queryKey, {
+        entries: nextEntries,
+        persisted: base.persisted,
+      });
+      if (!configured) writeLocalEntries(nextEntries);
+      return { previous };
+    },
+    onError: (_err, _albumId, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+
   const applyPatch = useCallback(
     (albumId: string, patch: JournalPatch) => {
       const base = albumById[albumId];
@@ -291,6 +334,16 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     [applyPatch],
   );
 
+  const removeEntry = useCallback<JournalContextValue["removeEntry"]>(
+    (albumId) => {
+      remove.mutate(albumId);
+      // If it was a user-added album, drop it from the custom store too so it
+      // disappears entirely rather than reverting to a catalog default.
+      removeCustomAlbum(albumId, !guest);
+    },
+    [remove, guest],
+  );
+
   const value = useMemo<JournalContextValue>(
     () => ({
       albums,
@@ -299,9 +352,10 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       logEntry,
       addAlbum,
       updateEntry,
+      removeEntry,
       persisted: query.data?.persisted ?? false,
     }),
-    [albums, albumsByDate, albumById, logEntry, addAlbum, updateEntry, query.data?.persisted],
+    [albums, albumsByDate, albumById, logEntry, addAlbum, updateEntry, removeEntry, query.data?.persisted],
   );
 
   return <JournalContext.Provider value={value}>{children}</JournalContext.Provider>;

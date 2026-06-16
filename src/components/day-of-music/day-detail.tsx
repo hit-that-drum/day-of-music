@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { DOW, parseDate, type Album } from "@/lib/day-of-music/data";
 import { Cover } from "@/components/day-of-music/cover";
@@ -14,6 +14,10 @@ type DayDetailProps = {
   album: Album;
   onClose: () => void;
   onUpdate: (id: string, patch: Partial<Album>) => void;
+  /** Delete this entry from the day. */
+  onRemove: (id: string) => void;
+  /** Swap which album is logged on this day (reopens search, keeps the date). */
+  onReplace: (album: Album) => void;
 };
 
 // Deterministic track time from index so renders are stable (no hydration drift).
@@ -24,18 +28,38 @@ function trackTime(i: number, seed: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export function DayDetail({ album, onClose, onUpdate }: DayDetailProps) {
+export function DayDetail({ album, onClose, onUpdate, onRemove, onReplace }: DayDetailProps) {
   const [tab, setTab] = useState<Tab>("tracklist");
   const [note, setNote] = useState(album.note);
-  const [rating, setRating] = useState(album.rating);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [noteSaved, setNoteSaved] = useState(false);
+  // Holds the "Saved ✓" auto-clear timer so we can cancel it on unmount and
+  // before re-arming — otherwise setNoteSaved could fire after unmount.
+  const noteSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const date = parseDate(album.date);
   const seed = album.tracks.length;
+  const noteDirty = note !== album.note;
 
-  function setRatingAndCommit(v: number) {
-    setRating(v);
+  // Rating commits immediately, so render straight from the album prop (single
+  // source of truth) rather than mirroring it in local state that could drift.
+  function commitRating(v: number) {
     onUpdate(album.id, { rating: v });
   }
+
+  function saveNote() {
+    onUpdate(album.id, { note });
+    setNoteSaved(true);
+    if (noteSavedTimer.current) clearTimeout(noteSavedTimer.current);
+    noteSavedTimer.current = setTimeout(() => setNoteSaved(false), 1600);
+  }
+
+  useEffect(
+    () => () => {
+      if (noteSavedTimer.current) clearTimeout(noteSavedTimer.current);
+    },
+    [],
+  );
 
   return (
     <div
@@ -85,6 +109,7 @@ export function DayDetail({ album, onClose, onUpdate }: DayDetailProps) {
 
           {tab === "tracklist" && (
             <ol className="dom-tracklist">
+              {/* Tracklist order is fixed for a given album, so the index is a stable key. */}
               {album.tracks.map((name, i) => (
                 <li key={i}>
                   <span className="dom-track-num">{String(i + 1).padStart(2, "0")}</span>
@@ -98,12 +123,13 @@ export function DayDetail({ album, onClose, onUpdate }: DayDetailProps) {
           {tab === "journal" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div className="dom-rate-row">
+                {/* Fixed 5-star row — index is a stable key. */}
                 {Array.from({ length: 5 }, (_, i) => (
                   <button
                     key={i}
                     className="dom-star"
-                    data-on={i + 1 <= rating ? "1" : "0"}
-                    onClick={() => setRatingAndCommit(i + 1)}
+                    data-on={i + 1 <= album.rating ? "1" : "0"}
+                    onClick={() => commitRating(i + 1)}
                     aria-label={`Rate ${i + 1} stars`}
                   >
                     ★
@@ -117,13 +143,34 @@ export function DayDetail({ album, onClose, onUpdate }: DayDetailProps) {
                   </span>
                 ))}
               </div>
-              <textarea
-                className="dom-input dom-textarea"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                onBlur={() => onUpdate(album.id, { note })}
-                placeholder="Write a note…"
-              />
+              <label className="dom-edit-field">
+                <span className="dom-edit-label">Logged on · 기록한 날</span>
+                <input
+                  type="date"
+                  className="dom-input"
+                  value={album.date}
+                  onChange={(e) => e.target.value && onUpdate(album.id, { date: e.target.value })}
+                />
+              </label>
+              <div className="dom-edit-field">
+                <span className="dom-edit-label">Note · 메모</span>
+                <textarea
+                  className="dom-input dom-textarea"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Write a note…"
+                />
+                <div className="dom-note-actions">
+                  {noteSaved && <span className="dom-note-saved">Saved ✓</span>}
+                  <button
+                    className="dom-btn dom-btn-sm"
+                    onClick={saveNote}
+                    disabled={!noteDirty}
+                  >
+                    Save note
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -137,6 +184,31 @@ export function DayDetail({ album, onClose, onUpdate }: DayDetailProps) {
               <InfoRow label="Mood" value={album.mood.join(", ")} />
             </div>
           )}
+
+          <div className="dom-detail-actions">
+            <button className="dom-btn dom-btn-ghost" onClick={() => onReplace(album)}>
+              Replace album
+            </button>
+            {confirmRemove ? (
+              <span className="dom-confirm">
+                <span className="dom-confirm-q">Remove from this day?</span>
+                <button
+                  className="dom-btn dom-btn-danger"
+                  // onRemove already closes the modal (handleRemove resets openAlbum).
+                  onClick={() => onRemove(album.id)}
+                >
+                  Remove
+                </button>
+                <button className="dom-btn dom-btn-ghost" onClick={() => setConfirmRemove(false)}>
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <button className="dom-btn dom-btn-ghost dom-btn-danger-ghost" onClick={() => setConfirmRemove(true)}>
+                Remove
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

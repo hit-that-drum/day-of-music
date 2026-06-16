@@ -17,12 +17,15 @@ export function TopBar({
   screen,
   onScreen,
   onAdd,
+  onTweaks,
   account = null,
   showAuthLinks = false,
 }: {
   screen: ScreenId;
   onScreen: (id: ScreenId) => void;
   onAdd: () => void;
+  /** Toggle the Tweaks panel (lives in the header now, not floating). */
+  onTweaks: () => void;
   account?: Account | null;
   /** Show Sign in / Sign up links (guest mode). */
   showAuthLinks?: boolean;
@@ -48,15 +51,13 @@ export function TopBar({
         ))}
       </nav>
       <div className="dom-topbar-actions">
+        <button className="dom-btn dom-btn-ghost" onClick={onTweaks}>
+          Tweaks
+        </button>
         {account && (
-          <span className="dom-account">
-            <span className="dom-account-email" title={account.email}>
-              {account.email}
-            </span>
-            <button className="dom-btn dom-btn-ghost" onClick={account.onSignOut}>
-              Sign out
-            </button>
-          </span>
+          <button className="dom-btn dom-btn-ghost" onClick={account.onSignOut}>
+            Sign out
+          </button>
         )}
         {showAuthLinks && (
           <>
