@@ -10,7 +10,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
@@ -29,7 +31,9 @@ import { useAuth } from "@/components/day-of-music/auth-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type PatchMap = Record<string, JournalPatch>;
-type JournalResponse = { entries: JournalEntry[]; persisted: boolean };
+// `albums` carries the full metadata for every logged album so a second device
+// can render entries it never saw created. Built from each row's `album` blob.
+type JournalResponse = { entries: JournalEntry[]; albums: Album[]; persisted: boolean };
 
 // Row shape of public.journal_entries (snake_case).
 type JournalRow = {
@@ -38,6 +42,7 @@ type JournalRow = {
   rating: number;
   note: string;
   mood: string[];
+  album: Album | null;
 };
 
 const JournalContext = createContext<JournalContextValue | null>(null);
@@ -94,23 +99,27 @@ async function fetchJournal(userId: string | null): Promise<JournalResponse> {
 
   // Unconfigured local dev: localStorage is the only persistence.
   if (!supabase || !userId) {
-    return { entries: readLocalEntries(), persisted: false };
+    return { entries: readLocalEntries(), albums: readCustomAlbums(), persisted: false };
   }
 
   const { data, error } = await supabase
     .from("journal_entries")
-    .select("album_id, date, rating, note, mood")
+    .select("album_id, date, rating, note, mood, album")
     .order("date");
   if (error) throw new Error(error.message);
 
+  const rows = data as JournalRow[];
   return {
-    entries: (data as JournalRow[]).map((r) => ({
+    entries: rows.map((r) => ({
       albumId: r.album_id,
       date: r.date,
       rating: r.rating,
       note: r.note,
       mood: r.mood ?? [],
     })),
+    // Older rows predate the `album` column and come back null — those albums
+    // get backfilled from localStorage by the effect in JournalProvider.
+    albums: rows.map((r) => r.album).filter((a): a is Album => Boolean(a)),
     persisted: true,
   };
 }
@@ -204,8 +213,9 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     enabled: !configured || Boolean(user),
   });
 
-  // User-added albums (from music search). Guests get the in-memory bucket.
-  const customAlbums = useSyncExternalStore(
+  // User-added albums (from music search). Guests get the in-memory bucket;
+  // signed-in users get a localStorage cache for instant optimistic renders.
+  const storeAlbums = useSyncExternalStore(
     subscribeCustomAlbums,
     guest ? getGuestAlbums : getCustomAlbums,
     () => EMPTY_ALBUMS,
@@ -216,6 +226,16 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     () => patchesFromEntries(queryData?.entries ?? []),
     [queryData],
   );
+  // The synced metadata from Supabase is the cross-device source of truth; the
+  // local store overlays it so an album just added on this device shows before
+  // the refetch lands (and DB albums fill in entries this device never saw).
+  const dbAlbums = queryData?.albums;
+  const customAlbums = useMemo(() => {
+    const byId = new Map<string, Album>();
+    for (const a of dbAlbums ?? []) byId.set(a.id, a);
+    for (const a of storeAlbums) byId.set(a.id, a);
+    return [...byId.values()];
+  }, [dbAlbums, storeAlbums]);
   const albums = useMemo(
     () => mergeAlbums(patches, customAlbums),
     [patches, customAlbums],
@@ -227,8 +247,11 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     return map;
   }, [albums]);
 
+  // Takes the full merged Album so the album's metadata is persisted alongside
+  // its journal overlay — that metadata blob is what lets another device render
+  // the entry. The journal columns (date/rating/note/mood) are derived from it.
   const upsert = useMutation({
-    mutationFn: async (entry: JournalEntry) => {
+    mutationFn: async (album: Album) => {
       // Guests: the optimistic cache update in onMutate is their whole
       // persistence. Unconfigured: localStorage write-through in onMutate.
       const supabase = getSupabaseBrowserClient();
@@ -236,11 +259,12 @@ export function JournalProvider({ children }: { children: ReactNode }) {
 
       const row = {
         user_id: userId,
-        album_id: entry.albumId,
-        date: entry.date,
-        rating: entry.rating,
-        note: entry.note,
-        mood: entry.mood,
+        album_id: album.id,
+        date: album.date,
+        rating: album.rating,
+        note: album.note,
+        mood: album.mood,
+        album,
       };
       const { error } = await supabase
         .from("journal_entries")
@@ -248,22 +272,34 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       if (error) throw new Error(error.message);
       return { persisted: true };
     },
-    onMutate: (entry) => {
+    onMutate: (album) => {
       const previous = queryClient.getQueryData<JournalResponse>(queryKey);
-      const base = previous ?? { entries: [], persisted: false };
+      const base = previous ?? { entries: [], albums: [], persisted: false };
+      const entry: JournalEntry = {
+        albumId: album.id,
+        date: album.date,
+        rating: album.rating,
+        note: album.note,
+        mood: album.mood,
+      };
       const nextEntries = [
-        ...base.entries.filter((e) => e.albumId !== entry.albumId),
+        ...base.entries.filter((e) => e.albumId !== album.id),
         entry,
+      ];
+      const nextAlbums = [
+        ...base.albums.filter((a) => a.id !== album.id),
+        album,
       ];
       queryClient.setQueryData<JournalResponse>(queryKey, {
         entries: nextEntries,
+        albums: nextAlbums,
         persisted: base.persisted,
       });
       // localStorage write-through only in unconfigured (no-Supabase) mode.
       if (!configured) writeLocalEntries(nextEntries);
       return { previous };
     },
-    onError: (_err, _entry, ctx) => {
+    onError: (_err, _album, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
     },
     onSettled: () => {
@@ -285,10 +321,11 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     },
     onMutate: (albumId) => {
       const previous = queryClient.getQueryData<JournalResponse>(queryKey);
-      const base = previous ?? { entries: [], persisted: false };
+      const base = previous ?? { entries: [], albums: [], persisted: false };
       const nextEntries = base.entries.filter((e) => e.albumId !== albumId);
       queryClient.setQueryData<JournalResponse>(queryKey, {
         entries: nextEntries,
+        albums: base.albums.filter((a) => a.id !== albumId),
         persisted: base.persisted,
       });
       if (!configured) writeLocalEntries(nextEntries);
@@ -302,20 +339,22 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Destructure the mutate functions: they're referentially stable across
+  // renders, so depending on them (rather than the fresh mutation object) keeps
+  // the callbacks/effect below memoized and satisfies exhaustive-deps.
+  const { mutate: upsertMutate } = upsert;
+  const { mutate: removeMutate } = remove;
+
   const applyPatch = useCallback(
     (albumId: string, patch: JournalPatch) => {
       const base = albumById[albumId];
       if (!base) return;
-      const merged = { ...base, ...patch };
-      upsert.mutate({
-        albumId,
-        date: merged.date,
-        rating: merged.rating,
-        note: merged.note,
-        mood: merged.mood,
-      });
+      // Pass the whole merged album so its metadata is re-persisted with the
+      // overlay change — never just the journal fields, or the upsert would
+      // overwrite the row's metadata blob with null.
+      upsertMutate({ ...base, ...patch });
     },
-    [albumById, upsert],
+    [albumById, upsertMutate],
   );
 
   const logEntry = useCallback<JournalContextValue["logEntry"]>(
@@ -327,9 +366,11 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     (album, { date, rating, note }) => {
       upsertCustomAlbum(album, !guest);
       // Bypass applyPatch: the album isn't in albumById until the store updates.
-      upsert.mutate({ albumId: album.id, date, rating, note, mood: album.mood });
+      // mood is spelled out (not just relied on via the spread) so the journal
+      // overlay always has an explicit array.
+      upsertMutate({ ...album, date, rating, note, mood: album.mood ?? [] });
     },
-    [upsert, guest],
+    [upsertMutate, guest],
   );
 
   const updateEntry = useCallback<JournalContextValue["updateEntry"]>(
@@ -343,20 +384,56 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       // albums already ship with their tracklist and need no enrichment.
       const base = albumById[albumId];
       if (!base || !albumId.startsWith("itunes-")) return;
-      upsertCustomAlbum({ ...base, ...patch }, !guest);
+      const merged = { ...base, ...patch };
+      // Intentional double update: upsertCustomAlbum refreshes the local store
+      // (storeAlbums → customAlbums → albums re-render) for an instant view, and
+      // the upsert re-persists the enriched metadata to the row so it syncs too.
+      upsertCustomAlbum(merged, !guest);
+      if (!guest) upsertMutate(merged);
     },
-    [albumById, guest],
+    [albumById, guest, upsertMutate],
   );
 
   const removeEntry = useCallback<JournalContextValue["removeEntry"]>(
     (albumId) => {
-      remove.mutate(albumId);
+      removeMutate(albumId);
       // If it was a user-added album, drop it from the custom store too so it
       // disappears entirely rather than reverting to a catalog default.
       removeCustomAlbum(albumId, !guest);
     },
-    [remove, guest],
+    [removeMutate, guest],
   );
+
+  // Backfill: entries created before metadata sync existed have their album
+  // blob only in this device's localStorage. On the device that still holds it,
+  // push it up so other devices (where the entry loads but the album is blank)
+  // can finally render it. Self-terminating — once the row has a blob, the
+  // refetch includes it and it drops out of `missing`. The ref stops us from
+  // re-firing the same id while its upsert is in flight.
+  const backfilledRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (guest || !configured || !user || !queryData) return;
+    const synced = new Set(queryData.albums.map((a) => a.id));
+    const local = new Map(storeAlbums.map((a) => [a.id, a]));
+    const missing = queryData.entries.filter(
+      (e) =>
+        !synced.has(e.albumId) &&
+        !backfilledRef.current.has(e.albumId) &&
+        local.has(e.albumId),
+    );
+    for (const e of missing) {
+      const meta = local.get(e.albumId);
+      if (!meta) continue;
+      backfilledRef.current.add(e.albumId);
+      upsertMutate({
+        ...meta,
+        date: e.date,
+        rating: e.rating,
+        note: e.note,
+        mood: e.mood,
+      });
+    }
+  }, [guest, configured, user, queryData, storeAlbums, upsertMutate]);
 
   const value = useMemo<JournalContextValue>(
     () => ({
