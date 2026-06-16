@@ -1,0 +1,22 @@
+# docker-compose.yml — Day of Music web app.
+#
+#   docker compose up --build -d
+#   open http://localhost:3000
+#
+# Data and auth live in Supabase cloud (direct supabase-js queries, secured by
+# RLS — see supabase/migrations/). Put NEXT_PUBLIC_SUPABASE_URL and
+# NEXT_PUBLIC_SUPABASE_ANON_KEY in a .env file next to this compose file and
+# rebuild when they change: they are inlined into the bundle at build time.
+# Without them the app runs unauthenticated with localStorage persistence.
+
+services:
+  web:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped

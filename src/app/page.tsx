@@ -1,5 +1,5 @@
-import { MusicCalendarWorkspace } from "@/components/music-calendar-workspace";
+import { HomeLanding } from "@/components/day-of-music/home-landing";
 
-export default function Home() {
-  return <MusicCalendarWorkspace />;
+export default function HomePage() {
+  return <HomeLanding />;
 }
