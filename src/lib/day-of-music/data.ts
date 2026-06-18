@@ -40,7 +40,11 @@ export type Album = {
   /** Full release date (ISO 8601, e.g. "2024-10-14T..." from iTunes). Catalog
    *  albums rely on `year` only and leave this undefined. */
   releaseDate?: string;
-  mood: string[];
+  /** Whether this logged item is a whole album or a single track. Defaults to
+   *  "album". For a track, `title` is the track name and `artist` the artist. */
+  kind?: "album" | "track";
+  /** For a track: the parent album's title (shown as context). */
+  albumTitle?: string;
   note: string;
   rating: number;
   tracks: string[];

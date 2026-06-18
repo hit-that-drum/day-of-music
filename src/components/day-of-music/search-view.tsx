@@ -21,7 +21,7 @@ export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
     return albums.filter((a) => {
       if (genre !== "All" && a.genre !== genre) return false;
       if (!query) return true;
-      return `${a.title} ${a.artist} ${a.mood.join(" ")}`.toLowerCase().includes(query);
+      return `${a.title} ${a.artist}`.toLowerCase().includes(query);
     });
   }, [albums, q, genre]);
 
@@ -37,7 +37,7 @@ export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
       <div className="dom-search-box">
         <input
           className="dom-input dom-input-lg"
-          placeholder="Search albums, artists, moods…"
+          placeholder="Search albums, artists…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />

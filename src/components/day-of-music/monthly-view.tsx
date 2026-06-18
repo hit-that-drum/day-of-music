@@ -1,15 +1,16 @@
 // monthly-view.tsx — Monthly Overview: editorial calendar with featured picks.
 
+import { useState } from "react";
 import dayjs from "dayjs";
 
 import {
-  DOW,
+  // DOW, — used only by the temporarily-disabled feature section below
   DOW_KO,
-  MONTHS,
+  // MONTHS,
   MONTHS_LONG,
   addDays,
   fmtDate,
-  parseDate,
+  // parseDate,
   startOfWeek,
   type Album,
 } from "@/lib/day-of-music/data";
@@ -25,6 +26,7 @@ export function MonthlyView({
   onNext,
   onJump,
   onShare,
+  onMove,
 }: {
   /** Any day inside the month being viewed. */
   anchor: Date;
@@ -37,8 +39,13 @@ export function MonthlyView({
   onJump: (date: Date) => void;
   /** Open the shareable image of this month. */
   onShare: () => void;
+  /** Reschedule via drag-and-drop. Dropping on an empty day moves the album;
+   *  dropping on a filled day swaps the two albums' dates. */
+  onMove: (fromDate: string, toDate: string) => void;
 }) {
   const { albums, albumsByDate } = useJournal();
+  // Date currently hovered as a drag-and-drop target (for highlight).
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   // The month being viewed follows `anchor`; `today` is only for highlighting.
   const current = dayjs(anchor);
   const year = current.year();
@@ -58,9 +65,10 @@ export function MonthlyView({
     return d.month() === month && d.year() === year;
   });
 
-  const featured = monthAlbums.filter((a) => a.rating === 5);
-  const heroPick = featured[0] ?? monthAlbums[0];
-  const restFeatured = featured.slice(1, 4);
+  // Feature section temporarily disabled (to be moved elsewhere):
+  // const featured = monthAlbums.filter((a) => a.rating === 5);
+  // const heroPick = featured[0] ?? monthAlbums[0];
+  // const restFeatured = featured.slice(1, 4);
 
   const totalLogged = monthAlbums.length;
   const completion = Math.round((totalLogged / lastOfMonth.date()) * 100);
@@ -113,6 +121,9 @@ export function MonthlyView({
         </div>
       </div>
 
+      {/* PICK OF THE MONTH / ALSO FIVE-STARS — temporarily disabled, to be moved
+          elsewhere. Re-enable the DOW / MONTHS / parseDate imports and the
+          featured / heroPick / restFeatured vars above when restoring.
       {heroPick && (
         <div className="dom-month-feature">
           <div
@@ -164,6 +175,7 @@ export function MonthlyView({
           )}
         </div>
       )}
+      */}
 
       <div className="dom-month-cal">
         <div className="dom-month-cal-hd">
@@ -188,6 +200,7 @@ export function MonthlyView({
             // Empty in-month days up to today get a "+ log" affordance, like the
             // week view. Future days stay blank (can't log ahead).
             const canAdd = inMonth && !album && !isFuture;
+            const dayKey = fmtDate(d);
             return (
               <button
                 key={i}
@@ -196,10 +209,58 @@ export function MonthlyView({
                 data-today={isToday ? "1" : "0"}
                 data-empty={album ? "0" : "1"}
                 data-add={canAdd ? "1" : "0"}
+                data-dragover={dragOverDate === dayKey ? "1" : "0"}
+                // Drag a logged album onto any in-month day: empty → move,
+                // filled → swap the two albums' dates.
+                draggable={Boolean(album)}
+                onDragStart={
+                  album
+                    ? (e) => {
+                        e.dataTransfer.setData(
+                          "text/plain",
+                          JSON.stringify({ id: album.id, from: album.date }),
+                        );
+                        e.dataTransfer.effectAllowed = "move";
+                      }
+                    : undefined
+                }
+                onDragOver={
+                  inMonth
+                    ? (e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        setDragOverDate(dayKey);
+                      }
+                    : undefined
+                }
+                onDragLeave={
+                  inMonth
+                    ? () => setDragOverDate((cur) => (cur === dayKey ? null : cur))
+                    : undefined
+                }
+                onDrop={
+                  inMonth
+                    ? (e) => {
+                        e.preventDefault();
+                        setDragOverDate(null);
+                        try {
+                          const { from } = JSON.parse(
+                            e.dataTransfer.getData("text/plain"),
+                          ) as { id: string; from: string };
+                          if (from) onMove(from, dayKey);
+                        } catch {
+                          /* ignore non-album drops */
+                        }
+                      }
+                    : undefined
+                }
                 onClick={() => {
                   if (album) onOpen(album);
                   else if (canAdd) onAdd(fmtDate(d));
                 }}
+                // Disable cells with no action (out-of-month, or in-month future
+                // empties) so they don't become keyboard tab stops; only album
+                // (open) and canAdd (log) cells stay focusable.
                 disabled={!album && !canAdd}
               >
                 {inMonth && (

@@ -12,6 +12,8 @@
 import dayjs from "dayjs";
 import { z } from "zod";
 
+import type { AlbumDetail, TrackItem } from "@/lib/day-of-music/music-types";
+
 const lookupParamsSchema = z.object({
   // Accept either a bare collectionId ("1234567") or the app's prefixed form
   // ("itunes-1234567"); we extract the digits below.
@@ -39,18 +41,8 @@ type ITunesResult = {
   trackNumber?: number;
 };
 
-export type AlbumDetail = {
-  id: string;
-  title: string;
-  artist: string;
-  genre: string;
-  year: number;
-  releaseDate: string;
-  artworkUrl: string;
-  trackCount: number;
-  /** Track names in disc/track order. */
-  tracks: string[];
-};
+// AlbumDetail / TrackItem are shared with the client (music-types.ts) so the
+// route's JSON shape and the client's expected shape can't drift.
 
 function collectionIdFromParam(raw: string): string | null {
   const match = raw.match(/(\d+)/);
@@ -82,51 +74,139 @@ export async function GET(request: Request) {
     );
   }
 
-  const itunesUrl = new URL("https://itunes.apple.com/lookup");
-  itunesUrl.searchParams.set("id", collectionId);
-  itunesUrl.searchParams.set("entity", "song");
-  itunesUrl.searchParams.set("country", country.toUpperCase());
-  // Normalize text (e.g. genre names) to English regardless of storefront.
-  itunesUrl.searchParams.set("lang", "en_us");
+  // An album only exists in the storefronts it was released in, and a recovered
+  // entry carries no storefront (just the id). So try the requested store
+  // first, then common fallbacks, and use the first that has the album.
+  const storefronts = [...new Set([country.toUpperCase(), "US", "KR", "JP", "GB"])];
 
-  let response: Response;
-  try {
-    // Cache identical lookups for an hour (iTunes rate limit is ~20/min).
-    response = await fetch(itunesUrl, { next: { revalidate: 3600 } });
-  } catch {
-    return Response.json({ error: "Album lookup failed." }, { status: 502 });
+  async function lookupIn(store: string, id: string): Promise<ITunesResult[] | null> {
+    const itunesUrl = new URL("https://itunes.apple.com/lookup");
+    itunesUrl.searchParams.set("id", id);
+    itunesUrl.searchParams.set("entity", "song");
+    itunesUrl.searchParams.set("country", store);
+    // Normalize text (e.g. genre names) to English regardless of storefront.
+    itunesUrl.searchParams.set("lang", "en_us");
+    try {
+      // Cache identical lookups for an hour (iTunes rate limit is ~20/min).
+      const resp = await fetch(itunesUrl, { next: { revalidate: 3600 } });
+      if (!resp.ok) return null;
+      const body = JSON.parse(await resp.text()) as { results?: ITunesResult[] };
+      return body.results ?? [];
+    } catch {
+      return null;
+    }
   }
 
-  if (!response.ok) {
-    return Response.json(
-      { error: "Album lookup failed." },
-      { status: response.status === 403 ? 429 : 502 },
-    );
+  function buildTrackItems(r: ITunesResult[], coll: ITunesResult): TrackItem[] {
+    return r
+      .filter((x) => x.wrapperType === "track" && x.kind === "song")
+      .sort(
+        (a, b) =>
+          (a.discNumber ?? 1) - (b.discNumber ?? 1) ||
+          (a.trackNumber ?? 0) - (b.trackNumber ?? 0),
+      )
+      .filter((x) => x.trackId != null)
+      .map((x) => ({
+        trackId: x.trackId as number,
+        name: x.trackCensoredName ?? x.trackName ?? "",
+        artist: x.artistName ?? coll.artistName ?? "",
+      }))
+      .filter((t) => t.name.length > 0);
   }
 
-  // iTunes serves JSON with a text/javascript content type; parse manually.
-  let results: ITunesResult[];
-  try {
-    const body = JSON.parse(await response.text()) as { results?: ITunesResult[] };
-    results = body.results ?? [];
-  } catch {
-    return Response.json({ error: "Album lookup failed." }, { status: 502 });
+  // Find an edition of an album (by name + artist) that actually has tracks.
+  // Used when the requested id resolves to a songless collection.
+  // NOTE: worst case this is sequential I/O — up to (storefronts × 3 candidate)
+  // lookups, i.e. ~15 round-trips — but it only runs on the rare songless-
+  // collection fallback and short-circuits on the first edition with tracks, so
+  // it's left serial for now. Parallelize per-store if it becomes a latency hot
+  // spot.
+  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+  async function findAlbumWithTracks(
+    artist: string,
+    name: string,
+  ): Promise<{ collection: ITunesResult; trackItems: TrackItem[] } | null> {
+    if (!artist || !name) return null;
+    for (const store of storefronts) {
+      let albums: ITunesResult[];
+      try {
+        const searchUrl = new URL("https://itunes.apple.com/search");
+        searchUrl.searchParams.set("term", `${artist} ${name}`);
+        searchUrl.searchParams.set("entity", "album");
+        searchUrl.searchParams.set("limit", "15");
+        searchUrl.searchParams.set("country", store);
+        searchUrl.searchParams.set("lang", "en_us");
+        const resp = await fetch(searchUrl, { next: { revalidate: 3600 } });
+        if (!resp.ok) continue;
+        albums = (JSON.parse(await resp.text()).results ?? []) as ITunesResult[];
+      } catch {
+        continue;
+      }
+      // Same album name (normalized), fullest tracklist first.
+      const candidates = albums
+        .filter((a) => a.collectionId != null && normalize(a.collectionName ?? "") === normalize(name))
+        .sort((a, b) => (b.trackCount ?? 0) - (a.trackCount ?? 0))
+        .slice(0, 3);
+      for (const c of candidates) {
+        const r = await lookupIn(store, String(c.collectionId));
+        if (!r) continue;
+        const coll = r.find((x) => x.wrapperType === "collection");
+        if (!coll) continue;
+        const items = buildTrackItems(r, coll);
+        if (items.length > 0) return { collection: coll, trackItems: items };
+      }
+    }
+    return null;
   }
 
-  const collection = results.find((r) => r.wrapperType === "collection");
+  // Prefer a storefront that returns the album AND usable tracks. Some stores
+  // list an album (trackCount > 0) without individually-available songs, so if
+  // a store yields no tracks we keep trying the other storefronts; only fall
+  // back to a collection-only result if none of them have tracks.
+  let collection: ITunesResult | undefined;
+  let trackItems: TrackItem[] = [];
+  let fallbackCollection: ITunesResult | undefined;
+  let fallbackTrackItems: TrackItem[] = [];
+  for (const store of storefronts) {
+    const r = await lookupIn(store, collectionId);
+    if (r === null) continue;
+    const coll = r.find((x) => x.wrapperType === "collection");
+    if (!coll) continue;
+    const items = buildTrackItems(r, coll);
+    if (items.length > 0) {
+      collection = coll;
+      trackItems = items;
+      break;
+    }
+    if (!fallbackCollection) {
+      fallbackCollection = coll;
+      fallbackTrackItems = items;
+    }
+  }
+  if (!collection && fallbackCollection) {
+    collection = fallbackCollection;
+    trackItems = fallbackTrackItems;
+  }
+
   if (!collection) {
     return Response.json({ error: "Album not found." }, { status: 404 });
   }
 
-  const tracks = results
-    .filter((r) => r.wrapperType === "track" && r.kind === "song")
-    .sort(
-      (a, b) =>
-        (a.discNumber ?? 1) - (b.discNumber ?? 1) ||
-        (a.trackNumber ?? 0) - (b.trackNumber ?? 0),
-    )
-    .map((r) => r.trackCensoredName ?? r.trackName ?? "")
-    .filter((name): name is string => name.length > 0);
+  // Some editions (regional masters, "single" variants) resolve to a collection
+  // with no individually-available songs. If we got the album but no tracks,
+  // find another edition with the same name + artist that does have tracks.
+  if (trackItems.length === 0) {
+    const alt = await findAlbumWithTracks(
+      collection.artistName ?? "",
+      collection.collectionName ?? "",
+    );
+    if (alt) {
+      collection = alt.collection;
+      trackItems = alt.trackItems;
+    }
+  }
+
+  const tracks = trackItems.map((t) => t.name);
 
   const releaseDate = collection.releaseDate ?? "";
   const detail: AlbumDetail = {
@@ -139,6 +219,7 @@ export async function GET(request: Request) {
     artworkUrl: collection.artworkUrl100?.replace("100x100bb", "600x600bb") ?? "",
     trackCount: collection.trackCount ?? tracks.length,
     tracks,
+    trackItems,
   };
 
   return Response.json({ detail });

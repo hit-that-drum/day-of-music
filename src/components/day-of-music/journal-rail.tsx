@@ -43,13 +43,6 @@ export function JournalRail({
       <div className="dom-rail-section">
         <div className="dom-rail-eyebrow">my note · 메모</div>
         <p className="dom-rail-note">&ldquo;{todayAlbum.note}&rdquo;</p>
-        <div className="dom-rail-mood">
-          {todayAlbum.mood.map((m) => (
-            <span key={m} className="dom-mood-chip">
-              {m}
-            </span>
-          ))}
-        </div>
       </div>
 
       <div className="dom-rail-section">

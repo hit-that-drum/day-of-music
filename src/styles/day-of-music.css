@@ -167,6 +167,63 @@
   overflow: hidden;
 }
 
+/* ── Theme switcher tabs (active lane) — sits at the top of the main panel. */
+.dom-theme-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 18px 28px 0;
+}
+.dom-theme-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.dom-theme-tab:hover {
+  background-color: var(--chip);
+}
+.dom-theme-tab[data-active="1"] {
+  background-color: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.dom-theme-tab-emoji {
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* Theme manager rows (Profile) */
+.dom-theme-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Scoped to beat .dom-input { width: 100% } so the row's controls fit inside. */
+.dom-theme-row .dom-input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+.dom-theme-row .dom-theme-emoji {
+  flex: none;
+  width: 48px;
+  text-align: center;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.dom-theme-row .dom-iconbtn {
+  flex: none;
+}
+
 /* ── Buttons & inputs ───────────────────────────────────────────────────── */
 
 .dom-btn {
@@ -655,6 +712,27 @@
   filter: grayscale(0.1);
 }
 
+/* ── Drag-and-drop: reschedule a logged album by dragging it onto an empty day */
+.dom-day-draggable,
+.dom-month-cal-cell[draggable="true"] {
+  cursor: grab;
+}
+.dom-day-draggable:active,
+.dom-month-cal-cell[draggable="true"]:active {
+  cursor: grabbing;
+}
+/* Let the cell own the drag — don't start the cover image's native drag. */
+.dom-cover img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+/* Highlight the day being hovered as a drop target (empty or filled). */
+.dom-day[data-dragover="1"] .dom-day-body,
+.dom-month-cal-cell[data-dragover="1"] {
+  background-color: color-mix(in oklab, var(--accent) 16%, transparent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
 /* Split-by-month: cells from the adjacent month blend into the page entirely —
    no date, no preview. opacity:0 (not display:none) keeps the column height so
    the 7-day grid stays aligned. */
@@ -724,20 +802,6 @@
   line-height: 1.45;
   margin: 0;
   color: var(--ink2);
-}
-.dom-rail-mood {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.dom-mood-chip {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink2);
-  border: 1px solid var(--lineSoft);
-  padding: 4px 8px;
 }
 .dom-rail-recent {
   display: flex;
@@ -1172,6 +1236,66 @@
 .dom-profile {
   padding: 24px 28px 28px;
 }
+/* Profile (settings) page */
+.dom-profile-settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 8px;
+}
+.dom-settings-card {
+  border: 1px solid var(--line);
+  background-color: var(--bg);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dom-settings-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-settings-key {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink3);
+}
+.dom-settings-val {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--ink);
+  text-align: right;
+  word-break: break-all;
+}
+.dom-settings-note {
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink2);
+  margin: 0;
+}
+.dom-settings-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+@media (max-width: 720px) {
+  .dom-profile-settings {
+    grid-template-columns: 1fr;
+  }
+}
 .dom-stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1247,24 +1371,6 @@
   font-size: 11px;
   color: var(--ink3);
   text-align: right;
-}
-.dom-moodcloud {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 18px;
-  align-items: baseline;
-}
-.dom-moodcloud-item {
-  font-family: var(--font-display);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-}
-.dom-moodcloud-item sup {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--ink3);
-  margin-left: 2px;
 }
 .dom-profile-section {
   margin-top: 28px;
@@ -1608,6 +1714,53 @@
 
 /* ── Add / Log Album flow ───────────────────────────────────────────────── */
 
+/* Tracklist shown under a picked album, to log a single track. */
+.dom-addflow-tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 8px 14px;
+  padding-left: 12px;
+  border-left: 2px solid var(--lineSoft);
+}
+.dom-addflow-tracks-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding: 4px 0;
+}
+.dom-addflow-track {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-align: left;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.dom-addflow-track:hover {
+  background-color: var(--chip);
+}
+.dom-addflow-track[data-active="1"] {
+  border-color: var(--accent);
+  background-color: color-mix(in oklab, var(--accent) 12%, transparent);
+}
+.dom-addflow-track-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--ink);
+  flex: 1;
+  min-width: 0;
+}
+.dom-addflow-track-artist {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink3);
+}
+
 .dom-rating-input {
   display: flex;
   gap: 4px;
@@ -1815,6 +1968,14 @@
 .dom-share-card-month {
   width: min(1180px, 96vw);
 }
+/* Same WYSIWYG export fix as the week poster: use a self-contained web-safe
+   serif for the wrapping text so the canvas export wraps identically to the
+   on-screen preview (no font substitution → no overlap or clipping). */
+.dom-share-card-month .dom-month-cal-title,
+.dom-share-card-month .dom-month-cal-artist,
+.dom-share-card-month .dom-month-cal-artist-ko {
+  font-family: Georgia, "Times New Roman", Times, serif;
+}
 /* The poster grid always shows the full 7-day week, overriding the responsive
    column counts the weekly board uses at narrow widths. */
 .dom-share-card .dom-grid.dom-share-week {
@@ -1839,6 +2000,22 @@
 }
 .dom-share-card .dom-share-week .dom-day-meta {
   padding: 12px 12px 14px;
+}
+/* WYSIWYG export fix. The PNG exporter rasterizes the card on a canvas that
+   can't load our external "Spectral" web font, so it silently falls back to a
+   wider system serif — wrapping titles onto more lines than the on-screen
+   (Spectral-measured) box allowed, which overflowed onto the artist (overlap)
+   or got clipped. Using a self-contained web-safe serif for the wrapping text
+   means the on-screen preview and the downloaded PNG use the *same* font and
+   wrap identically, so the cell grows to fit and nothing overlaps or clips. */
+.dom-share-card .dom-share-week .dom-title,
+.dom-share-card .dom-share-week .dom-artist,
+.dom-share-card .dom-share-week .dom-artist-ko {
+  font-family: Georgia, "Times New Roman", Times, serif;
+}
+.dom-share-card .dom-share-week .dom-title {
+  font-size: 13px;
+  line-height: 1.3;
 }
 /* Fixed header height so every day's bottom border lands on the same line —
    otherwise the export's fallback font gives headers uneven heights and the

@@ -24,14 +24,16 @@ import { DayDetail } from "@/components/day-of-music/day-detail";
 import { JournalRail } from "@/components/day-of-music/journal-rail";
 import { MonthlyView } from "@/components/day-of-music/monthly-view";
 import { ProfileStats } from "@/components/day-of-music/profile-stats";
+import { ProfilePage } from "@/components/day-of-music/profile-page";
 import { SearchView } from "@/components/day-of-music/search-view";
 import { ShareCard } from "@/components/day-of-music/share-card";
 import { MonthShareCard } from "@/components/day-of-music/month-share-card";
+import { ThemeTabs } from "@/components/day-of-music/theme-tabs";
 import { TopBar } from "@/components/day-of-music/top-bar";
 import { TweaksPanel, type Tweaks } from "@/components/day-of-music/tweaks-panel";
 import { WeeklyGrid } from "@/components/day-of-music/weekly-grid";
 
-export type ScreenId = "week" | "month" | "search" | "profile";
+export type ScreenId = "week" | "month" | "search" | "logs" | "profile";
 
 // Real current date. (The sample catalog covers Jan 5–18, 2026 — navigate back
 // to that week to see the demo data.) Evaluated client-side per page load.
@@ -107,7 +109,7 @@ function monthSegmentBounds(anchor: Date): { first: Date; last: Date } {
 
 export function DayOfMusicApp() {
   const rootRef = useRef<HTMLDivElement>(null);
-  const { logEntry, addAlbum, updateEntry, enrichAlbum, removeEntry, getAlbum } = useJournal();
+  const { logAlbum, updateSlot, moveSlot, removeSlot, enrichSlot } = useJournal();
   const { configured, loading: authLoading, user, signOut } = useAuth();
 
   // Persisted across reloads via localStorage (see the store helpers above).
@@ -228,71 +230,67 @@ export function DayOfMusicApp() {
 
   const handleOpen = useCallback((album: Album) => setOpenAlbum(album), []);
 
+  // Drag-and-drop reschedule (onMove={moveSlot}): dropping onto an empty day
+  // moves the album there; dropping onto a filled day swaps the two days.
+  // moveSlot is a stable ref, so it's passed straight through.
+
+  // `date` identifies the slot. A patch carrying `date` is a reschedule (move);
+  // otherwise it's a rating/note edit on the same slot.
   const handleUpdate = useCallback(
-    (id: string, patch: Partial<Album>) => {
-      updateEntry(id, patch);
-      setOpenAlbum((prev) => (prev && prev.id === id ? { ...prev, ...patch } : prev));
+    (date: string, patch: Partial<Album>) => {
+      if (patch.date && patch.date !== date) {
+        moveSlot(date, patch.date);
+      } else {
+        updateSlot(date, patch);
+      }
+      setOpenAlbum((prev) => (prev && prev.date === date ? { ...prev, ...patch } : prev));
     },
-    [updateEntry],
+    [moveSlot, updateSlot],
   );
 
   // Lazily-fetched album metadata (tracklist, release date) from iTunes Lookup.
-  // Persist it on the album and reflect it in the open modal immediately.
   const handleEnrich = useCallback(
-    (id: string, patch: Partial<Album>) => {
-      enrichAlbum(id, patch);
-      setOpenAlbum((prev) => (prev && prev.id === id ? { ...prev, ...patch } : prev));
+    (date: string, patch: Partial<Album>) => {
+      enrichSlot(date, patch);
+      setOpenAlbum((prev) => (prev && prev.date === date ? { ...prev, ...patch } : prev));
     },
-    [enrichAlbum],
+    [enrichSlot],
   );
 
   const handleRemove = useCallback(
-    (id: string) => {
-      removeEntry(id);
+    (date: string) => {
+      removeSlot(date);
       setOpenAlbum(null);
       toast.success("Removed from your journal");
     },
-    [removeEntry],
+    [removeSlot],
   );
 
-  // Replace: reopen the add-flow on the same day; the old entry is dropped when
-  // the new album is saved (see handleSave).
+  // Replace: reopen the add-flow on the same day. Logging the new album at that
+  // date overwrites the slot, so no separate removal is needed.
   const handleReplace = useCallback((album: Album) => {
     setOpenAlbum(null);
     setAddDate(album.date);
-    setReplaceTarget(album.id);
+    setReplaceTarget(album.date);
     setShowAdd(true);
   }, []);
 
   const handleSave = useCallback(
     (entry: NewEntry) => {
-      if (entry.album) {
-        // Album came from music search — add it to the journal's catalog.
-        addAlbum(entry.album, {
-          date: entry.date,
-          rating: entry.rating,
-          note: entry.note,
-        });
-      } else {
-        logEntry({
-          albumId: entry.id,
-          date: entry.date,
-          rating: entry.rating,
-          note: entry.note,
-        });
-      }
-      // If this save is replacing an existing entry, drop the old one (unless
-      // the user re-picked the very same album).
-      const newId = entry.album?.id ?? entry.id;
-      if (replaceTarget && replaceTarget !== newId) removeEntry(replaceTarget);
+      logAlbum(entry.album, {
+        date: entry.date,
+        rating: entry.rating,
+        note: entry.note,
+      });
+      // If replacing on a different day than chosen, clear the original slot.
+      if (replaceTarget && replaceTarget !== entry.date) removeSlot(replaceTarget);
       setReplaceTarget(null);
 
-      const title = entry.album?.title ?? getAlbum(entry.id)?.title;
-      toast.success(`Logged ${title ?? "album"}`, {
+      toast.success(`Logged ${entry.album.title}`, {
         description: `${entry.date} · ${entry.rating || "—"}★`,
       });
     },
-    [logEntry, addAlbum, getAlbum, replaceTarget, removeEntry],
+    [logAlbum, replaceTarget, removeSlot],
   );
 
   // Everyone can use the board. Guests (configured auth, no session) work
@@ -311,10 +309,6 @@ export function DayOfMusicApp() {
         <TopBar
           screen={screen}
           onScreen={setScreen}
-          onAdd={() => {
-            setAddDate(null);
-            setShowAdd(true);
-          }}
           onTweaks={() => setShowTweaks((v) => !v)}
           account={configured && user ? { email: user.email ?? "", onSignOut: signOut } : null}
           showAuthLinks={isGuest}
@@ -328,6 +322,7 @@ export function DayOfMusicApp() {
         )}
 
         <main className="dom-main">
+          {(screen === "week" || screen === "month") && <ThemeTabs />}
           {screen === "week" && (
             <WeeklyGrid
               days={days}
@@ -344,6 +339,7 @@ export function DayOfMusicApp() {
               // Jump the week view to whatever date the user picks in the mini calendar.
               onJump={setAnchor}
               onShare={() => setShowShare(true)}
+              onMove={moveSlot}
             />
           )}
           {screen === "month" && (
@@ -359,10 +355,12 @@ export function DayOfMusicApp() {
               onNext={nextMonth}
               onJump={setAnchor}
               onShare={() => setShowMonthShare(true)}
+              onMove={moveSlot}
             />
           )}
           {screen === "search" && <SearchView onOpen={handleOpen} />}
-          {screen === "profile" && <ProfileStats onOpen={handleOpen} />}
+          {screen === "logs" && <ProfileStats onOpen={handleOpen} />}
+          {screen === "profile" && <ProfilePage />}
         </main>
 
         {screen === "week" && tweaks.showJournal && (
@@ -387,7 +385,7 @@ export function DayOfMusicApp() {
             setReplaceTarget(null);
           }}
           onSave={handleSave}
-          weekStart={weekStart}
+          defaultWeekStart={weekStart}
           // Clicked day wins; otherwise preselect today when it's in view.
           defaultDate={
             addDate ??

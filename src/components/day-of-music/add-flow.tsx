@@ -4,26 +4,38 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { ALBUMS, DOW, addDays, fmtDate, type Album } from "@/lib/day-of-music/data";
+import {
+  ALBUMS,
+  DOW,
+  addDays,
+  fmtDate,
+  parseDate,
+  startOfWeek,
+  type Album,
+} from "@/lib/day-of-music/data";
 import {
   albumFromDetail,
   albumFromSearchResult,
+  albumFromTrack,
   fetchAlbumDetail,
   parseAppleMusicLink,
   searchMusic,
+  type AlbumDetail,
 } from "@/lib/day-of-music/music-search";
+import { useCountry } from "@/lib/day-of-music/profile";
 import { Cover } from "@/components/day-of-music/cover";
 
 export type NewEntry = {
-  id: string;
   date: string;
   rating: number;
   note: string;
-  /** Set when the picked album is not in the static catalog (search result). */
-  album?: Album;
+  /** The picked album (catalog quick-pick or music-search result). Its metadata
+   *  is always carried so the journal can render and sync it — the pool isn't
+   *  seeded from the static catalog. */
+  album: Album;
 };
 
 const CATALOG_IDS = new Set(ALBUMS.map((a) => a.id));
@@ -40,20 +52,24 @@ function useDebounced(value: string, delayMs: number): string {
 type AddFlowProps = {
   onClose: () => void;
   onSave: (entry: NewEntry) => void;
-  /** First day of the week the picker offers (the week being viewed). */
-  weekStart: Date;
+  /** Seeds the initial selected day when no `defaultDate` is given. The picker
+   *  then follows the selected day's week independently of this. */
+  defaultWeekStart: Date;
   defaultDate?: string;
 };
 
-export function AddFlow({ onClose, onSave, weekStart, defaultDate }: AddFlowProps) {
+export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddFlowProps) {
   const [step, setStep] = useState(1);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<Album | null>(null);
-  const [date, setDate] = useState(defaultDate ?? fmtDate(weekStart));
+  const [date, setDate] = useState(defaultDate ?? fmtDate(defaultWeekStart));
   const [rating, setRating] = useState(0);
   const [note, setNote] = useState("");
 
   const debouncedQuery = useDebounced(query.trim(), 300);
+  // Search the user's preferred storefront first (server falls back to the
+  // common stores after it).
+  const country = useCountry();
 
   // Compact by default (8 results); "See all" fetches a larger batch and
   // reveals it with infinite scroll. Reset whenever the query changes.
@@ -62,6 +78,8 @@ export function AddFlow({ onClose, onSave, weekStart, defaultDate }: AddFlowProp
   const PAGE = 12;
   const [showAll, setShowAll] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE);
+  // Album whose tracklist is expanded for picking a single track.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const catalogResults = useMemo(() => {
     const q = query.toLowerCase();
@@ -76,8 +94,8 @@ export function AddFlow({ onClose, onSave, weekStart, defaultDate }: AddFlowProp
 
   const limit = showAll ? ALL_LIMIT : COMPACT_COUNT;
   const search = useQuery({
-    queryKey: ["music-search", debouncedQuery, limit],
-    queryFn: () => searchMusic(debouncedQuery, { limit }),
+    queryKey: ["music-search", debouncedQuery, limit, country],
+    queryFn: () => searchMusic(debouncedQuery, { limit, country }),
     enabled: debouncedQuery.length >= 2 && !pastedLink,
     staleTime: 5 * 60 * 1000,
     retry: 1,
@@ -94,6 +112,15 @@ export function AddFlow({ onClose, onSave, weekStart, defaultDate }: AddFlowProp
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
+
+  // Tracklist of the expanded album, for picking a single track.
+  const expanded = useQuery({
+    queryKey: ["album-detail", expandedId, country],
+    queryFn: () => fetchAlbumDetail(expandedId!, { country }),
+    enabled: Boolean(expandedId),
+    staleTime: 5 * 60 * 1000,
+  });
+  const expandedDetail = expandedId ? expanded.data ?? null : null;
 
   const allResults = useMemo(() => {
     // Pasted-link mode: a single resolved album (or nothing yet).
@@ -132,9 +159,14 @@ export function AddFlow({ onClose, onSave, weekStart, defaultDate }: AddFlowProp
     }
   }
 
+  // Show the week containing the currently-selected day, so a day picked from
+  // the month view (outside the viewed week) still appears and stays selected.
   const weekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart],
+    () => {
+      const start = startOfWeek(parseDate(date));
+      return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+    },
+    [date],
   );
 
   return (
@@ -166,26 +198,42 @@ export function AddFlow({ onClose, onSave, weekStart, defaultDate }: AddFlowProp
                 // New query → back to the compact list.
                 setShowAll(false);
                 setVisibleCount(PAGE);
+                setExpandedId(null);
               }}
             />
             <div className="dom-addflow-results" onScroll={handleResultsScroll}>
-              {results.map((a) => (
-                <button
-                  key={a.id}
-                  className="dom-addflow-result"
-                  data-active={picked?.id === a.id ? "1" : "0"}
-                  onClick={() => setPicked(a)}
-                >
-                  <Cover album={a} size={56} />
-                  <div className="dom-addflow-result-info">
-                    <div className="dom-addflow-result-title">{a.title}</div>
-                    <div className="dom-addflow-result-artist">
-                      {a.artist} · {a.year}
-                    </div>
-                  </div>
-                  {picked?.id === a.id && <span className="dom-addflow-check">✓</span>}
-                </button>
-              ))}
+              {results.map((a) => {
+                const expandable = a.id.startsWith("itunes-");
+                return (
+                  <Fragment key={a.id}>
+                    <button
+                      className="dom-addflow-result"
+                      data-active={picked?.id === a.id ? "1" : "0"}
+                      onClick={() => {
+                        setPicked(a);
+                        setExpandedId(expandable ? a.id : null);
+                      }}
+                    >
+                      <Cover album={a} size={56} />
+                      <div className="dom-addflow-result-info">
+                        <div className="dom-addflow-result-title">{a.title}</div>
+                        <div className="dom-addflow-result-artist">
+                          {a.artist} · {a.year}
+                        </div>
+                      </div>
+                      {picked?.id === a.id && <span className="dom-addflow-check">✓</span>}
+                    </button>
+                    {expandedId === a.id && (
+                      <TrackPanel
+                        detail={expandedDetail}
+                        loading={expanded.isFetching}
+                        picked={picked}
+                        onPick={setPicked}
+                      />
+                    )}
+                  </Fragment>
+                );
+              })}
               {canSeeAll && (
                 <button
                   type="button"
@@ -298,14 +346,7 @@ export function AddFlow({ onClose, onSave, weekStart, defaultDate }: AddFlowProp
               className="dom-btn"
               onClick={() => {
                 if (picked) {
-                  onSave({
-                    id: picked.id,
-                    date,
-                    rating,
-                    note,
-                    // Pass the full album along when it's not in the catalog.
-                    album: CATALOG_IDS.has(picked.id) ? undefined : picked,
-                  });
+                  onSave({ date, rating, note, album: picked });
                 }
                 onClose();
               }}
@@ -315,6 +356,69 @@ export function AddFlow({ onClose, onSave, weekStart, defaultDate }: AddFlowProp
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// The expandable tracklist under a search result. Lets the user log the whole
+// album or pick a single track. Rendered only while a result is expanded.
+function TrackPanel({
+  detail,
+  loading,
+  picked,
+  onPick,
+}: {
+  detail: AlbumDetail | null;
+  loading: boolean;
+  picked: Album | null;
+  onPick: (album: Album) => void;
+}) {
+  // Bail before `detail` resolves — this also narrows it for albumFromTrack
+  // below, so no non-null assertion is needed.
+  if (!detail) {
+    return (
+      <div className="dom-addflow-tracks">
+        <div className="dom-addflow-tracks-label">
+          Log the album, or pick a track · 트랙 선택
+        </div>
+        <div className="dom-addflow-empty">
+          {loading ? "Loading tracks…" : "Couldn't load this album's tracks."}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dom-addflow-tracks">
+      <div className="dom-addflow-tracks-label">
+        Log the album, or pick a track · 트랙 선택
+      </div>
+      {detail.trackItems.length > 0 ? (
+        detail.trackItems.map((t) => {
+          // Build the track album once so the compared id and the picked id
+          // always match — the resolved detail's collection id may differ from
+          // the row's id (the route falls back to an edition with tracks).
+          const trackAlbum = albumFromTrack(detail, t);
+          return (
+            <button
+              key={t.trackId}
+              className="dom-addflow-track"
+              data-active={picked?.id === trackAlbum.id ? "1" : "0"}
+              onClick={() => onPick(trackAlbum)}
+            >
+              <span className="dom-addflow-track-name">{t.name}</span>
+              <span className="dom-addflow-track-artist">{t.artist}</span>
+              {picked?.id === trackAlbum.id && (
+                <span className="dom-addflow-check">✓</span>
+              )}
+            </button>
+          );
+        })
+      ) : (
+        <div className="dom-addflow-empty">
+          Couldn&apos;t load this album&apos;s tracks.
+        </div>
+      )}
     </div>
   );
 }

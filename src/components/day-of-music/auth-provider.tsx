@@ -28,6 +28,8 @@ type AuthContextValue = {
   signInWithPassword: (email: string, password: string) => Promise<AuthResult>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  /** Merge keys into the account's user_metadata so profile prefs sync. */
+  updateUserMetadata: (patch: Record<string, unknown>) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -94,6 +96,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
   }, []);
 
+  const updateUserMetadata = useCallback(async (patch: Record<string, unknown>) => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+    // GoTrue merges these keys into user_metadata.
+    const { data, error } = await supabase.auth.updateUser({ data: patch });
+    // Reflect the new metadata immediately (onAuthStateChange also fires).
+    if (!error && data.user) setSession((s) => (s ? { ...s, user: data.user } : s));
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       configured,
@@ -104,8 +115,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithPassword,
       signInWithGoogle,
       signOut,
+      updateUserMetadata,
     }),
-    [configured, loading, session, signUpWithPassword, signInWithPassword, signInWithGoogle, signOut],
+    [configured, loading, session, signUpWithPassword, signInWithPassword, signInWithGoogle, signOut, updateUserMetadata],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

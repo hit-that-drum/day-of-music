@@ -15,7 +15,9 @@ import {
   startOfWeek,
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
-import { copyCurrentLink, saveCardAsImage } from "@/lib/day-of-music/save-card";
+import { DEFAULT_USERNAME, useProfile } from "@/lib/day-of-music/profile";
+import { useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
+import { copyCurrentLink, saveCardAsImage, shareFileName } from "@/lib/day-of-music/save-card";
 import { Cover } from "@/components/day-of-music/cover";
 
 export function MonthShareCard({
@@ -29,6 +31,11 @@ export function MonthShareCard({
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const { albums, albumsByDate } = useJournal();
+  const { username } = useProfile();
+  const { themes } = useThemes();
+  const { activeTheme } = useActiveTheme();
+  const themeName =
+    themes.find((t) => t.id === activeTheme)?.name ?? themes[0]?.name ?? "Daily";
 
   const current = dayjs(anchor);
   const year = current.year();
@@ -51,7 +58,7 @@ export function MonthShareCard({
 
   function handleSaveImage() {
     if (!cardRef.current) return;
-    void saveCardAsImage(cardRef.current, `day-of-music-${monthLabel.toLowerCase()}-${year}.png`);
+    void saveCardAsImage(cardRef.current, shareFileName([themeName, monthLabel, year]));
   }
 
   return (
@@ -68,7 +75,7 @@ export function MonthShareCard({
                 {monthLabel} · {year}
               </div>
             </div>
-            <div className="dom-share-meta">@listener</div>
+            <div className="dom-share-meta">@{username.trim() || DEFAULT_USERNAME}</div>
           </div>
 
           {/* Month grid — identical markup/classes to the monthly board. */}

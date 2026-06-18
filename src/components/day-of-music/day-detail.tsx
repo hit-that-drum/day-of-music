@@ -15,11 +15,12 @@ type Tab = "tracklist" | "journal" | "info";
 type DayDetailProps = {
   album: Album;
   onClose: () => void;
-  onUpdate: (id: string, patch: Partial<Album>) => void;
+  /** Update the slot at this date — rating/note, or a `date` patch to move it. */
+  onUpdate: (date: string, patch: Partial<Album>) => void;
   /** Persist lazily-fetched catalog metadata (tracklist, release date). */
-  onEnrich: (id: string, patch: Partial<Album>) => void;
-  /** Delete this entry from the day. */
-  onRemove: (id: string) => void;
+  onEnrich: (date: string, patch: Partial<Album>) => void;
+  /** Delete the slot on this date. */
+  onRemove: (date: string) => void;
   /** Swap which album is logged on this day (reopens search, keeps the date). */
   onReplace: (album: Album) => void;
 };
@@ -67,21 +68,21 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
       const patch: Partial<Album> = {};
       if (needsTracks && detail.tracks.length) patch.tracks = detail.tracks;
       if (needsDate && detail.releaseDate) patch.releaseDate = detail.releaseDate;
-      if (Object.keys(patch).length) onEnrich(album.id, patch);
+      if (Object.keys(patch).length) onEnrich(album.date, patch);
     });
     return () => {
       cancelled = true;
     };
-  }, [album.id, album.tracks.length, album.releaseDate, onEnrich]);
+  }, [album.id, album.date, album.tracks.length, album.releaseDate, onEnrich]);
 
   // Rating commits immediately, so render straight from the album prop (single
   // source of truth) rather than mirroring it in local state that could drift.
   function commitRating(v: number) {
-    onUpdate(album.id, { rating: v });
+    onUpdate(album.date, { rating: v });
   }
 
   function saveNote() {
-    onUpdate(album.id, { note });
+    onUpdate(album.date, { note });
     setNoteSaved(true);
     if (noteSavedTimer.current) clearTimeout(noteSavedTimer.current);
     noteSavedTimer.current = setTimeout(() => setNoteSaved(false), 1600);
@@ -154,9 +155,11 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
               </ol>
             ) : (
               <div className="dom-addflow-empty">
-                {album.id.startsWith("itunes-")
-                  ? "Loading tracklist…"
-                  : "No tracklist for this album."}
+                {album.kind === "track"
+                  ? `Single track${album.albumTitle ? ` from ${album.albumTitle}` : ""}.`
+                  : album.id.startsWith("itunes-")
+                    ? "Loading tracklist…"
+                    : "No tracklist for this album."}
               </div>
             )
           )}
@@ -177,20 +180,13 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
                   </button>
                 ))}
               </div>
-              <div className="dom-rail-mood">
-                {album.mood.map((m) => (
-                  <span key={m} className="dom-mood-chip">
-                    {m}
-                  </span>
-                ))}
-              </div>
               <label className="dom-edit-field">
                 <span className="dom-edit-label">Logged on · 기록한 날</span>
                 <input
                   type="date"
                   className="dom-input"
                   value={album.date}
-                  onChange={(e) => e.target.value && onUpdate(album.id, { date: e.target.value })}
+                  onChange={(e) => e.target.value && onUpdate(album.date, { date: e.target.value })}
                 />
               </label>
               <div className="dom-edit-field">
@@ -220,9 +216,15 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
               <InfoRow label="Released" value={formatReleased(album)} />
               <InfoRow label="Genre" value={album.genre} />
               <InfoRow label="Format" value={album.format} />
-              <InfoRow label="Tracks" value={String(album.tracks.length)} />
+              {album.kind === "track" ? (
+                <>
+                  <InfoRow label="Type" value="Track" />
+                  {album.albumTitle && <InfoRow label="From album" value={album.albumTitle} />}
+                </>
+              ) : (
+                <InfoRow label="Tracks" value={String(album.tracks.length)} />
+              )}
               <InfoRow label="Logged on" value={album.date} />
-              <InfoRow label="Mood" value={album.mood.join(", ")} />
             </div>
           )}
 
@@ -236,7 +238,7 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
                 <button
                   className="dom-btn dom-btn-danger"
                   // onRemove already closes the modal (handleRemove resets openAlbum).
-                  onClick={() => onRemove(album.id)}
+                  onClick={() => onRemove(album.date)}
                 >
                   Remove
                 </button>
