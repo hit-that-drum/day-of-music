@@ -31,7 +31,6 @@ const HERO_COVERS: Album[] = (
   year: 0,
   format: "",
   cover: { style: t.style, bg: t.bg, fg: t.fg, accent: t.accent },
-  mood: [],
   note: "",
   rating: 0,
   tracks: [],

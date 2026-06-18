@@ -1,4 +1,4 @@
-// top-bar.tsx — brand + screen navigation + log-album action.
+// top-bar.tsx — brand + screen navigation + header actions.
 
 import Link from "next/link";
 
@@ -8,7 +8,8 @@ const SCREENS: { id: ScreenId; label: string; ko: string }[] = [
   { id: "week", label: "Week", ko: "주간" },
   { id: "month", label: "Month", ko: "월간" },
   { id: "search", label: "Search", ko: "검색" },
-  { id: "profile", label: "Profile", ko: "나의 기록" },
+  { id: "logs", label: "My Logs", ko: "나의 기록" },
+  { id: "profile", label: "Profile", ko: "프로필" },
 ];
 
 type Account = { email: string; onSignOut: () => void };
@@ -16,14 +17,12 @@ type Account = { email: string; onSignOut: () => void };
 export function TopBar({
   screen,
   onScreen,
-  onAdd,
   onTweaks,
   account = null,
   showAuthLinks = false,
 }: {
   screen: ScreenId;
   onScreen: (id: ScreenId) => void;
-  onAdd: () => void;
   /** Toggle the Tweaks panel (lives in the header now, not floating). */
   onTweaks: () => void;
   account?: Account | null;
@@ -69,9 +68,6 @@ export function TopBar({
             </Link>
           </>
         )}
-        <button className="dom-btn" onClick={onAdd}>
-          ＋ Log album
-        </button>
       </div>
     </header>
   );

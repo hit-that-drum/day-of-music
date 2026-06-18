@@ -22,12 +22,6 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
   });
   const topGenres = Object.entries(byGenre).sort((a, b) => b[1] - a[1]);
 
-  const moods: Record<string, number> = {};
-  albums.forEach((a) => a.mood.forEach((m) => (moods[m] = (moods[m] ?? 0) + 1)));
-  const moodList = Object.entries(moods)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10);
-
   const fives = albums.filter((a) => a.rating === 5);
 
   return (
@@ -76,17 +70,6 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
                 </div>
                 <span className="dom-bar-num">{n}</span>
               </div>
-            ))}
-          </div>
-        </div>
-        <div className="dom-stat dom-stat-wide">
-          <div className="dom-stat-label">mood map · 분위기</div>
-          <div className="dom-moodcloud">
-            {moodList.map(([m, n]) => (
-              <span key={m} className="dom-moodcloud-item" style={{ fontSize: 14 + n * 4 }}>
-                {m}
-                <sup>{n}</sup>
-              </span>
             ))}
           </div>
         </div>

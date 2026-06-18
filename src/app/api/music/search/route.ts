@@ -88,42 +88,42 @@ export async function GET(request: Request) {
 
   const { q, type, limit, country } = parsed.data;
 
-  const itunesUrl = new URL("https://itunes.apple.com/search");
-  itunesUrl.searchParams.set("term", q);
-  itunesUrl.searchParams.set("media", "music");
-  itunesUrl.searchParams.set("entity", ENTITY_BY_TYPE[type]);
-  itunesUrl.searchParams.set("limit", String(limit));
-  itunesUrl.searchParams.set("country", country.toUpperCase());
-  // Normalize text (e.g. genre names) to English regardless of storefront.
-  itunesUrl.searchParams.set("lang", "en_us");
+  // Search the user's preferred storefront first, then fall back through the
+  // common stores (deduped). Returns the first store that yields any results,
+  // so a region-specific release surfaces even if the preferred store is empty.
+  const storefronts = [...new Set([country.toUpperCase(), "US", "KR", "JP", "GB"])];
 
-  let response: Response;
-  try {
-    // Cache identical queries for an hour (iTunes rate limit is ~20/min).
-    response = await fetch(itunesUrl, { next: { revalidate: 3600 } });
-  } catch {
-    return Response.json({ error: "Music search failed." }, { status: 502 });
+  async function searchIn(store: string): Promise<MusicSearchResult[] | null> {
+    const itunesUrl = new URL("https://itunes.apple.com/search");
+    itunesUrl.searchParams.set("term", q);
+    itunesUrl.searchParams.set("media", "music");
+    itunesUrl.searchParams.set("entity", ENTITY_BY_TYPE[type]);
+    itunesUrl.searchParams.set("limit", String(limit));
+    itunesUrl.searchParams.set("country", store);
+    // Normalize text (e.g. genre names) to English regardless of storefront.
+    itunesUrl.searchParams.set("lang", "en_us");
+    try {
+      // Cache identical queries for an hour (iTunes rate limit is ~20/min).
+      const resp = await fetch(itunesUrl, { next: { revalidate: 3600 } });
+      if (!resp.ok) return null;
+      const body = JSON.parse(await resp.text()) as { results?: ITunesResult[] };
+      return (body.results ?? [])
+        .map(mapResult)
+        .filter((r): r is MusicSearchResult => r !== null);
+    } catch {
+      return null;
+    }
   }
 
-  if (!response.ok) {
-    return Response.json(
-      { error: "Music search failed." },
-      { status: response.status === 403 ? 429 : 502 },
-    );
+  let anyStoreReached = false;
+  for (const store of storefronts) {
+    const results = await searchIn(store);
+    if (results === null) continue;
+    anyStoreReached = true;
+    if (results.length > 0) return Response.json({ results });
   }
 
-  // iTunes serves JSON with a text/javascript content type; parse manually.
-  let results: ITunesResult[];
-  try {
-    const body = JSON.parse(await response.text()) as { results?: ITunesResult[] };
-    results = body.results ?? [];
-  } catch {
-    return Response.json({ error: "Music search failed." }, { status: 502 });
-  }
-
-  return Response.json({
-    results: results
-      .map(mapResult)
-      .filter((r): r is MusicSearchResult => r !== null),
-  });
+  // Every reachable store returned zero matches → empty list (not an error).
+  if (anyStoreReached) return Response.json({ results: [] });
+  return Response.json({ error: "Music search failed." }, { status: 502 });
 }

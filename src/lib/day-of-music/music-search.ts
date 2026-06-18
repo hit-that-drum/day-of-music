@@ -3,6 +3,9 @@
 // journal alongside the static catalog.
 
 import type { Album, CoverSpec, CoverStyle } from "@/lib/day-of-music/data";
+import type { AlbumDetail, TrackItem } from "@/lib/day-of-music/music-types";
+
+export type { AlbumDetail, TrackItem };
 
 export type MusicSearchResult = {
   id: string;
@@ -31,19 +34,8 @@ export async function searchMusic(
 
 // The Search API returns album metadata only — no tracks. To get the
 // tracklist (and to resolve a pasted Apple Music link) we hit the iTunes
-// *Lookup* API (entity=song) through this proxy.
-export type AlbumDetail = {
-  id: string;
-  title: string;
-  artist: string;
-  genre: string;
-  year: number;
-  releaseDate: string;
-  artworkUrl: string;
-  trackCount: number;
-  /** Track names in disc/track order. */
-  tracks: string[];
-};
+// *Lookup* API (entity=song) through this proxy. `AlbumDetail`/`TrackItem` are
+// defined in music-types.ts and re-exported above.
 
 /** Fetch an album's full metadata + tracklist. `id` may be a bare iTunes
  *  collectionId or the app's prefixed form ("itunes-123456"). Returns null on
@@ -134,7 +126,6 @@ export function albumFromSearchResult(r: MusicSearchResult): Album {
     cover: coverFromSeed(r.id),
     artworkUrl: r.artworkUrl || undefined,
     releaseDate: r.releaseDate || undefined,
-    mood: [],
     note: "",
     rating: 0,
     tracks: [],
@@ -155,9 +146,36 @@ export function albumFromDetail(d: AlbumDetail): Album {
     cover: coverFromSeed(d.id),
     artworkUrl: d.artworkUrl || undefined,
     releaseDate: d.releaseDate || undefined,
-    mood: [],
+    kind: "album",
     note: "",
     rating: 0,
     tracks: d.tracks ?? [],
+  };
+}
+
+/** Build a journal-ready Album for a single TRACK picked from an album. Uses
+ *  the album's artwork; `title` is the track name and `artist` the track's
+ *  artist. The id uses an "itrack-" prefix so it never collides with the
+ *  album's "itunes-" id and is skipped by the album-only recovery/enrich. */
+export function albumFromTrack(d: AlbumDetail, track: TrackItem): Album {
+  const collectionId = d.id.replace(/^itunes-/, "");
+  const id = `itrack-${collectionId}-${track.trackId}`;
+  return {
+    id,
+    date: "",
+    title: track.name,
+    titleKo: "",
+    artist: track.artist || d.artist,
+    genre: d.genre || "—",
+    year: d.year,
+    format: "Digital",
+    cover: coverFromSeed(id),
+    artworkUrl: d.artworkUrl || undefined,
+    releaseDate: d.releaseDate || undefined,
+    kind: "track",
+    albumTitle: d.title,
+    note: "",
+    rating: 0,
+    tracks: [],
   };
 }

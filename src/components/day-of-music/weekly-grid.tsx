@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState, type DragEvent } from "react";
 
 import {
   DOW,
@@ -35,6 +35,9 @@ type WeeklyGridProps = {
   /** Jump the view to the week containing this date (mini-calendar pick). */
   onJump: (date: Date) => void;
   onShare: () => void;
+  /** Reschedule via drag-and-drop. Dropping on an empty day moves the album;
+   *  dropping on a filled day swaps the two albums' dates. */
+  onMove: (fromDate: string, toDate: string) => void;
 };
 
 export function WeeklyGrid({
@@ -48,6 +51,7 @@ export function WeeklyGrid({
   onNext,
   onJump,
   onShare,
+  onMove,
 }: WeeklyGridProps) {
   const { albumsByDate } = useJournal();
   const monthLabel = MONTHS_LONG[labelDate.getMonth()];
@@ -122,6 +126,7 @@ export function WeeklyGrid({
               outOfMonth={outOfMonth}
               onOpen={onOpen}
               onAdd={onAdd}
+              onMove={onMove}
             />
           );
         })}
@@ -208,6 +213,7 @@ function DayCell({
   outOfMonth,
   onOpen,
   onAdd,
+  onMove,
 }: {
   date: Date;
   album: Album | undefined;
@@ -217,10 +223,45 @@ function DayCell({
   outOfMonth: boolean;
   onOpen: (album: Album) => void;
   onAdd: (date: string) => void;
+  onMove: (fromDate: string, toDate: string) => void;
 }) {
   const day = date.getDate();
   const dow = DOW[date.getDay()];
   const dowKo = DOW_KO[date.getDay()];
+  const [dragOver, setDragOver] = useState(false);
+
+  // Any in-month day is a drop target (empty → move, filled → swap dates).
+  const handleDragOver = useCallback(
+    (e: DragEvent) => {
+      if (outOfMonth) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      setDragOver(true);
+    },
+    [outOfMonth],
+  );
+  const handleDrop = useCallback(
+    (e: DragEvent) => {
+      if (outOfMonth) return;
+      e.preventDefault();
+      setDragOver(false);
+      try {
+        const { from } = JSON.parse(e.dataTransfer.getData("text/plain")) as {
+          id: string;
+          from: string;
+        };
+        if (from) onMove(from, fmtDate(date));
+      } catch {
+        /* ignore non-album drops */
+      }
+    },
+    [outOfMonth, onMove, date],
+  );
+  // Only clear the highlight when the cursor actually leaves the cell — not when
+  // it moves onto a child (album button, cover image), which would flicker it.
+  const handleDragLeave = useCallback((e: DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false);
+  }, []);
 
   return (
     <div
@@ -229,6 +270,10 @@ function DayCell({
       data-future={isFuture ? "1" : "0"}
       data-empty={album ? "0" : "1"}
       data-outmonth={outOfMonth ? "1" : "0"}
+      data-dragover={dragOver ? "1" : "0"}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
       <div className="dom-day-hd">
         <span className="dom-day-num">{day}</span>
@@ -240,7 +285,15 @@ function DayCell({
         <div className="dom-day-body dom-day-empty dom-day-blank" aria-hidden="true" />
       ) : album ? (
         <button
-          className="dom-day-body"
+          className="dom-day-body dom-day-draggable"
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData(
+              "text/plain",
+              JSON.stringify({ id: album.id, from: album.date }),
+            );
+            e.dataTransfer.effectAllowed = "move";
+          }}
           onClick={() => onOpen(album)}
           aria-label={`Open ${album.title}`}
         >
