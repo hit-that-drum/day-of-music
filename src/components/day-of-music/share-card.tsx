@@ -42,8 +42,9 @@ export function ShareCard({
   const { username } = useProfile();
   const { themes } = useThemes();
   const { activeTheme } = useActiveTheme();
-  const themeName =
-    themes.find((t) => t.id === activeTheme)?.name ?? themes[0]?.name ?? "Daily";
+  const activeThemeObj = themes.find((t) => t.id === activeTheme) ?? themes[0];
+  const themeName = activeThemeObj?.name ?? "Daily";
+  const themeEmoji = activeThemeObj?.emoji ?? "🎧";
 
   const monthLabel = MONTHS_LONG[weekStart.getMonth()];
   const weekNum = weekOfMonth(weekStart);
@@ -86,7 +87,12 @@ export function ShareCard({
                 {monthLabel} · Week {weekNum}
               </div>
             </div>
-            <div className="dom-share-meta">@{username.trim() || DEFAULT_USERNAME}</div>
+            <div className="dom-share-meta">
+              <span className="dom-share-user">@{username.trim() || DEFAULT_USERNAME}</span>
+              <span className="dom-share-theme">
+                {themeEmoji ? `${themeEmoji} ${themeName}` : themeName}
+              </span>
+            </div>
           </div>
 
           {/* Week grid — identical markup/classes to the weekly board. */}

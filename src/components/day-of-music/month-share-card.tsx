@@ -34,8 +34,9 @@ export function MonthShareCard({
   const { username } = useProfile();
   const { themes } = useThemes();
   const { activeTheme } = useActiveTheme();
-  const themeName =
-    themes.find((t) => t.id === activeTheme)?.name ?? themes[0]?.name ?? "Daily";
+  const activeThemeObj = themes.find((t) => t.id === activeTheme) ?? themes[0];
+  const themeName = activeThemeObj?.name ?? "Daily";
+  const themeEmoji = activeThemeObj?.emoji ?? "🎧";
 
   const current = dayjs(anchor);
   const year = current.year();
@@ -75,7 +76,12 @@ export function MonthShareCard({
                 {monthLabel} · {year}
               </div>
             </div>
-            <div className="dom-share-meta">@{username.trim() || DEFAULT_USERNAME}</div>
+            <div className="dom-share-meta">
+              <span className="dom-share-user">@{username.trim() || DEFAULT_USERNAME}</span>
+              <span className="dom-share-theme">
+                {themeEmoji ? `${themeEmoji} ${themeName}` : themeName}
+              </span>
+            </div>
           </div>
 
           {/* Month grid — identical markup/classes to the monthly board. */}
@@ -108,7 +114,15 @@ export function MonthShareCard({
                       <>
                         <div className="dom-month-cal-date">
                           <span className="dom-month-cal-num">{d.getDate()}</span>
-                          {isToday && <span className="dom-month-cal-today">TODAY</span>}
+                          <span className="dom-month-cal-date-right">
+                            {isToday && <span className="dom-month-cal-today">TODAY</span>}
+                            {album && album.rating > 0 && (
+                              <span className="dom-month-cal-rating">
+                                <span className="dom-month-cal-rating-star">★</span>
+                                {album.rating}
+                              </span>
+                            )}
+                          </span>
                         </div>
                         {album && (
                           <div className="dom-month-cal-cover">

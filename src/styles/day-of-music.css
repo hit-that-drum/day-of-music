@@ -339,7 +339,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-top: 20px;
+  /* Pin to the bottom of the right column so the action bar stays put across
+     tabs whose content heights differ (the modal height is now fixed). */
+  margin-top: auto;
   padding-top: 16px;
   border-top: 1px solid var(--lineSoft);
   flex-wrap: wrap;
@@ -926,6 +928,11 @@
   color: var(--ink3);
   margin-left: 2px;
 }
+.dom-month-stat-num i.dom-month-stat-star {
+  font-size: 24px;
+  margin-left: 0;
+  color: var(--accent);
+}
 .dom-month-stat-lbl {
   font-family: var(--font-mono);
   font-size: 9.5px;
@@ -1161,6 +1168,26 @@
   letter-spacing: 0.18em;
   color: var(--accent);
   font-weight: 600;
+}
+/* Per-day rating, top-right of the cell — shares the date row's right slot with
+   the TODAY label. */
+.dom-month-cal-date-right {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.dom-month-cal-rating {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.dom-month-cal-rating-star {
+  color: var(--accent);
 }
 /* Cover bleeds to the cell edges — negative margins cancel the cell's
    10px/12px padding so only the date + text stay inset. */
@@ -1518,6 +1545,9 @@
 /* ── Day Detail modal ───────────────────────────────────────────────────── */
 
 .dom-scrim {
+  /* Shared modal width — every overlay modal (Day Detail, Add/Log Album,
+     Share Week/Month) reads this token so they're all the same size. */
+  --dom-modal-w: 1100px;
   position: fixed;
   inset: 0;
   z-index: 50;
@@ -1549,10 +1579,16 @@
   background-color: var(--panel);
   border: 1px solid var(--line);
   width: 100%;
-  max-width: 1100px;
-  max-height: 90vh;
+  max-width: var(--dom-modal-w);
+  /* Fixed height so every tab (tracklist / journal / info) is the same size —
+     matched to the journal tab; taller content (long tracklist) scrolls inside. */
+  height: min(660px, 90vh);
   display: grid;
   grid-template-columns: 460px minmax(0, 1fr);
+  /* Bound the single row to the modal's height so the right column's
+     overflow-y can engage — without this the row grows to the tracklist's
+     content height and a long list (and the actions below it) gets clipped. */
+  grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
   animation: dom-rise 0.25s ease;
 }
@@ -1602,6 +1638,9 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  /* min-height:0 lets this grid item shrink below its content so overflow-y
+     scrolls the tracklist instead of stretching the modal. */
+  min-height: 0;
   overflow-y: auto;
 }
 .dom-detail-title {
@@ -1771,8 +1810,10 @@
   line-height: 1;
 }
 .dom-addflow {
-  width: min(560px, 100%);
-  /* Fixed size: the modal stays put while only its inner content changes
+  width: 100%;
+  max-width: var(--dom-modal-w);
+  /* Shared modal width (--dom-modal-w) keeps every overlay modal the same size.
+     Fixed height: the modal stays put while only its inner content changes
      (search results scroll internally instead of resizing the modal). */
   height: min(620px, 86vh);
   background-color: var(--panel);
@@ -1886,6 +1927,114 @@
   background-color: var(--chip);
   color: var(--ink);
 }
+/* ── Manual entry (music not on Apple Music) ─────────────────────────────── */
+.dom-addflow-manual-link {
+  flex: none;
+  margin-top: 4px;
+  padding: 10px;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.dom-addflow-manual-link:hover {
+  background-color: var(--chip);
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.dom-addflow-manual-back,
+.dom-addflow-manual-removeimg {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.dom-addflow-manual-back:hover,
+.dom-addflow-manual-removeimg:hover {
+  color: var(--ink);
+}
+.dom-addflow-manual-cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.dom-addflow-imagedrop {
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px dashed var(--line);
+  background-color: var(--chip);
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+.dom-addflow-imagedrop:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.dom-addflow-imagedrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.dom-addflow-weeknav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dom-addflow-weeknav-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--lineSoft);
+  background: transparent;
+  color: var(--ink2);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.dom-addflow-weeknav-btn:hover {
+  background-color: var(--chip);
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.dom-addflow-weeknav-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+}
+.dom-addflow-selected {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
 .dom-addflow-datestack {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -1955,7 +2104,7 @@
   animation: dom-rise 0.25s ease;
 }
 .dom-share-card {
-  width: min(960px, 96vw);
+  width: min(var(--dom-modal-w), 96vw);
   background-color: var(--panel);
   border: 1px solid var(--line);
   padding: 28px;
@@ -1964,10 +2113,8 @@
   gap: 16px;
   box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.3);
 }
-/* Month poster is wider to fit the full 7-column calendar grid. */
-.dom-share-card-month {
-  width: min(1180px, 96vw);
-}
+/* Month poster shares the standard modal width (--dom-modal-w) — same box as
+   the week poster, so all overlay modals stay the same size. */
 /* Same WYSIWYG export fix as the week poster: use a self-contained web-safe
    serif for the wrapping text so the canvas export wraps identically to the
    on-screen preview (no font substitution → no overlap or clipping). */
@@ -2057,9 +2204,25 @@
   white-space: nowrap;
 }
 .dom-share-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  text-align: right;
+}
+/* Handle (small mono) over the active theme name (serif title) — mirrors the
+   header's left side (eyebrow over the month/week title). */
+.dom-share-user {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--ink3);
+}
+.dom-share-theme {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink2);
 }
 .dom-share-grid {
   display: grid;
@@ -2327,6 +2490,10 @@
   }
   .dom-detail {
     grid-template-columns: 1fr;
+    /* Single-column: revert to content-driven height + whole-modal scroll
+       (the fixed two-column height doesn't apply when stacked). */
+    grid-template-rows: auto;
+    height: auto;
     max-height: 95vh;
     overflow-y: auto;
   }
