@@ -5,6 +5,7 @@
 
 import { useEffect, useRef } from "react";
 
+import { DomSelect } from "@/components/day-of-music/dom-select";
 import {
   AESTHETICS,
   TYPE_PAIRS,
@@ -115,17 +116,7 @@ function Select({
   return (
     <div className="dom-tweak-field">
       <span className="dom-tweak-label">{label}</span>
-      <select
-        className="dom-tweak-select"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <DomSelect ariaLabel={label} value={value} options={options} onChange={onChange} />
     </div>
   );
 }

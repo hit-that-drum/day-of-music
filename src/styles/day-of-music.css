@@ -309,6 +309,126 @@
   font-family: var(--font-body);
 }
 
+/* dom-select — designed listbox that replaces the native <select> so dropdowns
+   match the editorial look (square corners, --line borders, accent highlight)
+   instead of the OS chrome. Styled to read as a sibling of .dom-input. */
+.dom-select {
+  position: relative;
+  width: 100%;
+}
+.dom-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+.dom-select-trigger:hover,
+.dom-select-trigger:focus-visible,
+.dom-select-trigger[data-open="1"] {
+  border-color: var(--accent);
+}
+.dom-select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dom-select-value[data-empty="1"] {
+  color: var(--ink3);
+}
+.dom-select-caret {
+  flex: none;
+  font-size: 11px;
+  color: var(--ink2);
+  transition: transform 0.15s ease;
+}
+.dom-select-trigger[data-open="1"] .dom-select-caret {
+  transform: rotate(180deg);
+}
+.dom-select-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  animation: dom-fade 0.12s ease;
+}
+.dom-select-search {
+  padding: 6px;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-select-search-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+}
+.dom-select-search-input:focus {
+  border-color: var(--accent);
+}
+.dom-select-list {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.dom-select-empty {
+  padding: 12px 10px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink3);
+  text-align: center;
+}
+.dom-select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.dom-select-option[data-active="1"] {
+  background-color: var(--accent);
+  color: var(--bg);
+}
+.dom-select-option[data-selected="1"] {
+  font-weight: 600;
+}
+.dom-select-check {
+  flex: none;
+  width: 14px;
+  font-size: 12px;
+  color: var(--accent);
+}
+.dom-select-option[data-active="1"] .dom-select-check {
+  color: var(--bg);
+}
+.dom-select-option-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Day-detail edit controls (rating/note/date/remove/replace). */
 .dom-edit-field {
   display: flex;
