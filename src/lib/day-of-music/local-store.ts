@@ -45,15 +45,26 @@ function makeStore<T>(
   };
 }
 
-export function makeStringStore(key: string, fallback: string): Store<string> {
+export function makeStringStore(
+  key: string,
+  fallback: string,
+  // Optional client-only default, resolved lazily when there's no stored value
+  // (e.g. deriving the storefront from the browser locale). The *server*
+  // snapshot still returns `fallback`, so SSR/hydration stays stable — the
+  // client just re-renders to this value after mount, like any stored read.
+  clientDefault?: () => string,
+): Store<string> {
   return makeStore<string>(
     () => {
       if (typeof window === "undefined") return fallback;
+      let stored: string | null = null;
       try {
-        return window.localStorage.getItem(key) || fallback;
+        stored = window.localStorage.getItem(key);
       } catch {
         return fallback;
       }
+      if (stored) return stored;
+      return clientDefault ? clientDefault() : fallback;
     },
     (next) => {
       try {

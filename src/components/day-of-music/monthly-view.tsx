@@ -73,6 +73,10 @@ export function MonthlyView({
   const totalLogged = monthAlbums.length;
   const completion = Math.round((totalLogged / lastOfMonth.date()) * 100);
   const genreCount = new Set(monthAlbums.map((a) => a.genre)).size;
+  // Average rating across the month (mirrors the share card). "—" when empty.
+  const avgRating = monthAlbums.length
+    ? (monthAlbums.reduce((s, a) => s + a.rating, 0) / monthAlbums.length).toFixed(1)
+    : "—";
 
   return (
     <div className="dom-month">
@@ -103,6 +107,12 @@ export function MonthlyView({
           </div>
         </div>
         <div className="dom-month-hd-right">
+          <div className="dom-month-stat">
+            <span className="dom-month-stat-num">
+              <i className="dom-month-stat-star">★</i> {avgRating}
+            </span>
+            <span className="dom-month-stat-lbl">avg rating · 평균 별점</span>
+          </div>
           <div className="dom-month-stat">
             <span className="dom-month-stat-num">{String(totalLogged).padStart(2, "0")}</span>
             <span className="dom-month-stat-lbl">albums logged · 기록한 앨범</span>
@@ -267,7 +277,15 @@ export function MonthlyView({
                   <>
                     <div className="dom-month-cal-date">
                       <span className="dom-month-cal-num">{d.getDate()}</span>
-                      {isToday && <span className="dom-month-cal-today">TODAY</span>}
+                      <span className="dom-month-cal-date-right">
+                        {isToday && <span className="dom-month-cal-today">TODAY</span>}
+                        {album && album.rating > 0 && (
+                          <span className="dom-month-cal-rating">
+                            <span className="dom-month-cal-rating-star">★</span>
+                            {album.rating}
+                          </span>
+                        )}
+                      </span>
                     </div>
                     {album && (
                       <div className="dom-month-cal-cover">
@@ -283,6 +301,9 @@ export function MonthlyView({
                             <span className="dom-month-cal-artist-ko"> · {album.titleKo}</span>
                           )}
                         </div>
+                        {album.kind === "track" && album.albumTitle && (
+                          <div className="dom-from">from 〈{album.albumTitle}〉</div>
+                        )}
                       </div>
                     )}
                     {canAdd && (

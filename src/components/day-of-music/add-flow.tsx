@@ -12,6 +12,7 @@ import {
   DOW,
   addDays,
   fmtDate,
+  formatDisplayDate,
   parseDate,
   startOfWeek,
   type Album,
@@ -20,6 +21,7 @@ import {
   albumFromDetail,
   albumFromSearchResult,
   albumFromTrack,
+  coverFromSeed,
   fetchAlbumDetail,
   parseAppleMusicLink,
   searchMusic,
@@ -29,7 +31,9 @@ import { useCountry } from "@/lib/day-of-music/profile";
 import { Cover } from "@/components/day-of-music/cover";
 
 export type NewEntry = {
-  date: string;
+  /** One or more days to log this album on. The same album/rating/note is
+   *  written to each date (one album per day per theme). */
+  dates: string[];
   rating: number;
   note: string;
   /** The picked album (catalog quick-pick or music-search result). Its metadata
@@ -62,9 +66,91 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
   const [step, setStep] = useState(1);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<Album | null>(null);
-  const [date, setDate] = useState(defaultDate ?? fmtDate(defaultWeekStart));
+  const initialDate = defaultDate ?? fmtDate(defaultWeekStart);
+  // Days to log on. Multiple days can be selected so the same album is logged
+  // across several dates at once.
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(
+    () => new Set([initialDate]),
+  );
+  // The day whose week is currently shown in the picker. Independent of the
+  // selection so the user can navigate weeks and pick days across them.
+  const [weekAnchor, setWeekAnchor] = useState(initialDate);
   const [rating, setRating] = useState(0);
   const [note, setNote] = useState("");
+
+  function toggleDate(k: string) {
+    setSelectedDates((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+  }
+
+  // Manual entry: log music that isn't on Apple Music (e.g. found on YouTube).
+  // The user types title + artist and can add their own cover picture.
+  const [manualMode, setManualMode] = useState(false);
+  const [manualTitle, setManualTitle] = useState("");
+  const [manualArtist, setManualArtist] = useState("");
+  // Cover image as a (downscaled) data URL, or null for the typographic tile.
+  const [manualArt, setManualArt] = useState<string | null>(null);
+  // Stable id for the manual album, created once per modal open.
+  const [manualId] = useState(
+    () => `manual-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  );
+
+  // Read a picked image file, downscale it to keep localStorage small, and
+  // store it as a JPEG data URL (data URLs don't taint the export canvas).
+  function handlePickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file later
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const src = typeof reader.result === "string" ? reader.result : "";
+      if (!src) return;
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 600;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          setManualArt(src);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, w, h);
+        setManualArt(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = () => setManualArt(src);
+      img.src = src;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Build a journal-ready Album from the manual fields.
+  function buildManualAlbum(): Album {
+    return {
+      id: manualId,
+      date: "", // assigned when the entry is logged
+      title: manualTitle.trim(),
+      titleKo: "",
+      artist: manualArtist.trim() || "Unknown artist",
+      genre: "—",
+      year: new Date().getFullYear(),
+      format: "Manual",
+      cover: coverFromSeed(manualId),
+      artworkUrl: manualArt ?? undefined,
+      kind: "album",
+      note: "",
+      rating: 0,
+      tracks: [],
+    };
+  }
 
   const debouncedQuery = useDebounced(query.trim(), 300);
   // Search the user's preferred storefront first (server falls back to the
@@ -161,12 +247,10 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
 
   // Show the week containing the currently-selected day, so a day picked from
   // the month view (outside the viewed week) still appears and stays selected.
+  const weekStart = useMemo(() => startOfWeek(parseDate(weekAnchor)), [weekAnchor]);
   const weekDays = useMemo(
-    () => {
-      const start = startOfWeek(parseDate(date));
-      return Array.from({ length: 7 }, (_, i) => addDays(start, i));
-    },
-    [date],
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart],
   );
 
   return (
@@ -185,7 +269,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
           />
         </div>
 
-        {step === 1 && (
+        {step === 1 && !manualMode && (
           <div className="dom-addflow-body">
             <label className="dom-addflow-label">Find an album</label>
             <input
@@ -268,12 +352,99 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                 </div>
               )}
             </div>
+            <button
+              type="button"
+              className="dom-addflow-manual-link"
+              onClick={() => setManualMode(true)}
+            >
+              Not on Apple Music? Add it yourself · 직접 입력
+            </button>
+          </div>
+        )}
+
+        {step === 1 && manualMode && (
+          <div className="dom-addflow-body">
+            <button
+              type="button"
+              className="dom-addflow-manual-back"
+              onClick={() => setManualMode(false)}
+            >
+              ← Back to search · 검색으로
+            </button>
+
+            <label className="dom-addflow-label">Cover image · 커버 이미지 (선택)</label>
+            <div className="dom-addflow-manual-cover">
+              <label className="dom-addflow-imagedrop">
+                {manualArt ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={manualArt} alt="Cover preview" />
+                ) : (
+                  <span>
+                    ＋ Add a picture
+                    <br />
+                    사진 추가
+                  </span>
+                )}
+                <input type="file" accept="image/*" hidden onChange={handlePickImage} />
+              </label>
+              {manualArt && (
+                <button
+                  type="button"
+                  className="dom-addflow-manual-removeimg"
+                  onClick={() => setManualArt(null)}
+                >
+                  Remove picture · 사진 제거
+                </button>
+              )}
+            </div>
+
+            <label className="dom-addflow-label">Title · 제목</label>
+            <input
+              className="dom-input"
+              autoFocus
+              placeholder="Song or album title"
+              value={manualTitle}
+              onChange={(e) => setManualTitle(e.target.value)}
+            />
+
+            <label className="dom-addflow-label" style={{ marginTop: 4 }}>
+              Artist · 아티스트
+            </label>
+            <input
+              className="dom-input"
+              placeholder="Artist name"
+              value={manualArtist}
+              onChange={(e) => setManualArtist(e.target.value)}
+            />
           </div>
         )}
 
         {step === 2 && (
           <div className="dom-addflow-body">
-            <label className="dom-addflow-label">Pick a day</label>
+            <label className="dom-addflow-label">
+              Pick one or more days · 여러 날 선택 가능
+            </label>
+            <div className="dom-addflow-weeknav">
+              <button
+                type="button"
+                className="dom-addflow-weeknav-btn"
+                aria-label="Previous week"
+                onClick={() => setWeekAnchor(fmtDate(addDays(weekStart, -7)))}
+              >
+                ←
+              </button>
+              <span className="dom-addflow-weeknav-label">
+                {formatDisplayDate(weekStart, country, "short")} – {formatDisplayDate(addDays(weekStart, 6), country, "short")}
+              </span>
+              <button
+                type="button"
+                className="dom-addflow-weeknav-btn"
+                aria-label="Next week"
+                onClick={() => setWeekAnchor(fmtDate(addDays(weekStart, 7)))}
+              >
+                →
+              </button>
+            </div>
             <div className="dom-addflow-datestack">
               {weekDays.map((d) => {
                 const k = fmtDate(d);
@@ -281,8 +452,8 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                   <button
                     key={k}
                     className="dom-addflow-date"
-                    data-active={date === k ? "1" : "0"}
-                    onClick={() => setDate(k)}
+                    data-active={selectedDates.has(k) ? "1" : "0"}
+                    onClick={() => toggleDate(k)}
                   >
                     <span className="dom-addflow-date-num">{d.getDate()}</span>
                     <span className="dom-addflow-date-dow">{DOW[d.getDay()]}</span>
@@ -290,6 +461,13 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                 );
               })}
             </div>
+            {selectedDates.size > 0 && (
+              <div className="dom-addflow-selected">
+                {selectedDates.size === 1
+                  ? `1 day selected · ${formatDisplayDate([...selectedDates][0], country)}`
+                  : `${selectedDates.size} days selected · ${selectedDates.size}일 선택됨`}
+              </div>
+            )}
             {picked && (
               <div className="dom-addflow-preview">
                 <Cover album={picked} size={88} />
@@ -336,8 +514,16 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
           {step < 3 ? (
             <button
               className="dom-btn"
-              disabled={step === 1 && !picked}
-              onClick={() => setStep(step + 1)}
+              disabled={
+                (step === 1 && (manualMode ? !manualTitle.trim() : !picked)) ||
+                (step === 2 && selectedDates.size === 0)
+              }
+              onClick={() => {
+                // Leaving step 1 in manual mode: turn the typed fields into the
+                // picked album so steps 2–3 (and Save) work unchanged.
+                if (step === 1 && manualMode) setPicked(buildManualAlbum());
+                setStep(step + 1);
+              }}
             >
               Continue →
             </button>
@@ -345,8 +531,9 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
             <button
               className="dom-btn"
               onClick={() => {
-                if (picked) {
-                  onSave({ date, rating, note, album: picked });
+                const dates = [...selectedDates].sort();
+                if (picked && dates.length) {
+                  onSave({ dates, rating, note, album: picked });
                 }
                 onClose();
               }}

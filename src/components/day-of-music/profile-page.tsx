@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
+import { DomSelect } from "@/components/day-of-music/dom-select";
 import {
   COUNTRIES,
   DEFAULT_USERNAME,
@@ -14,6 +15,10 @@ import {
   type ProfilePatch,
 } from "@/lib/day-of-music/profile";
 import { useThemes, type Theme } from "@/lib/day-of-music/themes";
+
+// COUNTRIES is { code, label }; DomSelect wants { value, label }. Mapped once
+// at module scope so the option list is stable across renders.
+const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.label }));
 
 export function ProfilePage() {
   const { configured, user, signOut } = useAuth();
@@ -126,20 +131,17 @@ function SettingsForm({
           placeholder={DEFAULT_USERNAME}
         />
       </label>
-      <label className="dom-edit-field">
+      <div className="dom-edit-field">
         <span className="dom-edit-label">Store country · 스토어 국가</span>
-        <select
-          className="dom-input"
+        <DomSelect
+          ariaLabel="Store country"
           value={country}
-          onChange={(e) => setCountry(e.target.value)}
-        >
-          {COUNTRIES.map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-      </label>
+          options={COUNTRY_OPTIONS}
+          onChange={setCountry}
+          searchable
+          searchPlaceholder="Search country · 국가 검색"
+        />
+      </div>
       <div className="dom-settings-actions">
         <button
           className="dom-btn"

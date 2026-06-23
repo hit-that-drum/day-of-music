@@ -115,12 +115,52 @@ export async function GET(request: Request) {
     }
   }
 
+  // The album SEARCH returns a storefront's *romanized* title (e.g.
+  // "JAMONG SALGU CLUB") while the same store's SONG search carries the
+  // localized one ("자몽살구클럽"). One extra song query (in the store that
+  // produced the results) builds a collectionId → localized-title map, so album
+  // results read in the listener's language. Titles with no localized form, and
+  // non-album searches, are left untouched.
+  async function localizeAlbumTitles(
+    results: MusicSearchResult[],
+    store: string,
+  ): Promise<MusicSearchResult[]> {
+    if (type !== "album" || results.length === 0) return results;
+    try {
+      const songUrl = new URL("https://itunes.apple.com/search");
+      songUrl.searchParams.set("term", q);
+      songUrl.searchParams.set("media", "music");
+      songUrl.searchParams.set("entity", "song");
+      songUrl.searchParams.set("limit", "200");
+      songUrl.searchParams.set("country", store);
+      // No lang override → song rows carry the storefront's localized album name.
+      const resp = await fetch(songUrl, { next: { revalidate: 3600 } });
+      if (!resp.ok) return results;
+      const songs = (JSON.parse(await resp.text()).results ?? []) as ITunesResult[];
+      const titleByCollection = new Map<number, string>();
+      for (const s of songs) {
+        if (s.collectionId != null && s.collectionName && !titleByCollection.has(s.collectionId)) {
+          titleByCollection.set(s.collectionId, s.collectionName);
+        }
+      }
+      if (titleByCollection.size === 0) return results;
+      return results.map((r) => {
+        const localized = titleByCollection.get(Number(r.id.replace("itunes-", "")));
+        return localized ? { ...r, title: localized } : r;
+      });
+    } catch {
+      return results;
+    }
+  }
+
   let anyStoreReached = false;
   for (const store of storefronts) {
     const results = await searchIn(store);
     if (results === null) continue;
     anyStoreReached = true;
-    if (results.length > 0) return Response.json({ results });
+    if (results.length > 0) {
+      return Response.json({ results: await localizeAlbumTitles(results, store) });
+    }
   }
 
   // Every reachable store returned zero matches → empty list (not an error).

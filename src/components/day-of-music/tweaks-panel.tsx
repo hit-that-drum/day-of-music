@@ -3,6 +3,9 @@
 
 "use client";
 
+import { useEffect, useRef } from "react";
+
+import { DomSelect } from "@/components/day-of-music/dom-select";
 import {
   AESTHETICS,
   TYPE_PAIRS,
@@ -31,10 +34,28 @@ export function TweaksPanel({
   tweaks: Tweaks;
   onChange: <K extends keyof Tweaks>(key: K, value: Tweaks[K]) => void;
 }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Dismiss when a pointer-down lands outside the panel. The header's Tweaks
+  // button is excluded (it carries data-dom-tweaks-trigger) so its toggle isn't
+  // immediately undone — closing while open is left to the button's own onClick.
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Element | null;
+      if (!target) return;
+      if (panelRef.current?.contains(target)) return;
+      if (target.closest("[data-dom-tweaks-trigger]")) return;
+      onClose();
+    }
+    window.addEventListener("pointerdown", onPointerDown, true);
+    return () => window.removeEventListener("pointerdown", onPointerDown, true);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   return (
-    <div className="dom-tweaks-panel" role="dialog" aria-label="Tweaks">
+    <div className="dom-tweaks-panel" role="dialog" aria-label="Tweaks" ref={panelRef}>
       <div className="dom-tweaks-panel-hd">
         <span className="dom-tweak-section dom-tweaks-panel-title">Tweaks</span>
         <button className="dom-tweaks-close" onClick={onClose} aria-label="Close tweaks">
@@ -95,17 +116,7 @@ function Select({
   return (
     <div className="dom-tweak-field">
       <span className="dom-tweak-label">{label}</span>
-      <select
-        className="dom-tweak-select"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <DomSelect ariaLabel={label} value={value} options={options} onChange={onChange} />
     </div>
   );
 }

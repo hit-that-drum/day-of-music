@@ -50,7 +50,7 @@ export function TopBar({
         ))}
       </nav>
       <div className="dom-topbar-actions">
-        <button className="dom-btn dom-btn-ghost" onClick={onTweaks}>
+        <button className="dom-btn dom-btn-ghost" data-dom-tweaks-trigger onClick={onTweaks}>
           Tweaks
         </button>
         {account && (

@@ -15,8 +15,9 @@ import {
 } from "react";
 import { toast } from "sonner";
 
-import { addDays, fmtDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
+import { addDays, fmtDate, formatDisplayDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
+import { useCountry } from "@/lib/day-of-music/profile";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { AddFlow, type NewEntry } from "@/components/day-of-music/add-flow";
@@ -111,6 +112,9 @@ export function DayOfMusicApp() {
   const rootRef = useRef<HTMLDivElement>(null);
   const { logAlbum, updateSlot, moveSlot, removeSlot, enrichSlot } = useJournal();
   const { configured, loading: authLoading, user, signOut } = useAuth();
+  // Storefront country drives date formatting so every displayed date matches
+  // the listener's locale (see formatDisplayDate).
+  const country = useCountry();
 
   // Persisted across reloads via localStorage (see the store helpers above).
   const tweaks = useSyncExternalStore(
@@ -277,20 +281,27 @@ export function DayOfMusicApp() {
 
   const handleSave = useCallback(
     (entry: NewEntry) => {
-      logAlbum(entry.album, {
-        date: entry.date,
-        rating: entry.rating,
-        note: entry.note,
-      });
-      // If replacing on a different day than chosen, clear the original slot.
-      if (replaceTarget && replaceTarget !== entry.date) removeSlot(replaceTarget);
+      // Log the same album to every selected day (one album per day per theme).
+      for (const date of entry.dates) {
+        logAlbum(entry.album, {
+          date,
+          rating: entry.rating,
+          note: entry.note,
+        });
+      }
+      // If replacing and the original day wasn't among the chosen ones, clear it.
+      if (replaceTarget && !entry.dates.includes(replaceTarget)) removeSlot(replaceTarget);
       setReplaceTarget(null);
 
+      const count = entry.dates.length;
       toast.success(`Logged ${entry.album.title}`, {
-        description: `${entry.date} · ${entry.rating || "—"}★`,
+        description:
+          count > 1
+            ? `${count} days · ${entry.rating || "—"}★`
+            : `${formatDisplayDate(entry.dates[0], country)} · ${entry.rating || "—"}★`,
       });
     },
-    [logAlbum, replaceTarget, removeSlot],
+    [logAlbum, replaceTarget, removeSlot, country],
   );
 
   // Everyone can use the board. Guests (configured auth, no session) work
