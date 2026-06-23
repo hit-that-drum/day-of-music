@@ -12,6 +12,7 @@ import {
   DOW,
   addDays,
   fmtDate,
+  formatDisplayDate,
   parseDate,
   startOfWeek,
   type Album,
@@ -433,7 +434,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                 ←
               </button>
               <span className="dom-addflow-weeknav-label">
-                {fmtDate(weekStart)} – {fmtDate(addDays(weekStart, 6))}
+                {formatDisplayDate(weekStart, country, "short")} – {formatDisplayDate(addDays(weekStart, 6), country, "short")}
               </span>
               <button
                 type="button"
@@ -463,7 +464,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
             {selectedDates.size > 0 && (
               <div className="dom-addflow-selected">
                 {selectedDates.size === 1
-                  ? `1 day selected · ${[...selectedDates][0]}`
+                  ? `1 day selected · ${formatDisplayDate([...selectedDates][0], country)}`
                   : `${selectedDates.size} days selected · ${selectedDates.size}일 선택됨`}
               </div>
             )}

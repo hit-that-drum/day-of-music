@@ -48,6 +48,10 @@ export type Album = {
   note: string;
   rating: number;
   tracks: string[];
+  /** ISO 3166-1 alpha-2 storefront the `tracks` were fetched from. Lets the Day
+   *  Detail re-localize a stale tracklist when the listener's store country
+   *  differs (e.g. tracks saved as US English, now viewing as KR). */
+  tracksCountry?: string;
 };
 
 // User-added albums (from iTunes search) are the only source of albums now;
@@ -88,6 +92,39 @@ export function parseDate(s: string): Date {
 
 export function fmtDate(d: Date): string {
   return dayjs(d).format("YYYY-MM-DD");
+}
+
+// BCP-47 locale for a storefront/country region — the language most likely used
+// there — so dates render in that country's own notation (KR → "2023년 4월 4일",
+// US → "April 4, 2023", JP → "2023年4月4日"). Falls back to en-US.
+function localeForCountry(country: string | undefined): string {
+  if (!country) return "en-US";
+  try {
+    return new Intl.Locale("und", { region: country.toUpperCase() }).maximize().toString();
+  } catch {
+    return "en-US";
+  }
+}
+
+/** Format a single date — a Date or a "YYYY-MM-DD" / ISO string — in the
+ *  listener's country notation, so every displayed date is consistent. `style`
+ *  controls verbosity: "long" (default) full month name, "short" abbreviated.
+ *  Returns "" for empty/invalid input. (Note: `fmtDate` stays for the canonical
+ *  YYYY-MM-DD storage/lookup keys — this is display-only.) */
+export function formatDisplayDate(
+  input: string | Date | undefined | null,
+  country: string | undefined,
+  style: "long" | "short" = "long",
+): string {
+  if (!input) return "";
+  // Date-only: drop any time/zone so the displayed day can't shift across TZs.
+  const d = typeof input === "string" ? parseDate(input.slice(0, 10)) : input;
+  if (!d || Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat(localeForCountry(country), {
+    year: "numeric",
+    month: style === "long" ? "long" : "short",
+    day: "numeric",
+  }).format(d);
 }
 
 export function addDays(d: Date, n: number): Date {

@@ -128,6 +128,9 @@ export function ShareCard({
                             <span className="dom-artist-ko"> · {album.titleKo}</span>
                           )}
                         </div>
+                        {album.kind === "track" && album.albumTitle && (
+                          <div className="dom-from">from 〈{album.albumTitle}〉</div>
+                        )}
                         <MetaLine album={album} />
                       </div>
                     </div>

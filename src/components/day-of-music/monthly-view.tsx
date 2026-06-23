@@ -301,6 +301,9 @@ export function MonthlyView({
                             <span className="dom-month-cal-artist-ko"> · {album.titleKo}</span>
                           )}
                         </div>
+                        {album.kind === "track" && album.albumTitle && (
+                          <div className="dom-from">from 〈{album.albumTitle}〉</div>
+                        )}
                       </div>
                     )}
                     {canAdd && (

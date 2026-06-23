@@ -4,10 +4,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import dayjs from "dayjs";
 
-import { DOW, parseDate, type Album } from "@/lib/day-of-music/data";
+import { DOW, formatDisplayDate, parseDate, type Album } from "@/lib/day-of-music/data";
 import { fetchAlbumDetail } from "@/lib/day-of-music/music-search";
+import { useCountry } from "@/lib/day-of-music/profile";
 import { Cover } from "@/components/day-of-music/cover";
 
 type Tab = "tracklist" | "journal" | "info";
@@ -33,11 +33,11 @@ function trackTime(i: number, seed: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-// "2024-10-14T07:00:00Z" → "October 14, 2024". Format from the date portion
-// only so the local timezone can't shift it off the catalog release day.
-function formatReleased(album: Album): string {
+// Release date in the listener's country notation (KR → "2024년 10월 14일",
+// US → "October 14, 2024"). Falls back to the year when no full date is known.
+function formatReleased(album: Album, country: string): string {
   if (!album.releaseDate) return String(album.year);
-  return dayjs(album.releaseDate.slice(0, 10)).format("MMMM D, YYYY");
+  return formatDisplayDate(album.releaseDate, country);
 }
 
 export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onReplace }: DayDetailProps) {
@@ -49,31 +49,45 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
   // before re-arming — otherwise setNoteSaved could fire after unmount.
   const noteSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const country = useCountry();
   const date = parseDate(album.date);
   const seed = album.tracks.length;
   const noteDirty = note !== album.note;
 
   // iTunes albums arrive from Search with no tracklist (Search returns album
   // metadata only). The first time such an album is opened, pull its tracks +
-  // release date from the Lookup API and persist them onto the album.
+  // release date from the Lookup API — in the listener's storefront, so titles
+  // come back localized — and persist them onto the album. We also re-fetch when
+  // the stored tracklist was saved for a different store (e.g. old US-English
+  // tracks now viewed as KR), so the same localization the Add flow shows
+  // applies here too.
   useEffect(() => {
     if (!album.id.startsWith("itunes-")) return;
     const needsTracks = album.tracks.length === 0;
+    const staleTracks = album.tracks.length > 0 && album.tracksCountry !== country;
     const needsDate = !album.releaseDate;
-    if (!needsTracks && !needsDate) return;
+    if (!needsTracks && !staleTracks && !needsDate) return;
 
     let cancelled = false;
-    fetchAlbumDetail(album.id).then((detail) => {
+    fetchAlbumDetail(album.id, { country }).then((detail) => {
       if (cancelled || !detail) return;
       const patch: Partial<Album> = {};
-      if (needsTracks && detail.tracks.length) patch.tracks = detail.tracks;
+      if ((needsTracks || staleTracks) && detail.tracks.length) {
+        patch.tracks = detail.tracks;
+        patch.tracksCountry = country;
+        // Localize the album title/artist to the listener's store as well —
+        // Korean when the catalog has it (the lookup sometimes romanizes the
+        // title), otherwise the original. Only adopt non-empty, changed values.
+        if (detail.title && detail.title !== album.title) patch.title = detail.title;
+        if (detail.artist && detail.artist !== album.artist) patch.artist = detail.artist;
+      }
       if (needsDate && detail.releaseDate) patch.releaseDate = detail.releaseDate;
       if (Object.keys(patch).length) onEnrich(album.date, patch);
     });
     return () => {
       cancelled = true;
     };
-  }, [album.id, album.date, album.tracks.length, album.releaseDate, onEnrich]);
+  }, [album.id, album.date, album.title, album.artist, album.tracks.length, album.tracksCountry, album.releaseDate, country, onEnrich]);
 
   // Rating commits immediately, so render straight from the album prop (single
   // source of truth) rather than mirroring it in local state that could drift.
@@ -122,11 +136,16 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
         </div>
 
         <div className="dom-detail-right">
-          <span className="dom-eyebrow">album of the day · 오늘의 앨범</span>
+          <span className="dom-eyebrow">
+            {album.kind === "track" ? "track of the day · 오늘의 곡" : "album of the day · 오늘의 앨범"}
+          </span>
           <h2 className="dom-detail-title">{album.title}</h2>
           <div className="dom-detail-artist">
             {album.artist} <span className="dom-detail-artist-ko">{album.titleKo}</span>
           </div>
+          {album.kind === "track" && album.albumTitle && (
+            <div className="dom-detail-from">from 〈{album.albumTitle}〉</div>
+          )}
 
           <div className="dom-tabs">
             {(["tracklist", "journal", "info"] as Tab[]).map((t) => (
@@ -213,7 +232,7 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
 
           {tab === "info" && (
             <div>
-              <InfoRow label="Released" value={formatReleased(album)} />
+              <InfoRow label="Released" value={formatReleased(album, country)} />
               <InfoRow label="Genre" value={album.genre} />
               <InfoRow label="Format" value={album.format} />
               {album.kind === "track" ? (
@@ -224,7 +243,7 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
               ) : (
                 <InfoRow label="Tracks" value={String(album.tracks.length)} />
               )}
-              <InfoRow label="Logged on" value={album.date} />
+              <InfoRow label="Logged on" value={formatDisplayDate(album.date, country)} />
             </div>
           )}
 

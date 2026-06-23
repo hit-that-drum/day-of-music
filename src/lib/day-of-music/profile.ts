@@ -39,6 +39,30 @@ const APPLE_STOREFRONTS = new Set<string>([
   "ZW",
 ]);
 
+// Best-guess storefront from the browser locale, so a listener's *own* store
+// (and its language) is searched first by default — e.g. a Korean browser gets
+// the KR store ("방탄소년단", "이적") instead of the US one ("BTS", "Lee Juck").
+// Client-only (reads navigator); falls back to DEFAULT_COUNTRY when the region
+// can't be resolved or has no Apple Music store. Only used when the listener
+// hasn't explicitly chosen a country — an explicit choice always wins.
+export function detectStorefront(): string {
+  if (typeof navigator === "undefined") return DEFAULT_COUNTRY;
+  try {
+    const locales = navigator.languages?.length
+      ? navigator.languages
+      : [navigator.language];
+    for (const loc of locales) {
+      if (!loc) continue;
+      // "ko" → KR, "ko-KR" → KR, "en-GB" → GB (maximize fills in the likely region).
+      const region = new Intl.Locale(loc).maximize().region;
+      if (region && APPLE_STOREFRONTS.has(region)) return region;
+    }
+  } catch {
+    /* Intl.Locale unsupported or malformed tag — fall through */
+  }
+  return DEFAULT_COUNTRY;
+}
+
 // alpha-2 → flag emoji (regional-indicator letters). Renders as plain text, so
 // it works inside a native <select><option> (unlike SVG flag components).
 function flagEmoji(code: string): string {
@@ -71,7 +95,7 @@ export type ProfilePatch = { username?: string; country?: string };
 // localStorage-backed stores (one per key) live in local-store.ts — read via
 // useSyncExternalStore so they survive reloads without a hydration mismatch.
 const usernameStore = makeStringStore("dom.username.v1", DEFAULT_USERNAME);
-const countryStore = makeStringStore("dom.country.v1", DEFAULT_COUNTRY);
+const countryStore = makeStringStore("dom.country.v1", DEFAULT_COUNTRY, detectStorefront);
 
 /**
  * Resolved profile (display name + storefront country) and a single `save`.
@@ -100,7 +124,8 @@ export function useProfile(): {
     const meta = user.user_metadata ?? {};
     return {
       username: (meta.username as string | undefined) ?? "",
-      country: (meta.country as string | undefined) ?? DEFAULT_COUNTRY,
+      // No saved country yet → fall back to the locale's storefront, not US.
+      country: (meta.country as string | undefined) ?? detectStorefront(),
       save: (patch) => void updateUserMetadata(patch),
       synced: true,
     };

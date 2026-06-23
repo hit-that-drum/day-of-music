@@ -823,6 +823,14 @@
   color: var(--ink3);
   margin-top: 2px;
 }
+/* "from 〈album〉" context shown for a logged single track. */
+.dom-from {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--ink3);
+  line-height: 1.2;
+}
 .dom-meta .dom-dot {
   opacity: 0.5;
   margin: 0 4px;
@@ -1776,6 +1784,13 @@
   font-size: 22px;
   opacity: 0.85;
 }
+.dom-detail-from {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--ink3);
+  margin-top: 6px;
+}
 .dom-detail-artist-ko {
   font-family: var(--font-mono);
   font-size: 12px;
@@ -2240,7 +2255,8 @@
    on-screen preview (no font substitution → no overlap or clipping). */
 .dom-share-card-month .dom-month-cal-title,
 .dom-share-card-month .dom-month-cal-artist,
-.dom-share-card-month .dom-month-cal-artist-ko {
+.dom-share-card-month .dom-month-cal-artist-ko,
+.dom-share-card-month .dom-from {
   font-family: Georgia, "Times New Roman", Times, serif;
 }
 /* The poster grid always shows the full 7-day week, overriding the responsive
@@ -2277,7 +2293,8 @@
    wrap identically, so the cell grows to fit and nothing overlaps or clips. */
 .dom-share-card .dom-share-week .dom-title,
 .dom-share-card .dom-share-week .dom-artist,
-.dom-share-card .dom-share-week .dom-artist-ko {
+.dom-share-card .dom-share-week .dom-artist-ko,
+.dom-share-card .dom-share-week .dom-from {
   font-family: Georgia, "Times New Roman", Times, serif;
 }
 .dom-share-card .dom-share-week .dom-title {

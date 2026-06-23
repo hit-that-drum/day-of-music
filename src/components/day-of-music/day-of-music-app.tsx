@@ -15,8 +15,9 @@ import {
 } from "react";
 import { toast } from "sonner";
 
-import { addDays, fmtDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
+import { addDays, fmtDate, formatDisplayDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
+import { useCountry } from "@/lib/day-of-music/profile";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { AddFlow, type NewEntry } from "@/components/day-of-music/add-flow";
@@ -111,6 +112,9 @@ export function DayOfMusicApp() {
   const rootRef = useRef<HTMLDivElement>(null);
   const { logAlbum, updateSlot, moveSlot, removeSlot, enrichSlot } = useJournal();
   const { configured, loading: authLoading, user, signOut } = useAuth();
+  // Storefront country drives date formatting so every displayed date matches
+  // the listener's locale (see formatDisplayDate).
+  const country = useCountry();
 
   // Persisted across reloads via localStorage (see the store helpers above).
   const tweaks = useSyncExternalStore(
@@ -294,10 +298,10 @@ export function DayOfMusicApp() {
         description:
           count > 1
             ? `${count} days · ${entry.rating || "—"}★`
-            : `${entry.dates[0]} · ${entry.rating || "—"}★`,
+            : `${formatDisplayDate(entry.dates[0], country)} · ${entry.rating || "—"}★`,
       });
     },
-    [logAlbum, replaceTarget, removeSlot],
+    [logAlbum, replaceTarget, removeSlot, country],
   );
 
   // Everyone can use the board. Guests (configured auth, no session) work
