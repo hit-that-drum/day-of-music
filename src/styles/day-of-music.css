@@ -804,12 +804,17 @@
   font-size: 14px;
   letter-spacing: -0.01em;
   line-height: 1.15;
+  /* Break a space-less title (e.g. "MAMIHLAPINATAPAI") to the cell width
+     instead of letting it spill past the edge. Spaced titles still wrap
+     normally; only an over-wide unbreakable word is split. */
+  overflow-wrap: break-word;
 }
 .dom-artist {
   font-family: var(--font-display);
   font-size: 12px;
   opacity: 0.8;
   line-height: 1.2;
+  overflow-wrap: break-word;
 }
 .dom-artist-ko {
   color: var(--ink3);
@@ -830,6 +835,12 @@
   font-size: 11px;
   color: var(--ink3);
   line-height: 1.2;
+  /* Secondary context — keep it to one line so a long album title can't blow
+     out the cell (on screen and in the PNG export). Truncate with an ellipsis. */
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .dom-meta .dom-dot {
   opacity: 0.5;
@@ -1349,12 +1360,14 @@
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.15;
+  overflow-wrap: break-word;
 }
 .dom-month-cal-artist {
   font-family: var(--font-display);
   font-size: 11px;
   opacity: 0.8;
   line-height: 1.2;
+  overflow-wrap: break-word;
 }
 .dom-month-cal-artist-ko {
   color: var(--ink3);
