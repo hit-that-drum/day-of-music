@@ -9,6 +9,7 @@ import Link from "next/link";
 import type { Album } from "@/lib/day-of-music/data";
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
 import { useAuth } from "@/components/day-of-music/auth-provider";
+import { Button, buttonClass } from "@/components/day-of-music/atoms";
 import { Cover } from "@/components/day-of-music/cover";
 
 // Self-contained decorative covers for the hero — purely typographic tiles,
@@ -60,16 +61,16 @@ export function HomeLanding() {
                 <span className="dom-account-email" title={user.email ?? ""}>
                   {user.email}
                 </span>
-                <button className="dom-btn dom-btn-ghost" onClick={signOut}>
+                <Button variant="ghost" onClick={signOut}>
                   Sign out
-                </button>
+                </Button>
               </span>
             ) : (
               <>
-                <Link href="/signin" className="dom-btn dom-btn-ghost">
+                <Link href="/signin" className={buttonClass("ghost")}>
                   Sign in
                 </Link>
-                <Link href="/signup" className="dom-btn">
+                <Link href="/signup" className={buttonClass()}>
                   Sign up
                 </Link>
               </>
@@ -98,11 +99,11 @@ export function HomeLanding() {
             </div>
 
             <div className="dom-home-actions">
-              <Link href="/week" className="dom-btn dom-btn-lg">
+              <Link href="/week" className={buttonClass("solid", "lg")}>
                 Open the week board →
               </Link>
               {!user && (
-                <Link href="/signup" className="dom-btn dom-btn-ghost">
+                <Link href="/signup" className={buttonClass("ghost")}>
                   Create an account
                 </Link>
               )}

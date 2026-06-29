@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
+import { Button } from "@/components/day-of-music/atoms";
 
 type Mode = "signin" | "signup";
 
@@ -108,19 +109,15 @@ export function AuthForm({ mode }: { mode: Mode }) {
               minLength={6}
               required
             />
-            <button className="dom-btn" type="submit" disabled={!configured || status === "busy"}>
+            <Button type="submit" disabled={!configured || status === "busy"}>
               {status === "busy" ? "One moment…" : copy.cta}
-            </button>
+            </Button>
           </form>
 
           <div className="dom-signin-or">or</div>
-          <button
-            className="dom-btn dom-btn-ghost"
-            onClick={signInWithGoogle}
-            disabled={!configured}
-          >
+          <Button variant="ghost" onClick={signInWithGoogle} disabled={!configured}>
             Continue with Google
-          </button>
+          </Button>
 
           {message && (
             <p className="dom-signin-msg" data-error={status === "error" ? "1" : "0"}>

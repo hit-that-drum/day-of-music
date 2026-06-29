@@ -15,7 +15,7 @@ import {
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { Cover } from "@/components/day-of-music/cover";
-import { MetaLine } from "@/components/day-of-music/atoms";
+import { Button, MetaLine } from "@/components/day-of-music/atoms";
 import { WeekPicker } from "@/components/day-of-music/week-picker";
 
 type WeeklyGridProps = {
@@ -187,9 +187,9 @@ function WeekHeader({
         <button className="dom-iconbtn" onClick={onNext} aria-label="Next week">
           →
         </button>
-        <button className="dom-btn" onClick={onShare}>
+        <Button onClick={onShare}>
           Share week
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -29,6 +29,7 @@ import {
 } from "@/lib/day-of-music/music-search";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { Cover } from "@/components/day-of-music/cover";
+import { Button } from "@/components/day-of-music/atoms";
 
 export type NewEntry = {
   /** One or more days to log this album on. The same album/rating/note is
@@ -505,15 +506,14 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
 
         <div className="dom-addflow-actions">
           {step > 1 ? (
-            <button className="dom-btn dom-btn-ghost" onClick={() => setStep(step - 1)}>
+            <Button variant="ghost" onClick={() => setStep(step - 1)}>
               ← Back
-            </button>
+            </Button>
           ) : (
             <div />
           )}
           {step < 3 ? (
-            <button
-              className="dom-btn"
+            <Button
               disabled={
                 (step === 1 && (manualMode ? !manualTitle.trim() : !picked)) ||
                 (step === 2 && selectedDates.size === 0)
@@ -526,10 +526,9 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
               }}
             >
               Continue →
-            </button>
+            </Button>
           ) : (
-            <button
-              className="dom-btn"
+            <Button
               onClick={() => {
                 const dates = [...selectedDates].sort();
                 if (picked && dates.length) {
@@ -539,7 +538,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
               }}
             >
               Save entry
-            </button>
+            </Button>
           )}
         </div>
       </div>

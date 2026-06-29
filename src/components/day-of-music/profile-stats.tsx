@@ -5,7 +5,7 @@
 import type { Album } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { Cover } from "@/components/day-of-music/cover";
-import { Stars } from "@/components/day-of-music/atoms";
+import { Button, Stars } from "@/components/day-of-music/atoms";
 
 export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
   const { albums } = useJournal();
@@ -32,8 +32,8 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
           <h1>My Year in Music</h1>
         </div>
         <div className="dom-week-actions">
-          <button className="dom-btn dom-btn-ghost">Export</button>
-          <button className="dom-btn">Share card</button>
+          <Button variant="ghost">Export</Button>
+          <Button>Share card</Button>
         </div>
       </div>
 

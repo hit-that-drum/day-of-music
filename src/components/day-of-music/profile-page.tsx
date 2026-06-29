@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
+import { Button, buttonClass } from "@/components/day-of-music/atoms";
 import { DomSelect } from "@/components/day-of-music/dom-select";
 import {
   COUNTRIES,
@@ -49,9 +50,9 @@ export function ProfilePage() {
                 <span className="dom-settings-val">Signed in · synced</span>
               </div>
               <div className="dom-settings-actions">
-                <button className="dom-btn dom-btn-ghost" onClick={signOut}>
+                <Button variant="ghost" onClick={signOut}>
                   Sign out
-                </button>
+                </Button>
               </div>
             </>
           ) : guest ? (
@@ -61,10 +62,10 @@ export function ProfilePage() {
                 across devices.
               </p>
               <div className="dom-settings-actions">
-                <Link href="/signin" className="dom-btn dom-btn-ghost">
+                <Link href="/signin" className={buttonClass("ghost")}>
                   Sign in
                 </Link>
-                <Link href="/signup" className="dom-btn">
+                <Link href="/signup" className={buttonClass()}>
                   Sign up
                 </Link>
               </div>
@@ -143,13 +144,9 @@ function SettingsForm({
         />
       </div>
       <div className="dom-settings-actions">
-        <button
-          className="dom-btn"
-          disabled={!dirty}
-          onClick={() => onSave({ username: name.trim(), country })}
-        >
+        <Button disabled={!dirty} onClick={() => onSave({ username: name.trim(), country })}>
           Save changes
-        </button>
+        </Button>
       </div>
       <p className="dom-settings-note">
         Shown as <strong>@{handle}</strong> on shared images. Music search checks the{" "}
@@ -237,12 +234,12 @@ function ThemeManager({
         </div>
       ))}
       <div className="dom-settings-actions">
-        <button className="dom-btn dom-btn-ghost" onClick={add}>
+        <Button variant="ghost" onClick={add}>
           ＋ Add theme
-        </button>
-        <button className="dom-btn" disabled={!dirty} onClick={() => onSave(list)}>
+        </Button>
+        <Button disabled={!dirty} onClick={() => onSave(list)}>
           Save themes
-        </button>
+        </Button>
       </div>
       <p className="dom-settings-note">
         Each theme is its own daily lane. {synced ? "Synced to your account." : "Saved on this device."}{" "}

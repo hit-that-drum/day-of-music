@@ -9,6 +9,7 @@ import { DOW, formatDisplayDate, parseDate, type Album } from "@/lib/day-of-musi
 import { fetchAlbumDetail } from "@/lib/day-of-music/music-search";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { Cover } from "@/components/day-of-music/cover";
+import { Button } from "@/components/day-of-music/atoms";
 
 type Tab = "tracklist" | "journal" | "info";
 
@@ -218,13 +219,9 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
                 />
                 <div className="dom-note-actions">
                   {noteSaved && <span className="dom-note-saved">Saved ✓</span>}
-                  <button
-                    className="dom-btn dom-btn-sm"
-                    onClick={saveNote}
-                    disabled={!noteDirty}
-                  >
+                  <Button size="sm" onClick={saveNote} disabled={!noteDirty}>
                     Save note
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -248,27 +245,27 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
           )}
 
           <div className="dom-detail-actions">
-            <button className="dom-btn dom-btn-ghost" onClick={() => onReplace(album)}>
+            <Button variant="ghost" onClick={() => onReplace(album)}>
               Replace album
-            </button>
+            </Button>
             {confirmRemove ? (
               <span className="dom-confirm">
                 <span className="dom-confirm-q">Remove from this day?</span>
-                <button
-                  className="dom-btn dom-btn-danger"
+                <Button
+                  variant="danger"
                   // onRemove already closes the modal (handleRemove resets openAlbum).
                   onClick={() => onRemove(album.date)}
                 >
                   Remove
-                </button>
-                <button className="dom-btn dom-btn-ghost" onClick={() => setConfirmRemove(false)}>
+                </Button>
+                <Button variant="ghost" onClick={() => setConfirmRemove(false)}>
                   Cancel
-                </button>
+                </Button>
               </span>
             ) : (
-              <button className="dom-btn dom-btn-ghost dom-btn-danger-ghost" onClick={() => setConfirmRemove(true)}>
+              <Button variant="danger-ghost" onClick={() => setConfirmRemove(true)}>
                 Remove
-              </button>
+              </Button>
             )}
           </div>
         </div>

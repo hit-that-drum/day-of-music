@@ -30,7 +30,11 @@
   box-sizing: border-box;
   min-width: 0;
 }
-.dom-root button {
+/* Bare-button reset — strips native chrome from icon/nav/cell buttons so they
+   can be styled from scratch. Excludes .dom-btn: its own border/background/
+   padding must win (otherwise this reset, being more specific than .dom-btn,
+   flattens real buttons inside .dom-root into plain text). */
+.dom-root button:not(.dom-btn) {
   font: inherit;
   color: inherit;
   cursor: pointer;
@@ -235,6 +239,7 @@
   font-size: 13px;
   letter-spacing: -0.005em;
   border: 1px solid var(--ink);
+  cursor: pointer;
   transition: transform 0.12s ease, background-color 0.12s ease;
   white-space: nowrap;
 }

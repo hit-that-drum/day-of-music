@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import type { ScreenId } from "@/components/day-of-music/day-of-music-app";
+import { Button, buttonClass } from "@/components/day-of-music/atoms";
 
 const SCREENS: { id: ScreenId; label: string; ko: string }[] = [
   { id: "week", label: "Week", ko: "주간" },
@@ -50,20 +51,20 @@ export function TopBar({
         ))}
       </nav>
       <div className="dom-topbar-actions">
-        <button className="dom-btn dom-btn-ghost" data-dom-tweaks-trigger onClick={onTweaks}>
+        <Button variant="ghost" data-dom-tweaks-trigger onClick={onTweaks}>
           Tweaks
-        </button>
+        </Button>
         {account && (
-          <button className="dom-btn dom-btn-ghost" onClick={account.onSignOut}>
+          <Button variant="ghost" onClick={account.onSignOut}>
             Sign out
-          </button>
+          </Button>
         )}
         {showAuthLinks && (
           <>
-            <Link href="/signin" className="dom-btn dom-btn-ghost">
+            <Link href="/signin" className={buttonClass("ghost")}>
               Sign in
             </Link>
-            <Link href="/signup" className="dom-btn dom-btn-ghost">
+            <Link href="/signup" className={buttonClass("ghost")}>
               Sign up
             </Link>
           </>
