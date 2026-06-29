@@ -2530,8 +2530,8 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-height: 75vh;
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
   font-family: var(--font-mono);
 }
 .dom-tweaks-panel-hd {
