@@ -2903,20 +2903,6 @@ a.dom-btn {
 
 /* ── Empty-week hint & clickable empty days ─────────────────────────────── */
 
-.dom-week-hint {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  color: var(--ink2);
-  border: 1px dashed var(--line);
-  padding: 10px 14px;
-  margin-bottom: 14px;
-}
-.dom-week-hint em {
-  font-style: normal;
-  color: var(--ink);
-}
-
 button.dom-day-add {
   display: flex;
   flex-direction: column;
