@@ -1606,7 +1606,7 @@
   opacity: 0.7;
 }
 
-/* ── Search / Discover ──────────────────────────────────────────────────── */
+/* ── Journal search ─────────────────────────────────────────────────────── */
 
 .dom-search {
   padding: 24px 28px 28px;
@@ -2281,11 +2281,21 @@
 /* ── Share Week card ────────────────────────────────────────────────────── */
 
 .dom-share {
+  position: relative;
+  /* Reserve space above the card so the close button sits in this gap instead
+     of overlapping the card header (@username / theme meta). */
+  padding-top: 52px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   align-items: center;
   animation: dom-rise 0.25s ease;
+}
+/* Float the close button into the reserved space above the card, flush to its
+   right edge — clear of the card's top-right meta. */
+.dom-share > .dom-detail-close {
+  top: 0;
+  right: 0;
 }
 .dom-share-card {
   width: min(var(--dom-modal-w), 96vw);

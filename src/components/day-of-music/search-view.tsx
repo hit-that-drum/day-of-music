@@ -1,4 +1,4 @@
-// search-view.tsx — Search / Discover: filter the journal by query + genre.
+// search-view.tsx — Journal: filter the logged journal by query + genre.
 
 "use client";
 
@@ -29,8 +29,8 @@ export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
     <div className="dom-search">
       <div className="dom-week-hd">
         <div className="dom-week-title">
-          <span className="dom-eyebrow">발견 · discover</span>
-          <h1>Search the journal</h1>
+          <span className="dom-eyebrow">저널 · journal</span>
+          <h1>Journal search</h1>
         </div>
       </div>
 

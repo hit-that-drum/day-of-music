@@ -8,7 +8,7 @@ import { Button, buttonClass } from "@/components/day-of-music/atoms";
 const SCREENS: { id: ScreenId; label: string; ko: string }[] = [
   { id: "week", label: "Week", ko: "주간" },
   { id: "month", label: "Month", ko: "월간" },
-  { id: "search", label: "Search", ko: "검색" },
+  { id: "search", label: "Journal", ko: "저널" },
   { id: "logs", label: "My Logs", ko: "나의 기록" },
   { id: "profile", label: "Profile", ko: "프로필" },
 ];
