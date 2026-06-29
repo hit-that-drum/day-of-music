@@ -1262,9 +1262,12 @@
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
-/* Scoped under the grid so these beat the global `.dom-root button` reset
-   (which would otherwise zero out the cell borders + padding). */
-.dom-month-cal-grid .dom-month-cal-cell {
+/* Three classes (0,3,0) so these beat the global `.dom-root button:not(.dom-btn)`
+   reset (0,2,1) — the board's cells are <button>s, and without the extra
+   `.dom-month-cal` qualifier the reset wins and zeroes the cell borders +
+   padding (killing the grid lines + the cover's side margin). The Share poster's
+   cells are <div>s, so they were never affected. */
+.dom-month-cal .dom-month-cal-grid .dom-month-cal-cell {
   border-bottom: 1px solid var(--line);
   border-right: 1px solid var(--line);
   padding: 10px 12px 12px;
