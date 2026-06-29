@@ -735,11 +735,10 @@
 .dom-day-dow {
   color: var(--ink);
 }
-.dom-day-dowKo {
-  font-family: var(--font-mono);
+.dom-day-album-rating {
   font-size: 9px;
-  opacity: 0.55;
   margin-left: auto;
+  color: var(--ink3);
 }
 .dom-day[data-today="1"] .dom-day-hd {
   background-color: var(--accent);
@@ -1962,8 +1961,9 @@
   max-width: var(--dom-modal-w);
   /* Shared modal width (--dom-modal-w) keeps every overlay modal the same size.
      Fixed height: the modal stays put while only its inner content changes
-     (search results scroll internally instead of resizing the modal). */
-  height: min(620px, 86vh);
+     (the body scrolls internally instead of resizing the modal). Tall enough
+     for the manual-entry form (cover + title + artist) to fit without scroll. */
+  height: min(680px, 88vh);
   background-color: var(--panel);
   border: 1px solid var(--line);
   padding: 32px 36px;
@@ -2004,6 +2004,10 @@
   gap: 12px;
   flex: 1;
   min-height: 0;
+  /* Scroll the body (not the modal) when content is taller than the fixed
+     modal — e.g. the manual-entry form on a short viewport — so the pinned
+     actions row never gets overlapped. */
+  overflow-y: auto;
 }
 .dom-addflow-label {
   font-family: var(--font-mono);
@@ -2413,6 +2417,15 @@
 .dom-share-actions {
   display: flex;
   gap: 8px;
+}
+/* The share buttons sit on the dimmed scrim, so the ghost "Copy link" button
+   needs a solid (non-transparent) fill — otherwise the darkened page shows
+   through. Panel fill keeps it distinct from the solid-ink "Save image". */
+.dom-share-actions .dom-btn-ghost {
+  background-color: var(--panel);
+}
+.dom-share-actions .dom-btn-ghost:hover {
+  background-color: var(--bg);
 }
 
 /* ── Sign-in gate ───────────────────────────────────────────────────────── */

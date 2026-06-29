@@ -99,6 +99,7 @@ export function ShareCard({
           <div className="dom-grid dom-share-week" style={{ ["--cols" as string]: cells.length }}>
             {cells.map(({ d, outOfMonth, album }) => {
               const isToday = fmtDate(d) === fmtDate(today);
+
               return (
                 <div
                   key={fmtDate(d)}
@@ -111,7 +112,9 @@ export function ShareCard({
                     <span className="dom-day-num">{d.getDate()}</span>
                     <span className="dom-day-bar">|</span>
                     <span className="dom-day-dow">{DOW[d.getDay()]}</span>
-                    <span className="dom-day-dowKo">{DOW_KO[d.getDay()]}</span>
+                    <span className="dom-day-album-rating">
+                      <span>★</span>{album?.rating}
+                    </span>
                   </div>
                   {outOfMonth ? (
                     <div className="dom-day-body dom-day-empty dom-day-blank" aria-hidden="true" />
