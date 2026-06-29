@@ -20,7 +20,7 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
   albums.forEach((a) => {
     byGenre[a.genre] = (byGenre[a.genre] ?? 0) + 1;
   });
-  const topGenres = Object.entries(byGenre).sort((a, b) => b[1] - a[1]);
+  const topTenGenres = Object.entries(byGenre).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
   const fives = albums.filter((a) => a.rating === 5);
 
@@ -60,9 +60,9 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
           </div>
         </div>
         <div className="dom-stat dom-stat-wide">
-          <div className="dom-stat-label">top genres</div>
+          <div className="dom-stat-label">top 10 genres</div>
           <div className="dom-bars">
-            {topGenres.map(([g, n]) => (
+            {topTenGenres.map(([g, n]) => (
               <div key={g} className="dom-bar">
                 <span className="dom-bar-label">{g}</span>
                 <div className="dom-bar-track">
