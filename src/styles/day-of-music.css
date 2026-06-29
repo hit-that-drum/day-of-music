@@ -1463,6 +1463,33 @@
   gap: 8px;
   margin-top: 2px;
 }
+.dom-store-country-field .dom-select-trigger {
+  min-height: 48px;
+  padding: 0 0 0 14px;
+  overflow: hidden;
+  border-color: var(--ink);
+  background-color: var(--panel);
+  box-shadow: inset 0 -2px 0 var(--lineSoft);
+}
+.dom-store-country-field .dom-select-value {
+  padding: 12px 0;
+  font-size: 15px;
+}
+.dom-store-country-field .dom-select-caret {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  margin-left: 12px;
+  background-color: var(--ink);
+  color: var(--bg);
+  font-size: 13px;
+}
+.dom-store-country-field .dom-select-trigger:hover .dom-select-caret,
+.dom-store-country-field .dom-select-trigger:focus-visible .dom-select-caret,
+.dom-store-country-field .dom-select-trigger[data-open="1"] .dom-select-caret {
+  background-color: var(--accent);
+}
 @media (max-width: 720px) {
   .dom-profile-settings {
     grid-template-columns: 1fr;

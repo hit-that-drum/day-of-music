@@ -132,7 +132,7 @@ function SettingsForm({
           placeholder={DEFAULT_USERNAME}
         />
       </label>
-      <div className="dom-edit-field">
+      <div className="dom-edit-field dom-store-country-field">
         <span className="dom-edit-label">Store country · 스토어 국가</span>
         <DomSelect
           ariaLabel="Store country"
