@@ -8,7 +8,6 @@ import { useRef } from "react";
 
 import {
   DOW,
-  DOW_KO,
   MONTHS_LONG,
   fmtDate,
   weekOfMonth,
@@ -19,7 +18,7 @@ import { DEFAULT_USERNAME, useProfile } from "@/lib/day-of-music/profile";
 import { useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
 import { copyCurrentLink, saveCardAsImage, shareFileName } from "@/lib/day-of-music/save-card";
 import { Cover } from "@/components/day-of-music/cover";
-import { MetaLine } from "@/components/day-of-music/atoms";
+import { Button, MetaLine } from "@/components/day-of-music/atoms";
 
 export function ShareCard({
   weekStart,
@@ -99,6 +98,7 @@ export function ShareCard({
           <div className="dom-grid dom-share-week" style={{ ["--cols" as string]: cells.length }}>
             {cells.map(({ d, outOfMonth, album }) => {
               const isToday = fmtDate(d) === fmtDate(today);
+
               return (
                 <div
                   key={fmtDate(d)}
@@ -111,7 +111,9 @@ export function ShareCard({
                     <span className="dom-day-num">{d.getDate()}</span>
                     <span className="dom-day-bar">|</span>
                     <span className="dom-day-dow">{DOW[d.getDay()]}</span>
-                    <span className="dom-day-dowKo">{DOW_KO[d.getDay()]}</span>
+                    <span className="dom-day-album-rating">
+                      <span>★</span>{album?.rating}
+                    </span>
                   </div>
                   {outOfMonth ? (
                     <div className="dom-day-body dom-day-empty dom-day-blank" aria-hidden="true" />
@@ -146,16 +148,19 @@ export function ShareCard({
             <div>
               {week.length} albums · {genreCount} genres
             </div>
-            <div>★ {avg}</div>
+            <div className="dom-day-album-rating">
+              <span>★</span> 
+              {avg}
+            </div>
           </div>
         </div>
         <div className="dom-share-actions">
-          <button className="dom-btn dom-btn-ghost" onClick={() => void copyCurrentLink()}>
+          <Button variant="ghost" onClick={() => void copyCurrentLink()}>
             Copy link
-          </button>
-          <button className="dom-btn" onClick={handleSaveImage}>
+          </Button>
+          <Button onClick={handleSaveImage}>
             Save image
-          </button>
+          </Button>
         </div>
       </div>
     </div>

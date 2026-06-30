@@ -19,6 +19,7 @@ import { DEFAULT_USERNAME, useProfile } from "@/lib/day-of-music/profile";
 import { useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
 import { copyCurrentLink, saveCardAsImage, shareFileName } from "@/lib/day-of-music/save-card";
 import { Cover } from "@/components/day-of-music/cover";
+import { Button } from "@/components/day-of-music/atoms";
 
 export function MonthShareCard({
   anchor,
@@ -155,16 +156,19 @@ export function MonthShareCard({
             <div>
               {monthAlbums.length} albums · {genreCount} genres
             </div>
-            <div>★ {avg}</div>
+            <div className="dom-day-album-rating">
+              <span>★</span> 
+              {avg}
+            </div>
           </div>
         </div>
         <div className="dom-share-actions">
-          <button className="dom-btn dom-btn-ghost" onClick={() => void copyCurrentLink()}>
+          <Button variant="ghost" onClick={() => void copyCurrentLink()}>
             Copy link
-          </button>
-          <button className="dom-btn" onClick={handleSaveImage}>
+          </Button>
+          <Button onClick={handleSaveImage}>
             Save image
-          </button>
+          </Button>
         </div>
       </div>
     </div>

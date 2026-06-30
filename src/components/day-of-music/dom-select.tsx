@@ -10,7 +10,42 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
+import { cn } from "@/lib/utils";
+
 export type DomSelectOption = { value: string; label: string };
+
+export type DomSelectProps = {
+  value: string;
+  options: DomSelectOption[];
+  onChange: (value: string) => void;
+  ariaLabel?: string;
+  placeholder?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+};
+
+export function DomSelectField({
+  label,
+  className,
+  labelClassName,
+  variant = "default",
+  size = "default",
+  ariaLabel,
+  ...selectProps
+}: DomSelectProps & {
+  label: string;
+  className?: string;
+  labelClassName?: string;
+  variant?: "default" | "underline";
+  size?: "default" | "medium" | "large";
+}) {
+  return (
+    <div className={cn("dom-select-field", className)} data-variant={variant} data-size={size}>
+      <span className={cn("dom-select-field-label", labelClassName)}>{label}</span>
+      <DomSelect ariaLabel={ariaLabel ?? label} {...selectProps} />
+    </div>
+  );
+}
 
 export function DomSelect({
   value,
@@ -20,15 +55,7 @@ export function DomSelect({
   placeholder = "Select…",
   searchable = false,
   searchPlaceholder = "Search…",
-}: {
-  value: string;
-  options: DomSelectOption[];
-  onChange: (value: string) => void;
-  ariaLabel?: string;
-  placeholder?: string;
-  searchable?: boolean;
-  searchPlaceholder?: string;
-}) {
+}: DomSelectProps) {
   const [open, setOpen] = useState(false);
   // Index of the keyboard-highlighted option — into the *filtered* list below.
   const [active, setActive] = useState(-1);
@@ -62,18 +89,11 @@ export function DomSelect({
     return () => window.removeEventListener("pointerdown", onPointerDown, true);
   }, [open]);
 
-  // On open: clear any prior query, highlight the current value, and focus the
-  // search box. On close: reset the query so the next open starts fresh.
+  // On open, the panel is committed to the DOM, so the input exists and can be
+  // focused directly — let the user type straight away.
   useEffect(() => {
-    if (!open) {
-      setQuery("");
-      return;
-    }
-    setActive(options.findIndex((o) => o.value === value));
-    // The effect runs after the panel is committed to the DOM, so the input
-    // exists and can be focused directly — let the user type straight away.
-    if (searchable) searchRef.current?.focus();
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (open && searchable) searchRef.current?.focus();
+  }, [open, searchable]);
 
   // Keep the highlighted option scrolled into view (lists can be long).
   useEffect(() => {
@@ -83,8 +103,15 @@ export function DomSelect({
       ?.scrollIntoView({ block: "nearest" });
   }, [open, active]);
 
+  function openSelect() {
+    setQuery("");
+    setActive(options.findIndex((o) => o.value === value));
+    setOpen(true);
+  }
+
   function close(focusTrigger = false) {
     setOpen(false);
+    setQuery("");
     if (focusTrigger) triggerRef.current?.focus();
   }
 
@@ -130,7 +157,7 @@ export function DomSelect({
     if (!open) {
       if (["Enter", " ", "ArrowDown", "ArrowUp"].includes(e.key)) {
         e.preventDefault();
-        setOpen(true);
+        openSelect();
       }
       return;
     }
@@ -155,7 +182,7 @@ export function DomSelect({
         aria-label={ariaLabel}
         aria-activedescendant={open && !searchable && active >= 0 ? optionId(active) : undefined}
         data-open={open ? "1" : "0"}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (open ? close() : openSelect())}
         onKeyDown={onTriggerKeyDown}
       >
         <span className="dom-select-value" data-empty={selected ? "0" : "1"}>

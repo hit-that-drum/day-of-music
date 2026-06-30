@@ -15,7 +15,7 @@ import {
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { Cover } from "@/components/day-of-music/cover";
-import { MetaLine } from "@/components/day-of-music/atoms";
+import { Button, MetaLine } from "@/components/day-of-music/atoms";
 import { WeekPicker } from "@/components/day-of-music/week-picker";
 
 type WeeklyGridProps = {
@@ -61,10 +61,6 @@ export function WeeklyGrid({
   // In split mode a day outside the labelled month is blanked (not interactive).
   const isOutOfMonth = (d: Date) =>
     splitByMonth && (d.getMonth() !== labelMonth || d.getFullYear() !== labelYear);
-  // "Empty week" hint only considers the days that actually belong to the page.
-  const weekEmpty = days.every(
-    (d) => isOutOfMonth(d) || !albumsByDate[fmtDate(d)],
-  );
 
   // Header segments: one per calendar month present among the active days. When
   // a continuous (non-split) week straddles two months we show both, e.g.
@@ -93,12 +89,6 @@ export function WeeklyGrid({
         onJump={onJump}
         onShare={onShare}
       />
-      {weekEmpty && (
-        <div className="dom-week-hint" role="note">
-          이번 주는 아직 비어 있어요 — nothing logged this week yet. Tap a day, or hit{" "}
-          <em>＋ Log album</em> to search any album and start your journal.
-        </div>
-      )}
       <div
         className="dom-grid"
         style={{ ["--cols" as string]: days.length }}
@@ -197,9 +187,9 @@ function WeekHeader({
         <button className="dom-iconbtn" onClick={onNext} aria-label="Next week">
           →
         </button>
-        <button className="dom-btn" onClick={onShare}>
+        <Button onClick={onShare}>
           Share week
-        </button>
+        </Button>
       </div>
     </div>
   );

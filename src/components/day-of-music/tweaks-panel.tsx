@@ -5,7 +5,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { DomSelect } from "@/components/day-of-music/dom-select";
+import { DomSelectField } from "@/components/day-of-music/dom-select";
 import {
   AESTHETICS,
   TYPE_PAIRS,
@@ -64,17 +64,21 @@ export function TweaksPanel({
       </div>
 
       <div className="dom-tweak-section">Aesthetic</div>
-      <Select
+      <DomSelectField
         label="Theme"
         value={tweaks.aesthetic}
         options={Object.entries(AESTHETICS).map(([k, v]) => ({ value: k, label: v.label }))}
         onChange={(v) => onChange("aesthetic", v as AestheticKey)}
+        className="dom-tweak-field"
+        labelClassName="dom-tweak-label"
       />
-      <Select
+      <DomSelectField
         label="Typography"
         value={tweaks.typography}
         options={Object.entries(TYPE_PAIRS).map(([k, v]) => ({ value: k, label: v.label }))}
         onChange={(v) => onChange("typography", v as TypeKey)}
+        className="dom-tweak-field"
+        labelClassName="dom-tweak-label"
       />
 
       <div className="dom-tweak-section">Layout</div>
@@ -98,25 +102,6 @@ export function TweaksPanel({
           {tweaks.weekSplit ? "On" : "Off"}
         </button>
       </div>
-    </div>
-  );
-}
-
-function Select({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: { value: string; label: string }[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="dom-tweak-field">
-      <span className="dom-tweak-label">{label}</span>
-      <DomSelect ariaLabel={label} value={value} options={options} onChange={onChange} />
     </div>
   );
 }

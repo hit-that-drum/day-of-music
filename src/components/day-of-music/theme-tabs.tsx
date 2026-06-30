@@ -1,35 +1,31 @@
-// theme-tabs.tsx — segmented switcher for the active themed lane.
+// theme-tabs.tsx — selector for the active themed lane.
 // The calendar (week/month) reflects whichever theme is active here.
 
 "use client";
 
+import { DomSelectField } from "@/components/day-of-music/dom-select";
 import { resolveActiveTheme, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
 
 export function ThemeTabs() {
   const { themes } = useThemes();
   const { activeTheme, setActiveTheme } = useActiveTheme();
   const active = resolveActiveTheme(themes, activeTheme);
+  const options = themes.map((t) => ({
+    value: t.id,
+    label: t.emoji ? `${t.emoji} ${t.name}` : t.name,
+  }));
 
-  if (themes.length <= 1) return null;
+  if (!themes.length) return null;
 
   return (
-    <div className="dom-theme-tabs" role="tablist" aria-label="Themes">
-      {themes.map((t) => (
-        <button
-          key={t.id}
-          type="button"
-          role="tab"
-          aria-selected={t.id === active}
-          className="dom-theme-tab"
-          data-active={t.id === active ? "1" : "0"}
-          onClick={() => setActiveTheme(t.id)}
-        >
-          <span className="dom-theme-tab-emoji" aria-hidden="true">
-            {t.emoji}
-          </span>
-          {t.name}
-        </button>
-      ))}
-    </div>
+    <DomSelectField
+      label="Theme"
+      className="dom-theme-select"
+      value={active}
+      options={options}
+      onChange={setActiveTheme}
+      variant="underline"
+      size="large"
+    />
   );
 }

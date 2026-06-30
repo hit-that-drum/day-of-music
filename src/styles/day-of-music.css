@@ -30,7 +30,11 @@
   box-sizing: border-box;
   min-width: 0;
 }
-.dom-root button {
+/* Bare-button reset — strips native chrome from icon/nav/cell buttons so they
+   can be styled from scratch. Excludes .dom-btn: its own border/background/
+   padding must win (otherwise this reset, being more specific than .dom-btn,
+   flattens real buttons inside .dom-root into plain text). */
+.dom-root button:not(.dom-btn) {
   font: inherit;
   color: inherit;
   cursor: pointer;
@@ -167,38 +171,98 @@
   overflow: hidden;
 }
 
-/* ── Theme switcher tabs (active lane) — sits at the top of the main panel. */
-.dom-theme-tabs {
+/* ── Select field wrapper — label + DomSelect variants. */
+.dom-select-field {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.dom-select-field-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-select-field[data-variant="underline"] .dom-select {
+  width: 100%;
+}
+.dom-select-field[data-variant="underline"][data-size="large"] .dom-select {
+  width: min(420px, 100%);
+}
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger {
+  min-height: 48px;
+  padding: 0 0 0 14px;
+  overflow: hidden;
+  border: 0;
+  border-bottom: 1px solid var(--lineSoft);
+  background-color: var(--panel);
+  box-shadow: inset 0 -2px 0 var(--lineSoft);
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0;
+}
+.dom-select-field[data-variant="underline"] .dom-select-value {
+  padding: 12px 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+.dom-select-field[data-variant="underline"] .dom-select-caret {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  margin-left: 12px;
+  background-color: var(--ink);
+  color: var(--bg);
+  font-size: 13px;
+}
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:hover,
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:focus-visible,
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger[data-open="1"] {
+  border: 0;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:hover .dom-select-caret,
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:focus-visible .dom-select-caret,
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger[data-open="1"] .dom-select-caret {
+  background-color: var(--accent);
+}
+.dom-root .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-trigger {
+  min-height: 56px;
+  font-size: 22px;
+}
+.dom-select-field[data-variant="underline"][data-size="large"] .dom-select-value {
+  padding: 13px 0;
+  font-size: 22px;
+}
+.dom-select-field[data-variant="underline"][data-size="large"] .dom-select-caret {
+  width: 56px;
+  margin-left: 14px;
+}
+
+/* Theme selector (active lane) — sits at the top of the main panel. */
+.dom-theme-select {
   gap: 8px;
   padding: 18px 28px 0;
 }
-.dom-theme-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--ink2);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  padding: 7px 12px;
-  cursor: pointer;
-  transition: background-color 0.12s ease, color 0.12s ease;
-}
-.dom-theme-tab:hover {
-  background-color: var(--chip);
-}
-.dom-theme-tab[data-active="1"] {
-  background-color: var(--ink);
-  color: var(--bg);
-  border-color: var(--ink);
-}
-.dom-theme-tab-emoji {
-  font-size: 13px;
-  line-height: 1;
+@media (max-width: 760px) {
+  .dom-theme-select {
+    padding: 14px 16px 0;
+  }
+  .dom-select-field[data-variant="underline"][data-size="large"] .dom-select {
+    width: 100%;
+  }
+  .dom-root .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-trigger {
+    font-size: 18px;
+  }
+  .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-value {
+    font-size: 18px;
+  }
+  .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-caret {
+    width: 48px;
+  }
 }
 
 /* Theme manager rows (Profile) */
@@ -235,6 +299,7 @@
   font-size: 13px;
   letter-spacing: -0.005em;
   border: 1px solid var(--ink);
+  cursor: pointer;
   transition: transform 0.12s ease, background-color 0.12s ease;
   white-space: nowrap;
 }
@@ -735,11 +800,23 @@
 .dom-day-dow {
   color: var(--ink);
 }
-.dom-day-dowKo {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  opacity: 0.55;
+.dom-day-album-rating {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 3px;
+  font-size: 11px;
+  line-height: 1;
   margin-left: auto;
+  color: var(--ink3);
+}
+.dom-day-album-rating > span,
+.dom-month-cal-rating-star {
+  display: inline-flex;
+  align-items: center;
+  font-size: 18px;
+  line-height: 1;
+  padding-bottom: 5px;
 }
 .dom-day[data-today="1"] .dom-day-hd {
   background-color: var(--accent);
@@ -804,12 +881,17 @@
   font-size: 14px;
   letter-spacing: -0.01em;
   line-height: 1.15;
+  /* Break a space-less title (e.g. "MAMIHLAPINATAPAI") to the cell width
+     instead of letting it spill past the edge. Spaced titles still wrap
+     normally; only an over-wide unbreakable word is split. */
+  overflow-wrap: break-word;
 }
 .dom-artist {
   font-family: var(--font-display);
   font-size: 12px;
   opacity: 0.8;
   line-height: 1.2;
+  overflow-wrap: break-word;
 }
 .dom-artist-ko {
   color: var(--ink3);
@@ -830,6 +912,12 @@
   font-size: 11px;
   color: var(--ink3);
   line-height: 1.2;
+  /* Secondary context — keep it to one line so a long album title can't blow
+     out the cell (on screen and in the PNG export). Truncate with an ellipsis. */
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .dom-meta .dom-dot {
   opacity: 0.5;
@@ -1247,9 +1335,12 @@
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
-/* Scoped under the grid so these beat the global `.dom-root button` reset
-   (which would otherwise zero out the cell borders + padding). */
-.dom-month-cal-grid .dom-month-cal-cell {
+/* Three classes (0,3,0) so these beat the global `.dom-root button:not(.dom-btn)`
+   reset (0,2,1) — the board's cells are <button>s, and without the extra
+   `.dom-month-cal` qualifier the reset wins and zeroes the cell borders +
+   padding (killing the grid lines + the cover's side margin). The Share poster's
+   cells are <div>s, so they were never affected. */
+.dom-month-cal .dom-month-cal-grid .dom-month-cal-cell {
   border-bottom: 1px solid var(--line);
   border-right: 1px solid var(--line);
   padding: 10px 12px 12px;
@@ -1349,12 +1440,14 @@
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.15;
+  overflow-wrap: break-word;
 }
 .dom-month-cal-artist {
   font-family: var(--font-display);
   font-size: 11px;
   opacity: 0.8;
   line-height: 1.2;
+  overflow-wrap: break-word;
 }
 .dom-month-cal-artist-ko {
   color: var(--ink3);
@@ -1562,7 +1655,7 @@
   opacity: 0.7;
 }
 
-/* ── Search / Discover ──────────────────────────────────────────────────── */
+/* ── Journal search ─────────────────────────────────────────────────────── */
 
 .dom-search {
   padding: 24px 28px 28px;
@@ -1620,6 +1713,14 @@
   color: var(--ink3);
   letter-spacing: 0.1em;
 }
+.dom-search-result-context {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink3);
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
 .dom-search-result-date {
   text-align: right;
 }
@@ -1636,6 +1737,15 @@
   letter-spacing: 0.14em;
   color: var(--ink3);
   margin-top: 4px;
+}
+.dom-search-result-full-date {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink3);
+  margin-top: 8px;
+}
+.dom-search-sentinel {
+  height: 1px;
 }
 .dom-empty {
   padding: 40px;
@@ -1949,8 +2059,9 @@
   max-width: var(--dom-modal-w);
   /* Shared modal width (--dom-modal-w) keeps every overlay modal the same size.
      Fixed height: the modal stays put while only its inner content changes
-     (search results scroll internally instead of resizing the modal). */
-  height: min(620px, 86vh);
+     (the body scrolls internally instead of resizing the modal). Tall enough
+     for the manual-entry form (cover + title + artist) to fit without scroll. */
+  height: min(680px, 88vh);
   background-color: var(--panel);
   border: 1px solid var(--line);
   padding: 32px 36px;
@@ -1991,6 +2102,10 @@
   gap: 12px;
   flex: 1;
   min-height: 0;
+  /* Scroll the body (not the modal) when content is taller than the fixed
+     modal — e.g. the manual-entry form on a short viewport — so the pinned
+     actions row never gets overlapped. */
+  overflow-y: auto;
 }
 .dom-addflow-label {
   font-family: var(--font-mono);
@@ -2232,11 +2347,21 @@
 /* ── Share Week card ────────────────────────────────────────────────────── */
 
 .dom-share {
+  position: relative;
+  /* Reserve space above the card so the close button sits in this gap instead
+     of overlapping the card header (@username / theme meta). */
+  padding-top: 52px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   align-items: center;
   animation: dom-rise 0.25s ease;
+}
+/* Float the close button into the reserved space above the card, flush to its
+   right edge — clear of the card's top-right meta. */
+.dom-share > .dom-detail-close {
+  top: 0;
+  right: 0;
 }
 .dom-share-card {
   width: min(var(--dom-modal-w), 96vw);
@@ -2401,6 +2526,15 @@
   display: flex;
   gap: 8px;
 }
+/* The share buttons sit on the dimmed scrim, so the ghost "Copy link" button
+   needs a solid (non-transparent) fill — otherwise the darkened page shows
+   through. Panel fill keeps it distinct from the solid-ink "Save image". */
+.dom-share-actions .dom-btn-ghost {
+  background-color: var(--panel);
+}
+.dom-share-actions .dom-btn-ghost:hover {
+  background-color: var(--bg);
+}
 
 /* ── Sign-in gate ───────────────────────────────────────────────────────── */
 
@@ -2499,8 +2633,8 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-height: 75vh;
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
   font-family: var(--font-mono);
 }
 .dom-tweaks-panel-hd {
@@ -2876,20 +3010,6 @@ a.dom-btn {
 }
 
 /* ── Empty-week hint & clickable empty days ─────────────────────────────── */
-
-.dom-week-hint {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  color: var(--ink2);
-  border: 1px dashed var(--line);
-  padding: 10px 14px;
-  margin-bottom: 14px;
-}
-.dom-week-hint em {
-  font-style: normal;
-  color: var(--ink);
-}
 
 button.dom-day-add {
   display: flex;

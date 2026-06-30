@@ -1,8 +1,45 @@
 // atoms.tsx — small shared presentational atoms for Day of Music.
 
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
 import type { Album } from "@/lib/day-of-music/data";
+
+export type ButtonVariant = "solid" | "ghost" | "danger" | "danger-ghost";
+export type ButtonSize = "md" | "sm" | "lg";
+
+// Single source of truth for button classes. `danger-ghost` needs both
+// dom-btn-ghost (transparent fill + border) and dom-btn-danger-ghost (red text),
+// since the latter only recolors. Exposed as a helper so <Link>s that must look
+// like buttons (they can't be <button>) share the exact same styling.
+export function buttonClass(
+  variant: ButtonVariant = "solid",
+  size: ButtonSize = "md",
+  extra?: string,
+): string {
+  return [
+    "dom-btn",
+    variant === "ghost" && "dom-btn-ghost",
+    variant === "danger" && "dom-btn-danger",
+    variant === "danger-ghost" && "dom-btn-ghost dom-btn-danger-ghost",
+    size === "sm" && "dom-btn-sm",
+    size === "lg" && "dom-btn-lg",
+    extra,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+// The app's standard button. Defaults to type="button" so it never acts as an
+// accidental form-submit; pass type="submit" explicitly where needed.
+export function Button({
+  variant = "solid",
+  size = "md",
+  type = "button",
+  className,
+  ...props
+}: ComponentProps<"button"> & { variant?: ButtonVariant; size?: ButtonSize }) {
+  return <button type={type} className={buttonClass(variant, size, className)} {...props} />;
+}
 
 export function Chip({
   children,

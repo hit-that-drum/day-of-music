@@ -7,7 +7,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
-import { DomSelect } from "@/components/day-of-music/dom-select";
+import { Button, buttonClass } from "@/components/day-of-music/atoms";
+import { DomSelectField } from "@/components/day-of-music/dom-select";
 import {
   COUNTRIES,
   DEFAULT_USERNAME,
@@ -16,7 +17,7 @@ import {
 } from "@/lib/day-of-music/profile";
 import { useThemes, type Theme } from "@/lib/day-of-music/themes";
 
-// COUNTRIES is { code, label }; DomSelect wants { value, label }. Mapped once
+// COUNTRIES is { code, label }; DomSelectField wants { value, label }. Mapped once
 // at module scope so the option list is stable across renders.
 const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.label }));
 
@@ -49,9 +50,9 @@ export function ProfilePage() {
                 <span className="dom-settings-val">Signed in · synced</span>
               </div>
               <div className="dom-settings-actions">
-                <button className="dom-btn dom-btn-ghost" onClick={signOut}>
+                <Button variant="ghost" onClick={signOut}>
                   Sign out
-                </button>
+                </Button>
               </div>
             </>
           ) : guest ? (
@@ -61,10 +62,10 @@ export function ProfilePage() {
                 across devices.
               </p>
               <div className="dom-settings-actions">
-                <Link href="/signin" className="dom-btn dom-btn-ghost">
+                <Link href="/signin" className={buttonClass("ghost")}>
                   Sign in
                 </Link>
-                <Link href="/signup" className="dom-btn">
+                <Link href="/signup" className={buttonClass()}>
                   Sign up
                 </Link>
               </div>
@@ -131,25 +132,23 @@ function SettingsForm({
           placeholder={DEFAULT_USERNAME}
         />
       </label>
-      <div className="dom-edit-field">
-        <span className="dom-edit-label">Store country · 스토어 국가</span>
-        <DomSelect
-          ariaLabel="Store country"
-          value={country}
-          options={COUNTRY_OPTIONS}
-          onChange={setCountry}
-          searchable
-          searchPlaceholder="Search country · 국가 검색"
-        />
-      </div>
+      <DomSelectField
+        label="Store country · 스토어 국가"
+        ariaLabel="Store country"
+        className="dom-store-country-field"
+        labelClassName="dom-edit-label"
+        value={country}
+        options={COUNTRY_OPTIONS}
+        onChange={setCountry}
+        searchable
+        searchPlaceholder="Search country · 국가 검색"
+        variant="underline"
+        size="medium"
+      />
       <div className="dom-settings-actions">
-        <button
-          className="dom-btn"
-          disabled={!dirty}
-          onClick={() => onSave({ username: name.trim(), country })}
-        >
+        <Button disabled={!dirty} onClick={() => onSave({ username: name.trim(), country })}>
           Save changes
-        </button>
+        </Button>
       </div>
       <p className="dom-settings-note">
         Shown as <strong>@{handle}</strong> on shared images. Music search checks the{" "}
@@ -237,12 +236,12 @@ function ThemeManager({
         </div>
       ))}
       <div className="dom-settings-actions">
-        <button className="dom-btn dom-btn-ghost" onClick={add}>
+        <Button variant="ghost" onClick={add}>
           ＋ Add theme
-        </button>
-        <button className="dom-btn" disabled={!dirty} onClick={() => onSave(list)}>
+        </Button>
+        <Button disabled={!dirty} onClick={() => onSave(list)}>
           Save themes
-        </button>
+        </Button>
       </div>
       <p className="dom-settings-note">
         Each theme is its own daily lane. {synced ? "Synced to your account." : "Saved on this device."}{" "}

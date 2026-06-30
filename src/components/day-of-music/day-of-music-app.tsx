@@ -18,7 +18,8 @@ import { toast } from "sonner";
 import { addDays, fmtDate, formatDisplayDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
 import { useCountry } from "@/lib/day-of-music/profile";
-import { useJournal } from "@/lib/day-of-music/use-journal";
+import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
+import { useActiveTheme } from "@/lib/day-of-music/themes";
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { AddFlow, type NewEntry } from "@/components/day-of-music/add-flow";
 import { DayDetail } from "@/components/day-of-music/day-detail";
@@ -111,6 +112,7 @@ function monthSegmentBounds(anchor: Date): { first: Date; last: Date } {
 export function DayOfMusicApp() {
   const rootRef = useRef<HTMLDivElement>(null);
   const { logAlbum, updateSlot, moveSlot, removeSlot, enrichSlot } = useJournal();
+  const { setActiveTheme } = useActiveTheme();
   const { configured, loading: authLoading, user, signOut } = useAuth();
   // Storefront country drives date formatting so every displayed date matches
   // the listener's locale (see formatDisplayDate).
@@ -232,7 +234,13 @@ export function DayOfMusicApp() {
     return () => window.removeEventListener("keydown", onKey);
   }, [openAlbum, showAdd, showShare, showMonthShare, showTweaks, screen, prevWeek, nextWeek, prevMonth, nextMonth, closeAll]);
 
-  const handleOpen = useCallback((album: Album) => setOpenAlbum(album), []);
+  const handleOpen = useCallback(
+    (album: Album | JournalAlbum) => {
+      if ("theme" in album) setActiveTheme(album.theme);
+      setOpenAlbum(album);
+    },
+    [setActiveTheme],
+  );
 
   // Drag-and-drop reschedule (onMove={moveSlot}): dropping onto an empty day
   // moves the album there; dropping onto a filled day swaps the two days.

@@ -5,7 +5,7 @@
 import type { Album } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { Cover } from "@/components/day-of-music/cover";
-import { Stars } from "@/components/day-of-music/atoms";
+import { Button, Stars } from "@/components/day-of-music/atoms";
 
 export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
   const { albums } = useJournal();
@@ -20,7 +20,7 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
   albums.forEach((a) => {
     byGenre[a.genre] = (byGenre[a.genre] ?? 0) + 1;
   });
-  const topGenres = Object.entries(byGenre).sort((a, b) => b[1] - a[1]);
+  const topTenGenres = Object.entries(byGenre).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
   const fives = albums.filter((a) => a.rating === 5);
 
@@ -32,8 +32,8 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
           <h1>My Year in Music</h1>
         </div>
         <div className="dom-week-actions">
-          <button className="dom-btn dom-btn-ghost">Export</button>
-          <button className="dom-btn">Share card</button>
+          <Button variant="ghost">Export</Button>
+          <Button>Share card</Button>
         </div>
       </div>
 
@@ -60,9 +60,9 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
           </div>
         </div>
         <div className="dom-stat dom-stat-wide">
-          <div className="dom-stat-label">top genres</div>
+          <div className="dom-stat-label">top 10 genres</div>
           <div className="dom-bars">
-            {topGenres.map(([g, n]) => (
+            {topTenGenres.map(([g, n]) => (
               <div key={g} className="dom-bar">
                 <span className="dom-bar-label">{g}</span>
                 <div className="dom-bar-track">

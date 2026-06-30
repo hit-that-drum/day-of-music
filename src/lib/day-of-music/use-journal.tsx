@@ -58,6 +58,7 @@ const JournalContext = createContext<JournalContextValue | null>(null);
 
 type JournalContextValue = {
   albums: Album[];
+  allAlbums: JournalAlbum[];
   albumsByDate: Record<string, Album>;
   getByDate: (date: string) => Album | undefined;
   /** Log (or replace) the album in the active theme's slot at `date`. */
@@ -71,6 +72,10 @@ type JournalContextValue = {
   /** Enrich the album in the slot at `date` (tracklist/release date). */
   enrichSlot: (date: string, patch: Partial<Album>) => void;
   persisted: boolean;
+};
+
+export type JournalAlbum = Album & {
+  theme: string;
 };
 
 function readLocalEntries(): JournalEntry[] {
@@ -259,6 +264,21 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     return out;
   }, [queryData, theme, poolById]);
   const albums = useMemo(() => Object.values(albumsByDate), [albumsByDate]);
+  const allAlbums = useMemo<JournalAlbum[]>(() => {
+    const out: JournalAlbum[] = [];
+    for (const e of queryData?.entries ?? []) {
+      const meta = poolById.get(e.albumId);
+      if (!meta) continue;
+      out.push({
+        ...meta,
+        date: e.date,
+        rating: e.rating,
+        note: e.note,
+        theme: e.theme,
+      });
+    }
+    return out;
+  }, [queryData, poolById]);
 
   // Takes the full merged Album so the album's metadata is persisted alongside
   // its journal overlay — that metadata blob is what lets another device render
@@ -534,6 +554,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   const value = useMemo<JournalContextValue>(
     () => ({
       albums,
+      allAlbums,
       albumsByDate,
       getByDate: (date) => albumsByDate[date],
       logAlbum,
@@ -543,7 +564,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       enrichSlot,
       persisted: query.data?.persisted ?? false,
     }),
-    [albums, albumsByDate, logAlbum, updateSlot, moveSlot, removeSlot, enrichSlot, query.data?.persisted],
+    [albums, allAlbums, albumsByDate, logAlbum, updateSlot, moveSlot, removeSlot, enrichSlot, query.data?.persisted],
   );
 
   return <JournalContext.Provider value={value}>{children}</JournalContext.Provider>;
