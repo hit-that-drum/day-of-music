@@ -1667,6 +1667,14 @@
   color: var(--ink3);
   letter-spacing: 0.1em;
 }
+.dom-search-result-context {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink3);
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
 .dom-search-result-date {
   text-align: right;
 }
@@ -1683,6 +1691,15 @@
   letter-spacing: 0.14em;
   color: var(--ink3);
   margin-top: 4px;
+}
+.dom-search-result-full-date {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink3);
+  margin-top: 8px;
+}
+.dom-search-sentinel {
+  height: 1px;
 }
 .dom-empty {
   padding: 40px;
