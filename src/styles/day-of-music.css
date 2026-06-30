@@ -741,9 +741,22 @@
   color: var(--ink);
 }
 .dom-day-album-rating {
-  font-size: 9px;
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 3px;
+  font-size: 11px;
+  line-height: 1;
   margin-left: auto;
   color: var(--ink3);
+}
+.dom-day-album-rating > span,
+.dom-month-cal-rating-star {
+  display: inline-flex;
+  align-items: center;
+  font-size: 18px;
+  line-height: 1;
+  padding-bottom: 5px;
 }
 .dom-day[data-today="1"] .dom-day-hd {
   background-color: var(--accent);

@@ -8,7 +8,6 @@ import { useRef } from "react";
 
 import {
   DOW,
-  DOW_KO,
   MONTHS_LONG,
   fmtDate,
   weekOfMonth,
@@ -149,7 +148,10 @@ export function ShareCard({
             <div>
               {week.length} albums · {genreCount} genres
             </div>
-            <div>★ {avg}</div>
+            <div className="dom-day-album-rating">
+              <span>★</span> 
+              {avg}
+            </div>
           </div>
         </div>
         <div className="dom-share-actions">

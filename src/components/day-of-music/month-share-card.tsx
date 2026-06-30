@@ -156,7 +156,10 @@ export function MonthShareCard({
             <div>
               {monthAlbums.length} albums · {genreCount} genres
             </div>
-            <div>★ {avg}</div>
+            <div className="dom-day-album-rating">
+              <span>★</span> 
+              {avg}
+            </div>
           </div>
         </div>
         <div className="dom-share-actions">
