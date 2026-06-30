@@ -8,7 +8,7 @@ import Link from "next/link";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { Button, buttonClass } from "@/components/day-of-music/atoms";
-import { DomSelect } from "@/components/day-of-music/dom-select";
+import { DomSelectField } from "@/components/day-of-music/dom-select";
 import {
   COUNTRIES,
   DEFAULT_USERNAME,
@@ -17,7 +17,7 @@ import {
 } from "@/lib/day-of-music/profile";
 import { useThemes, type Theme } from "@/lib/day-of-music/themes";
 
-// COUNTRIES is { code, label }; DomSelect wants { value, label }. Mapped once
+// COUNTRIES is { code, label }; DomSelectField wants { value, label }. Mapped once
 // at module scope so the option list is stable across renders.
 const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.label }));
 
@@ -132,17 +132,19 @@ function SettingsForm({
           placeholder={DEFAULT_USERNAME}
         />
       </label>
-      <div className="dom-edit-field dom-store-country-field">
-        <span className="dom-edit-label">Store country · 스토어 국가</span>
-        <DomSelect
-          ariaLabel="Store country"
-          value={country}
-          options={COUNTRY_OPTIONS}
-          onChange={setCountry}
-          searchable
-          searchPlaceholder="Search country · 국가 검색"
-        />
-      </div>
+      <DomSelectField
+        label="Store country · 스토어 국가"
+        ariaLabel="Store country"
+        className="dom-store-country-field"
+        labelClassName="dom-edit-label"
+        value={country}
+        options={COUNTRY_OPTIONS}
+        onChange={setCountry}
+        searchable
+        searchPlaceholder="Search country · 국가 검색"
+        variant="underline"
+        size="medium"
+      />
       <div className="dom-settings-actions">
         <Button disabled={!dirty} onClick={() => onSave({ username: name.trim(), country })}>
           Save changes

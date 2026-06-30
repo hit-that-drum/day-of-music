@@ -171,38 +171,98 @@
   overflow: hidden;
 }
 
-/* ── Theme switcher tabs (active lane) — sits at the top of the main panel. */
-.dom-theme-tabs {
+/* ── Select field wrapper — label + DomSelect variants. */
+.dom-select-field {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.dom-select-field-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-select-field[data-variant="underline"] .dom-select {
+  width: 100%;
+}
+.dom-select-field[data-variant="underline"][data-size="large"] .dom-select {
+  width: min(420px, 100%);
+}
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger {
+  min-height: 48px;
+  padding: 0 0 0 14px;
+  overflow: hidden;
+  border: 0;
+  border-bottom: 1px solid var(--lineSoft);
+  background-color: var(--panel);
+  box-shadow: inset 0 -2px 0 var(--lineSoft);
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0;
+}
+.dom-select-field[data-variant="underline"] .dom-select-value {
+  padding: 12px 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+.dom-select-field[data-variant="underline"] .dom-select-caret {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  margin-left: 12px;
+  background-color: var(--ink);
+  color: var(--bg);
+  font-size: 13px;
+}
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:hover,
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:focus-visible,
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger[data-open="1"] {
+  border: 0;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:hover .dom-select-caret,
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:focus-visible .dom-select-caret,
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger[data-open="1"] .dom-select-caret {
+  background-color: var(--accent);
+}
+.dom-root .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-trigger {
+  min-height: 56px;
+  font-size: 22px;
+}
+.dom-select-field[data-variant="underline"][data-size="large"] .dom-select-value {
+  padding: 13px 0;
+  font-size: 22px;
+}
+.dom-select-field[data-variant="underline"][data-size="large"] .dom-select-caret {
+  width: 56px;
+  margin-left: 14px;
+}
+
+/* Theme selector (active lane) — sits at the top of the main panel. */
+.dom-theme-select {
   gap: 8px;
   padding: 18px 28px 0;
 }
-.dom-theme-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--ink2);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  padding: 7px 12px;
-  cursor: pointer;
-  transition: background-color 0.12s ease, color 0.12s ease;
-}
-.dom-theme-tab:hover {
-  background-color: var(--chip);
-}
-.dom-theme-tab[data-active="1"] {
-  background-color: var(--ink);
-  color: var(--bg);
-  border-color: var(--ink);
-}
-.dom-theme-tab-emoji {
-  font-size: 13px;
-  line-height: 1;
+@media (max-width: 760px) {
+  .dom-theme-select {
+    padding: 14px 16px 0;
+  }
+  .dom-select-field[data-variant="underline"][data-size="large"] .dom-select {
+    width: 100%;
+  }
+  .dom-root .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-trigger {
+    font-size: 18px;
+  }
+  .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-value {
+    font-size: 18px;
+  }
+  .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-caret {
+    width: 48px;
+  }
 }
 
 /* Theme manager rows (Profile) */
@@ -1478,33 +1538,6 @@
   display: flex;
   gap: 8px;
   margin-top: 2px;
-}
-.dom-store-country-field .dom-select-trigger {
-  min-height: 48px;
-  padding: 0 0 0 14px;
-  overflow: hidden;
-  border-color: var(--ink);
-  background-color: var(--panel);
-  box-shadow: inset 0 -2px 0 var(--lineSoft);
-}
-.dom-store-country-field .dom-select-value {
-  padding: 12px 0;
-  font-size: 15px;
-}
-.dom-store-country-field .dom-select-caret {
-  align-self: stretch;
-  display: grid;
-  place-items: center;
-  width: 46px;
-  margin-left: 12px;
-  background-color: var(--ink);
-  color: var(--bg);
-  font-size: 13px;
-}
-.dom-store-country-field .dom-select-trigger:hover .dom-select-caret,
-.dom-store-country-field .dom-select-trigger:focus-visible .dom-select-caret,
-.dom-store-country-field .dom-select-trigger[data-open="1"] .dom-select-caret {
-  background-color: var(--accent);
 }
 @media (max-width: 720px) {
   .dom-profile-settings {
