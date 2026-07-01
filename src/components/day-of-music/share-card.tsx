@@ -73,7 +73,7 @@ export function ShareCard({
   }
 
   return (
-    <div className="dom-scrim" onClick={onClose} role="dialog" aria-modal="true" aria-label="Share week">
+    <div className="dom-scrim" onClick={onClose} role="dialog" aria-modal="true" aria-label="SHARE WEEK">
       <div className="dom-share" onClick={(e) => e.stopPropagation()}>
         <button className="dom-detail-close" onClick={onClose} aria-label="Close">
           ✕

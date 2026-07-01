@@ -187,9 +187,7 @@ function WeekHeader({
         <button className="dom-iconbtn" onClick={onNext} aria-label="Next week">
           →
         </button>
-        <Button onClick={onShare}>
-          Share week
-        </Button>
+        <Button onClick={onShare}>SHARE WEEK</Button>
       </div>
     </div>
   );

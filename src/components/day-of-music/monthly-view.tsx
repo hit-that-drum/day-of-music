@@ -15,6 +15,7 @@ import {
   type Album,
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
+import { Button } from "@/components/day-of-music/atoms";
 import { Cover } from "@/components/day-of-music/cover";
 
 export function MonthlyView({
@@ -97,13 +98,9 @@ export function MonthlyView({
               →
             </button>
             {!isCurrentMonth && (
-              <button className="dom-month-today" onClick={() => onJump(today)}>
-                this month · 이번 달
-              </button>
+              <Button onClick={() => onJump(today)}>THIS MONTH</Button>
             )}
-            <button className="dom-month-today" onClick={onShare}>
-              Share · 공유
-            </button>
+            <Button onClick={onShare}>SHARE MONTH</Button>
           </div>
         </div>
         <div className="dom-month-hd-right">

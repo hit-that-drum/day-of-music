@@ -64,7 +64,7 @@ export function MonthShareCard({
   }
 
   return (
-    <div className="dom-scrim" onClick={onClose} role="dialog" aria-modal="true" aria-label="Share month">
+    <div className="dom-scrim" onClick={onClose} role="dialog" aria-modal="true" aria-label="SHARE MONTH">
       <div className="dom-share dom-share-month" onClick={(e) => e.stopPropagation()}>
         <button className="dom-detail-close" onClick={onClose} aria-label="Close">
           ✕

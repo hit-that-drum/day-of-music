@@ -1102,22 +1102,9 @@
 .dom-month-nav {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
-}
-.dom-month-today {
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--ink2);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 6px 12px;
-  cursor: pointer;
-}
-.dom-month-today:hover {
-  background-color: var(--chip);
 }
 .dom-month-hd-right {
   display: flex;
