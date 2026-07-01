@@ -1,0 +1,3038 @@
+/* day-of-music.css — Day of Music app styles. Themes applied via CSS variables
+   set on .dom-root by lib/day-of-music/theme.ts. Ported from the design handoff. */
+
+.dom-stage {
+  --font-body: "Spectral", Georgia, serif;
+  /* Editorial-theme defaults so pages/elements that don't run applyTheme
+     (auth cards, modals) still resolve every color var. applyTheme overrides
+     these inline per chosen theme. */
+  --bg: #efe6d2;
+  --panel: #f6efe0;
+  --ink: #1a1612;
+  --ink2: #564a36;
+  --ink3: #8a7a5d;
+  --line: #1a1612;
+  --lineSoft: rgba(26, 22, 18, 0.22);
+  --accent: #7a3b2e;
+  --chip: rgba(26, 22, 18, 0.06);
+  --coverShadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --coverRadius: 0px;
+  background: #d8c9a8;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: var(--ink, #1a1612);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+.dom-root * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+/* Bare-button reset — strips native chrome from icon/nav/cell buttons so they
+   can be styled from scratch. Excludes .dom-btn: its own border/background/
+   padding must win (otherwise this reset, being more specific than .dom-btn,
+   flattens real buttons inside .dom-root into plain text). */
+.dom-root button:not(.dom-btn) {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: left;
+}
+.dom-root input,
+.dom-root textarea {
+  font: inherit;
+  color: inherit;
+}
+.dom-root ol,
+.dom-root ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ── Root frame ─────────────────────────────────────────────────────────── */
+
+.dom-root {
+  --pad: 28px;
+  --gap: 24px;
+
+  position: relative;
+  min-height: 100vh;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  padding: var(--pad);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--gap);
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+.dom-root[data-rail="0"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.dom-root[data-grid="1"] {
+  background-image:
+    linear-gradient(var(--lineSoft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--lineSoft) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: -1px -1px;
+}
+
+/* ── Top bar ────────────────────────────────────────────────────────────── */
+
+.dom-topbar {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 18px 24px;
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  position: relative;
+}
+.dom-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.dom-brand-mark {
+  color: var(--accent);
+  font-size: 18px;
+  line-height: 1;
+}
+.dom-brand-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.dom-brand-ko {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--ink3);
+  padding-left: 8px;
+  border-left: 1px solid var(--lineSoft);
+  white-space: nowrap;
+}
+.dom-nav {
+  display: flex;
+  gap: 4px;
+}
+.dom-nav-btn {
+  padding: 10px 18px;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  border: 1px solid transparent;
+}
+.dom-nav-btn:hover {
+  background-color: var(--chip);
+}
+.dom-nav-btn[data-active="1"] {
+  background-color: var(--ink) !important;
+  color: var(--bg) !important;
+}
+.dom-nav-label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+.dom-nav-ko {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  opacity: 0.55;
+}
+.dom-topbar-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ── Main ───────────────────────────────────────────────────────────────── */
+
+.dom-main {
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  padding: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ── Select field wrapper — label + DomSelect variants. */
+.dom-select-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.dom-select-field-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-select-field[data-variant="underline"] .dom-select {
+  width: 100%;
+}
+.dom-select-field[data-variant="underline"][data-size="large"] .dom-select {
+  width: min(420px, 100%);
+}
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger {
+  min-height: 48px;
+  padding: 0 0 0 14px;
+  overflow: hidden;
+  border: 0;
+  border-bottom: 1px solid var(--lineSoft);
+  background-color: var(--panel);
+  box-shadow: inset 0 -2px 0 var(--lineSoft);
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0;
+}
+.dom-select-field[data-variant="underline"] .dom-select-value {
+  padding: 12px 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+.dom-select-field[data-variant="underline"] .dom-select-caret {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  margin-left: 12px;
+  background-color: var(--ink);
+  color: var(--bg);
+  font-size: 13px;
+}
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:hover,
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:focus-visible,
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger[data-open="1"] {
+  border: 0;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:hover .dom-select-caret,
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:focus-visible .dom-select-caret,
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger[data-open="1"] .dom-select-caret {
+  background-color: var(--accent);
+}
+.dom-root .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-trigger {
+  min-height: 56px;
+  font-size: 22px;
+}
+.dom-select-field[data-variant="underline"][data-size="large"] .dom-select-value {
+  padding: 13px 0;
+  font-size: 22px;
+}
+.dom-select-field[data-variant="underline"][data-size="large"] .dom-select-caret {
+  width: 56px;
+  margin-left: 14px;
+}
+
+/* Theme selector (active lane) — sits at the top of the main panel. */
+.dom-theme-select {
+  gap: 8px;
+  padding: 18px 28px 0;
+}
+@media (max-width: 760px) {
+  .dom-theme-select {
+    padding: 14px 16px 0;
+  }
+  .dom-select-field[data-variant="underline"][data-size="large"] .dom-select {
+    width: 100%;
+  }
+  .dom-root .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-trigger {
+    font-size: 18px;
+  }
+  .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-value {
+    font-size: 18px;
+  }
+  .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-caret {
+    width: 48px;
+  }
+}
+
+/* Theme manager rows (Profile) */
+.dom-theme-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Scoped to beat .dom-input { width: 100% } so the row's controls fit inside. */
+.dom-theme-row .dom-input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+.dom-theme-row .dom-theme-emoji {
+  flex: none;
+  width: 48px;
+  text-align: center;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.dom-theme-row .dom-iconbtn {
+  flex: none;
+}
+
+/* ── Buttons & inputs ───────────────────────────────────────────────────── */
+
+.dom-btn {
+  background-color: var(--ink);
+  color: var(--bg);
+  padding: 10px 16px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.005em;
+  border: 1px solid var(--ink);
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.12s ease;
+  white-space: nowrap;
+}
+.dom-btn:hover {
+  transform: translateY(-1px);
+}
+.dom-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+.dom-btn-ghost {
+  background: transparent;
+  color: var(--ink);
+}
+.dom-btn-ghost:hover {
+  background-color: var(--chip);
+}
+.dom-btn-sm {
+  padding: 7px 12px;
+  font-size: 12px;
+}
+.dom-btn-danger {
+  background-color: #a3342a;
+  color: #fff;
+  border-color: #a3342a;
+}
+.dom-btn-danger:hover {
+  background-color: #8c2c23;
+}
+.dom-btn-danger-ghost {
+  color: #a3342a;
+}
+.dom-btn-danger-ghost:hover {
+  background-color: color-mix(in oklab, #a3342a 12%, transparent);
+}
+.dom-iconbtn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  transition: background-color 0.12s;
+}
+.dom-iconbtn:hover {
+  background-color: var(--chip);
+}
+.dom-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  border-radius: 0;
+  outline: none;
+}
+.dom-input:focus {
+  border-color: var(--accent);
+}
+.dom-input-lg {
+  padding: 18px 20px;
+  font-size: 18px;
+}
+.dom-textarea {
+  resize: vertical;
+  min-height: 90px;
+  font-family: var(--font-body);
+}
+
+/* dom-select — designed listbox that replaces the native <select> so dropdowns
+   match the editorial look (square corners, --line borders, accent highlight)
+   instead of the OS chrome. Styled to read as a sibling of .dom-input. */
+.dom-select {
+  position: relative;
+  width: 100%;
+}
+.dom-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+.dom-select-trigger:hover,
+.dom-select-trigger:focus-visible,
+.dom-select-trigger[data-open="1"] {
+  border-color: var(--accent);
+}
+.dom-select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dom-select-value[data-empty="1"] {
+  color: var(--ink3);
+}
+.dom-select-caret {
+  flex: none;
+  font-size: 11px;
+  color: var(--ink2);
+  transition: transform 0.15s ease;
+}
+.dom-select-trigger[data-open="1"] .dom-select-caret {
+  transform: rotate(180deg);
+}
+.dom-select-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  animation: dom-fade 0.12s ease;
+}
+.dom-select-search {
+  padding: 6px;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-select-search-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+}
+.dom-select-search-input:focus {
+  border-color: var(--accent);
+}
+.dom-select-list {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.dom-select-empty {
+  padding: 12px 10px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink3);
+  text-align: center;
+}
+.dom-select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.dom-select-option[data-active="1"] {
+  background-color: var(--accent);
+  color: var(--bg);
+}
+.dom-select-option[data-selected="1"] {
+  font-weight: 600;
+}
+.dom-select-check {
+  flex: none;
+  width: 14px;
+  font-size: 12px;
+  color: var(--accent);
+}
+.dom-select-option[data-active="1"] .dom-select-check {
+  color: var(--bg);
+}
+.dom-select-option-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Day-detail edit controls (rating/note/date/remove/replace). */
+.dom-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dom-edit-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-note-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.dom-note-saved {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+}
+.dom-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  /* Pin to the bottom of the right column so the action bar stays put across
+     tabs whose content heights differ (the modal height is now fixed). */
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--lineSoft);
+  flex-wrap: wrap;
+}
+.dom-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.dom-confirm-q {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink2);
+}
+.dom-chip {
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--lineSoft);
+  color: var(--ink2);
+  background: transparent;
+  transition: background-color 0.12s;
+}
+.dom-chip:hover {
+  background-color: var(--chip);
+}
+.dom-chip[data-active="1"] {
+  background-color: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+/* ── Weekly grid ────────────────────────────────────────────────────────── */
+
+.dom-week {
+  padding: 24px 28px 48px;
+}
+.dom-week-hd {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+}
+.dom-week-title h1 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  font-size: 44px;
+  line-height: 1;
+  margin: 6px 0 0;
+}
+.dom-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-week-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── Week title → mini calendar picker ──────────────────────────────────── */
+.dom-week-title-anchor {
+  position: relative;
+}
+.dom-week-title-btn {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+}
+.dom-week-title-btn h1 {
+  transition: opacity 0.12s ease;
+}
+.dom-week-title-btn:hover h1 {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+.dom-week-title-sep {
+  color: var(--ink3);
+  font-weight: 400;
+  margin: 0 0.1em;
+}
+.dom-week-title-caret {
+  font-size: 18px;
+  color: var(--ink3);
+  transform: translateY(-2px);
+}
+.dom-week-title-btn[aria-expanded="true"] .dom-week-title-caret {
+  color: var(--ink);
+}
+
+.dom-wp-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+.dom-wp {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 71;
+  width: 280px;
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+  padding: 14px;
+  font-family: var(--font-mono);
+}
+.dom-wp-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.dom-wp-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+.dom-wp-nav {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink2);
+  width: 26px;
+  height: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.dom-wp-nav:hover {
+  background-color: var(--chip);
+}
+.dom-wp-dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+.dom-wp-dow-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  color: var(--ink3);
+}
+.dom-wp-dow-ko {
+  font-style: normal;
+  font-size: 7px;
+  opacity: 0.7;
+}
+.dom-wp-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dom-wp-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  border-radius: 4px;
+}
+/* Selection is week-based: hovering or activating any day lights the row. */
+.dom-wp-row:hover {
+  background-color: var(--chip);
+}
+.dom-wp-row[data-active="1"] {
+  background-color: color-mix(in oklab, var(--accent) 16%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.dom-wp-day {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
+  padding: 7px 0;
+  position: relative;
+}
+.dom-wp-day[data-inmonth="0"] {
+  color: var(--ink3);
+  opacity: 0.55;
+}
+.dom-wp-day[data-today="1"] {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* Dot marks days that already have a logged album. */
+.dom-wp-day[data-logged="1"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: var(--accent, #4b9a86);
+  transform: translateX(-50%);
+}
+.dom-wp-today-btn {
+  width: 100%;
+  margin-top: 12px;
+  background-color: var(--ink);
+  color: var(--bg);
+  border: 1px solid var(--ink);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.dom-grid {
+  display: grid;
+  /* --cols is the number of visible day cells (7 normally; fewer when a
+     split week is clipped to a single month). Falls back to 7. */
+  grid-template-columns: repeat(var(--cols, 7), minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+.dom-grid > * {
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  min-height: 280px;
+  position: relative;
+}
+.dom-grid-label {
+  display: none;
+}
+
+/* Day cell */
+.dom-day {
+  display: flex;
+  flex-direction: column;
+}
+.dom-day-hd {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--lineSoft);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+}
+.dom-day-num {
+  font-size: 13px;
+  font-weight: 600;
+}
+.dom-day-bar {
+  opacity: 0.35;
+}
+.dom-day-dow {
+  color: var(--ink);
+}
+.dom-day-album-rating {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 3px;
+  font-size: 11px;
+  line-height: 1;
+  margin-left: auto;
+  color: var(--ink3);
+}
+.dom-day-album-rating > span,
+.dom-month-cal-rating-star {
+  display: inline-flex;
+  align-items: center;
+  font-size: 18px;
+  line-height: 1;
+  padding-bottom: 5px;
+}
+.dom-day[data-today="1"] .dom-day-hd {
+  background-color: var(--accent);
+  color: #fff;
+}
+.dom-day[data-today="1"] .dom-day-dow,
+.dom-day[data-today="1"] .dom-day-dowKo {
+  color: #fff;
+  opacity: 1;
+}
+.dom-day-body {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+.dom-day-body:hover {
+  background-color: var(--chip);
+}
+.dom-day-empty {
+  cursor: default;
+}
+.dom-day-empty:hover {
+  background: transparent;
+}
+.dom-cover-wrap {
+  box-shadow: var(--coverShadow);
+  transition: transform 0.2s ease;
+  flex: none;
+  width: 100%;
+  max-width: 220px;
+}
+.dom-day-body:hover .dom-cover-wrap {
+  transform: translateY(-2px);
+}
+.dom-day-meta {
+  text-align: center;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 4px;
+  /* A little breathing room below the genre/year so it isn't flush to the
+     cell's bottom border. */
+  padding-bottom: 10px;
+  /* Fill the space under the cover so the artist + genre/year sit at the bottom
+     (title stays just under the artwork). No min-height:0 — the box must keep
+     its content height so a long title can't overflow onto the artist. */
+  flex: 1;
+}
+.dom-day-meta .dom-artist {
+  margin-top: auto;
+}
+.dom-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  /* Break a space-less title (e.g. "MAMIHLAPINATAPAI") to the cell width
+     instead of letting it spill past the edge. Spaced titles still wrap
+     normally; only an over-wide unbreakable word is split. */
+  overflow-wrap: break-word;
+}
+.dom-artist {
+  font-family: var(--font-display);
+  font-size: 12px;
+  opacity: 0.8;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+.dom-artist-ko {
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+.dom-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+/* "from 〈album〉" context shown for a logged single track. */
+.dom-from {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--ink3);
+  line-height: 1.2;
+  /* Secondary context — keep it to one line so a long album title can't blow
+     out the cell (on screen and in the PNG export). Truncate with an ellipsis. */
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dom-meta .dom-dot {
+  opacity: 0.5;
+  margin: 0 4px;
+}
+.dom-day[data-future="1"] {
+  opacity: 0.55;
+}
+.dom-day[data-future="1"][data-empty="0"] .dom-day-body {
+  filter: grayscale(0.1);
+}
+
+/* ── Drag-and-drop: reschedule a logged album by dragging it onto an empty day */
+.dom-day-draggable,
+.dom-month-cal-cell[draggable="true"] {
+  cursor: grab;
+}
+.dom-day-draggable:active,
+.dom-month-cal-cell[draggable="true"]:active {
+  cursor: grabbing;
+}
+/* Let the cell own the drag — don't start the cover image's native drag. */
+.dom-cover img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+/* Highlight the day being hovered as a drop target (empty or filled). */
+.dom-day[data-dragover="1"] .dom-day-body,
+.dom-month-cal-cell[data-dragover="1"] {
+  background-color: color-mix(in oklab, var(--accent) 16%, transparent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* Split-by-month: cells from the adjacent month blend into the page entirely —
+   no date, no preview. opacity:0 (not display:none) keeps the column height so
+   the 7-day grid stays aligned. */
+.dom-day[data-outmonth="1"] .dom-day-hd {
+  opacity: 0;
+}
+.dom-day-blank {
+  flex: 1;
+  background-color: var(--bg);
+}
+
+/* ── Journal rail (right sidebar) ───────────────────────────────────────── */
+
+.dom-rail {
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  align-self: start;
+  position: sticky;
+  top: 24px;
+}
+.dom-rail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dom-rail-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-rail-today {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+.dom-rail-today > div:first-child {
+  box-shadow: var(--coverShadow);
+  align-self: center;
+}
+.dom-rail-today-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dom-rail-today-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.dom-rail-today-artist {
+  font-family: var(--font-display);
+  font-size: 13px;
+  opacity: 0.75;
+}
+.dom-rail-note {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 0;
+  color: var(--ink2);
+}
+.dom-rail-recent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dom-rail-recent-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 4px;
+  transition: background-color 0.12s;
+  width: 100%;
+}
+.dom-rail-recent-row:hover {
+  background-color: var(--chip);
+}
+.dom-rail-recent-row > div:first-child {
+  box-shadow: var(--coverShadow);
+  width: 40px;
+  height: 40px;
+}
+.dom-rail-recent-title {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.dom-rail-recent-artist {
+  font-family: var(--font-display);
+  font-size: 10px;
+  opacity: 0.7;
+}
+.dom-rail-recent-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink3);
+}
+
+/* ── Monthly Overview — editorial calendar ─────────────────────────────── */
+
+.dom-month {
+  padding: 28px 32px 36px;
+}
+.dom-month-hd {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: end;
+  padding-bottom: 22px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--line);
+}
+.dom-month-hd-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dom-month-h1 {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  margin: 0;
+  line-height: 0.95;
+}
+.dom-month-h1-name {
+  font-size: 80px;
+}
+.dom-month-h1-year {
+  font-size: 22px;
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+  font-weight: 400;
+}
+.dom-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.dom-month-today {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.dom-month-today:hover {
+  background-color: var(--chip);
+}
+.dom-month-hd-right {
+  display: flex;
+  gap: 28px;
+  align-items: flex-end;
+}
+.dom-month-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 80px;
+}
+.dom-month-stat-num {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 38px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--ink);
+}
+.dom-month-stat-num i {
+  font-size: 18px;
+  font-style: normal;
+  color: var(--ink3);
+  margin-left: 2px;
+}
+.dom-month-stat-num i.dom-month-stat-star {
+  font-size: 24px;
+  margin-left: 0;
+  color: var(--accent);
+}
+.dom-month-stat-lbl {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-top: 4px;
+}
+
+/* Featured pick block */
+.dom-month-feature {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  margin-bottom: 36px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-month-feature-hero {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 28px;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px;
+  transition: transform 0.2s ease;
+}
+.dom-month-feature-hero:hover {
+  transform: translateY(-2px);
+}
+.dom-month-feature-hero .dom-cover {
+  box-shadow: var(--coverShadow);
+}
+.dom-month-feature-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.dom-feature-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.dom-feature-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 42px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-top: 2px;
+}
+.dom-feature-artist {
+  font-family: var(--font-display);
+  font-size: 20px;
+  opacity: 0.85;
+  line-height: 1.2;
+}
+.dom-feature-artist span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink3);
+  letter-spacing: 0.1em;
+}
+.dom-feature-note {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink2);
+  margin: 6px 0 0;
+  padding-left: 14px;
+  border-left: 2px solid var(--accent);
+  max-width: 520px;
+}
+.dom-feature-meta-line {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--ink3);
+  text-transform: uppercase;
+}
+.dom-feature-meta-line .dom-dot {
+  opacity: 0.5;
+}
+.dom-month-feature-side {
+  border-left: 1px solid var(--lineSoft);
+  padding-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dom-feature-side-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--ink3);
+  text-transform: uppercase;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-feature-side-item {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  padding: 4px;
+  transition: background-color 0.12s ease;
+}
+.dom-feature-side-item:hover {
+  background-color: var(--chip);
+}
+.dom-feature-side-item .dom-cover {
+  box-shadow: var(--coverShadow);
+}
+.dom-feature-side-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.dom-feature-side-artist {
+  font-family: var(--font-display);
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+.dom-feature-side-date {
+  text-align: right;
+}
+.dom-feature-side-date > span:first-child {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.dom-feature-side-dow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+
+/* Calendar */
+.dom-month-cal {
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+.dom-month-cal-hd {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.dom-month-cal-dow {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  background-color: var(--chip);
+}
+.dom-month-cal-dowKo {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--ink3);
+  letter-spacing: 0.1em;
+}
+.dom-month-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+/* Three classes (0,3,0) so these beat the global `.dom-root button:not(.dom-btn)`
+   reset (0,2,1) — the board's cells are <button>s, and without the extra
+   `.dom-month-cal` qualifier the reset wins and zeroes the cell borders +
+   padding (killing the grid lines + the cover's side margin). The Share poster's
+   cells are <div>s, so they were never affected. */
+.dom-month-cal .dom-month-cal-grid .dom-month-cal-cell {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  background-color: transparent;
+  transition: background-color 0.12s ease;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+.dom-month-cal-cell:not(:disabled):hover {
+  background-color: var(--chip);
+}
+/* Days outside the viewed month blend into the page (no faded preview). */
+.dom-month-cal-cell[data-inmonth="0"] {
+  background-color: var(--bg);
+  cursor: default;
+}
+.dom-month-cal-cell[data-today="1"] {
+  background-color: color-mix(in oklab, var(--accent) 12%, transparent);
+}
+.dom-month-cal-cell[data-today="1"]:not(:disabled):hover {
+  background-color: color-mix(in oklab, var(--accent) 18%, transparent);
+}
+.dom-month-cal-date {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+}
+.dom-month-cal-num {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.dom-month-cal-today {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  font-weight: 600;
+}
+/* Per-day rating, top-right of the cell — shares the date row's right slot with
+   the TODAY label. */
+.dom-month-cal-date-right {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.dom-month-cal-rating {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.dom-month-cal-rating-star {
+  color: var(--accent);
+}
+/* Cover bleeds to the cell edges — negative margins cancel the cell's
+   10px/12px padding so only the date + text stay inset. */
+.dom-month-cal-cover {
+  width: auto;
+  max-width: none;
+  margin: 0 -12px;
+  transition: transform 0.2s ease;
+}
+.dom-month-cal-cell:hover .dom-month-cal-cover {
+  transform: translateY(-2px);
+}
+/* Match the weekly day-card: cover, title under it, artist pushed to the
+   bottom of the cell. */
+.dom-month-cal-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding-bottom: 6px;
+  flex: 1;
+}
+.dom-month-cal-info .dom-month-cal-artist {
+  margin-top: auto;
+}
+.dom-month-cal-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  overflow-wrap: break-word;
+}
+.dom-month-cal-artist {
+  font-family: var(--font-display);
+  font-size: 11px;
+  opacity: 0.8;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+.dom-month-cal-artist-ko {
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+}
+/* Empty in-month day: "+ log · 기록" affordance, mirroring the week view. */
+.dom-month-cal-add {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--ink3);
+  transition: color 0.12s ease;
+}
+.dom-month-cal-cell[data-add="1"]:hover .dom-month-cal-add {
+  color: var(--ink);
+}
+.dom-month-cal-add-mark {
+  font-size: 22px;
+  line-height: 1;
+}
+.dom-month-cal-add-lbl {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* ── Profile / Year in Listening ───────────────────────────────────────── */
+
+.dom-profile {
+  padding: 24px 28px 28px;
+}
+/* Profile (settings) page */
+.dom-profile-settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 8px;
+}
+.dom-settings-card {
+  border: 1px solid var(--line);
+  background-color: var(--bg);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dom-settings-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-settings-key {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink3);
+}
+.dom-settings-val {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--ink);
+  text-align: right;
+  word-break: break-all;
+}
+.dom-settings-note {
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink2);
+  margin: 0;
+}
+.dom-settings-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+@media (max-width: 720px) {
+  .dom-profile-settings {
+    grid-template-columns: 1fr;
+  }
+}
+.dom-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+.dom-stat {
+  border: 1px solid var(--line);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: var(--bg);
+}
+.dom-stat-lg {
+  grid-column: span 2;
+  grid-row: span 2;
+  padding: 28px 30px;
+}
+.dom-stat-wide {
+  grid-column: span 2;
+}
+.dom-stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-stat-num {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 96px;
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+}
+.dom-stat-lg .dom-stat-num {
+  font-size: 168px;
+}
+.dom-stat-sub {
+  font-family: var(--font-display);
+  font-size: 14px;
+  opacity: 0.7;
+  margin-top: auto;
+}
+.dom-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dom-bar {
+  display: grid;
+  grid-template-columns: 110px 1fr 30px;
+  gap: 10px;
+  align-items: center;
+}
+.dom-bar-label {
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+.dom-bar-track {
+  height: 8px;
+  background-color: var(--lineSoft);
+  position: relative;
+}
+.dom-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background-color: var(--accent);
+  transition: width 0.4s ease;
+}
+.dom-bar-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink3);
+  text-align: right;
+}
+.dom-profile-section {
+  margin-top: 28px;
+}
+.dom-section-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  margin: 0 0 16px;
+}
+.dom-fives {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+.dom-fives-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.dom-fives-item > div:first-child {
+  box-shadow: var(--coverShadow);
+}
+.dom-fives-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+}
+.dom-fives-artist {
+  font-family: var(--font-display);
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* ── Journal search ─────────────────────────────────────────────────────── */
+
+.dom-search {
+  padding: 24px 28px 28px;
+}
+.dom-search-box {
+  margin-bottom: 14px;
+}
+.dom-search-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dom-search-result {
+  display: grid;
+  grid-template-columns: 120px 1fr 80px;
+  gap: 18px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--lineSoft);
+  transition: background-color 0.12s, border-color 0.12s;
+  width: 100%;
+}
+.dom-search-result:hover {
+  background-color: var(--chip);
+  border-color: var(--line);
+}
+.dom-search-result > div:first-child {
+  box-shadow: var(--coverShadow);
+  width: 120px;
+  height: 120px;
+}
+.dom-search-result-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.dom-search-result-artist {
+  font-family: var(--font-display);
+  font-size: 14px;
+  opacity: 0.8;
+  margin: 2px 0 6px;
+}
+.dom-search-result-artist span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink3);
+  letter-spacing: 0.1em;
+}
+.dom-search-result-context {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink3);
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+.dom-search-result-date {
+  text-align: right;
+}
+.dom-search-result-day {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.dom-search-result-dow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--ink3);
+  margin-top: 4px;
+}
+.dom-search-result-full-date {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink3);
+  margin-top: 8px;
+}
+.dom-search-sentinel {
+  height: 1px;
+}
+.dom-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--ink3);
+  font-family: var(--font-mono);
+}
+
+/* ── Placeholder panel (screens not yet built) ─────────────────────────── */
+
+.dom-placeholder {
+  padding: 80px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.dom-placeholder h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.dom-placeholder p {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 0;
+}
+
+/* ── Day Detail modal ───────────────────────────────────────────────────── */
+
+.dom-scrim {
+  /* Shared modal width — every overlay modal (Day Detail, Add/Log Album,
+     Share Week/Month) reads this token so they're all the same size. */
+  --dom-modal-w: 1100px;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(10, 8, 6, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  /* Allow the overlay to scroll when a modal is taller than the viewport, and
+     fall back to top-alignment (`safe`) so the top + bottom (e.g. the Save
+     image button) stay reachable instead of being clipped off-screen. */
+  align-items: safe center;
+  justify-content: safe center;
+  padding: 24px;
+  overflow-y: auto;
+  animation: dom-fade 0.2s ease;
+}
+@keyframes dom-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes dom-rise {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+}
+.dom-detail {
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  width: 100%;
+  max-width: var(--dom-modal-w);
+  /* Fixed height so every tab (tracklist / journal / info) is the same size —
+     matched to the journal tab; taller content (long tracklist) scrolls inside. */
+  height: min(660px, 90vh);
+  display: grid;
+  grid-template-columns: 460px minmax(0, 1fr);
+  /* Bound the single row to the modal's height so the right column's
+     overflow-y can engage — without this the row grows to the tracklist's
+     content height and a long list (and the actions below it) gets clipped. */
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
+  animation: dom-rise 0.25s ease;
+}
+.dom-detail-left {
+  padding: 36px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background-color: var(--bg);
+}
+.dom-detail-cover {
+  box-shadow: 0 24px 60px -16px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 420px;
+  align-self: center;
+}
+.dom-detail-datewrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin-top: auto;
+}
+.dom-detail-date {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 46px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.dom-detail-dow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--ink3);
+}
+.dom-detail-format {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-top: 4px;
+}
+.dom-detail-right {
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* min-height:0 lets this grid item shrink below its content so overflow-y
+     scrolls the tracklist instead of stretching the modal. */
+  min-height: 0;
+  overflow-y: auto;
+}
+.dom-detail-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 48px;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  margin: 4px 0 0;
+}
+.dom-detail-artist {
+  font-family: var(--font-display);
+  font-size: 22px;
+  opacity: 0.85;
+}
+.dom-detail-from {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--ink3);
+  margin-top: 6px;
+}
+.dom-detail-artist-ko {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink3);
+  letter-spacing: 0.08em;
+}
+.dom-detail-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  background-color: var(--panel);
+}
+.dom-detail-close:hover {
+  background-color: var(--chip);
+}
+.dom-tabs {
+  display: flex;
+  gap: 18px;
+  border-bottom: 1px solid var(--lineSoft);
+  margin-top: 6px;
+}
+.dom-tab {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.dom-tab[data-active="1"] {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+.dom-tracklist li {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-track-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink3);
+}
+.dom-track-name {
+  font-family: var(--font-body);
+  font-size: 15px;
+}
+.dom-track-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink3);
+}
+.dom-info-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-info-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-info-value {
+  font-family: var(--font-body);
+  font-size: 15px;
+}
+.dom-rate-row {
+  display: flex;
+  gap: 4px;
+}
+.dom-star {
+  font-size: 26px;
+  line-height: 1;
+  color: var(--lineSoft);
+}
+.dom-star[data-on="1"] {
+  color: var(--ink);
+}
+
+/* ── Add / Log Album flow ───────────────────────────────────────────────── */
+
+/* Tracklist shown under a picked album, to log a single track. */
+.dom-addflow-tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 8px 14px;
+  padding-left: 12px;
+  border-left: 2px solid var(--lineSoft);
+}
+.dom-addflow-tracks-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding: 4px 0;
+}
+.dom-addflow-track {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-align: left;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.dom-addflow-track:hover {
+  background-color: var(--chip);
+}
+.dom-addflow-track[data-active="1"] {
+  border-color: var(--accent);
+  background-color: color-mix(in oklab, var(--accent) 12%, transparent);
+}
+.dom-addflow-track-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--ink);
+  flex: 1;
+  min-width: 0;
+}
+.dom-addflow-track-artist {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink3);
+}
+
+.dom-rating-input {
+  display: flex;
+  gap: 4px;
+}
+.dom-rating-input button {
+  font-size: 28px;
+  padding: 2px 4px;
+  line-height: 1;
+}
+.dom-addflow {
+  width: 100%;
+  max-width: var(--dom-modal-w);
+  /* Shared modal width (--dom-modal-w) keeps every overlay modal the same size.
+     Fixed height: the modal stays put while only its inner content changes
+     (the body scrolls internally instead of resizing the modal). Tall enough
+     for the manual-entry form (cover + title + artist) to fit without scroll. */
+  height: min(680px, 88vh);
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  padding: 32px 36px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: dom-rise 0.25s ease;
+}
+.dom-addflow-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--ink3);
+}
+.dom-addflow-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.dom-addflow-progress {
+  height: 2px;
+  background-color: var(--lineSoft);
+  margin: 4px 0 12px;
+  position: relative;
+}
+.dom-addflow-progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background-color: var(--accent);
+  transition: width 0.25s ease;
+}
+.dom-addflow-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  /* Scroll the body (not the modal) when content is taller than the fixed
+     modal — e.g. the manual-entry form on a short viewport — so the pinned
+     actions row never gets overlapped. */
+  overflow-y: auto;
+}
+.dom-addflow-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-addflow-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.dom-addflow-result {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 12px;
+  padding: 8px;
+  align-items: center;
+  border: 1px solid transparent;
+  transition: background-color 0.12s, border-color 0.12s;
+  width: 100%;
+}
+.dom-addflow-result:hover {
+  background-color: var(--chip);
+}
+.dom-addflow-result[data-active="1"] {
+  border-color: var(--accent);
+  background-color: var(--chip);
+}
+.dom-addflow-result-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+}
+.dom-addflow-result-artist {
+  font-family: var(--font-display);
+  font-size: 12px;
+  opacity: 0.7;
+}
+.dom-addflow-check {
+  color: var(--accent);
+  font-size: 16px;
+}
+.dom-addflow-empty {
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 14px 4px;
+}
+.dom-addflow-seeall {
+  margin-top: 4px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  flex: none;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.dom-addflow-seeall:hover {
+  background-color: var(--chip);
+  color: var(--ink);
+}
+/* ── Manual entry (music not on Apple Music) ─────────────────────────────── */
+.dom-addflow-manual-link {
+  flex: none;
+  margin-top: 4px;
+  padding: 10px;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.dom-addflow-manual-link:hover {
+  background-color: var(--chip);
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.dom-addflow-manual-back,
+.dom-addflow-manual-removeimg {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.dom-addflow-manual-back:hover,
+.dom-addflow-manual-removeimg:hover {
+  color: var(--ink);
+}
+.dom-addflow-manual-cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.dom-addflow-imagedrop {
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px dashed var(--line);
+  background-color: var(--chip);
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+.dom-addflow-imagedrop:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.dom-addflow-imagedrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.dom-addflow-weeknav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dom-addflow-weeknav-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--lineSoft);
+  background: transparent;
+  color: var(--ink2);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.dom-addflow-weeknav-btn:hover {
+  background-color: var(--chip);
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.dom-addflow-weeknav-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+}
+.dom-addflow-selected {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.dom-addflow-datestack {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.dom-addflow-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 4px;
+  border: 1px solid var(--lineSoft);
+  transition: background-color 0.12s, border-color 0.12s;
+}
+.dom-addflow-date:hover {
+  background-color: var(--chip);
+}
+.dom-addflow-date[data-active="1"] {
+  background-color: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.dom-addflow-date-num {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+}
+.dom-addflow-date-dow {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  opacity: 0.7;
+}
+.dom-addflow-preview {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--lineSoft);
+  margin-top: 6px;
+}
+.dom-addflow-preview-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+}
+.dom-addflow-preview-artist {
+  font-family: var(--font-display);
+  font-size: 12px;
+  opacity: 0.7;
+}
+.dom-addflow-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 6px;
+  margin-top: auto;
+}
+
+/* ── Share Week card ────────────────────────────────────────────────────── */
+
+.dom-share {
+  position: relative;
+  /* Reserve space above the card so the close button sits in this gap instead
+     of overlapping the card header (@username / theme meta). */
+  padding-top: 52px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  animation: dom-rise 0.25s ease;
+}
+/* Float the close button into the reserved space above the card, flush to its
+   right edge — clear of the card's top-right meta. */
+.dom-share > .dom-detail-close {
+  top: 0;
+  right: 0;
+}
+.dom-share-card {
+  width: min(var(--dom-modal-w), 96vw);
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.3);
+}
+/* Month poster shares the standard modal width (--dom-modal-w) — same box as
+   the week poster, so all overlay modals stay the same size. */
+/* Same WYSIWYG export fix as the week poster: use a self-contained web-safe
+   serif for the wrapping text so the canvas export wraps identically to the
+   on-screen preview (no font substitution → no overlap or clipping). */
+.dom-share-card-month .dom-month-cal-title,
+.dom-share-card-month .dom-month-cal-artist,
+.dom-share-card-month .dom-month-cal-artist-ko,
+.dom-share-card-month .dom-from {
+  font-family: Georgia, "Times New Roman", Times, serif;
+}
+/* The poster grid always shows the full 7-day week, overriding the responsive
+   column counts the weekly board uses at narrow widths. */
+.dom-share-card .dom-grid.dom-share-week {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.dom-share-card .dom-grid.dom-share-week > * {
+  min-height: 0;
+}
+.dom-share-card .dom-grid.dom-share-week .dom-day-blank {
+  background-color: var(--bg);
+}
+/* Cover bleeds to the cell edges (no margin); only the date header + text
+   stay inset, matching the calendar look. */
+.dom-share-card .dom-share-week .dom-day-body {
+  padding: 0;
+  gap: 0;
+}
+.dom-share-card .dom-share-week .dom-cover-wrap {
+  width: 100%;
+  max-width: none;
+  box-shadow: none;
+}
+.dom-share-card .dom-share-week .dom-day-meta {
+  padding: 12px 12px 14px;
+}
+/* WYSIWYG export fix. The PNG exporter rasterizes the card on a canvas that
+   can't load our external "Spectral" web font, so it silently falls back to a
+   wider system serif — wrapping titles onto more lines than the on-screen
+   (Spectral-measured) box allowed, which overflowed onto the artist (overlap)
+   or got clipped. Using a self-contained web-safe serif for the wrapping text
+   means the on-screen preview and the downloaded PNG use the *same* font and
+   wrap identically, so the cell grows to fit and nothing overlaps or clips. */
+.dom-share-card .dom-share-week .dom-title,
+.dom-share-card .dom-share-week .dom-artist,
+.dom-share-card .dom-share-week .dom-artist-ko,
+.dom-share-card .dom-share-week .dom-from {
+  font-family: Georgia, "Times New Roman", Times, serif;
+}
+.dom-share-card .dom-share-week .dom-title {
+  font-size: 13px;
+  line-height: 1.3;
+}
+/* Fixed header height so every day's bottom border lands on the same line —
+   otherwise the export's fallback font gives headers uneven heights and the
+   divider looks stepped. */
+.dom-share-card .dom-share-week .dom-day-hd {
+  height: 44px;
+  align-items: center;
+  box-sizing: border-box;
+}
+/* The PNG export falls back from Spectral to a system serif. Georgia uses
+   old-style figures (the "3" drops below the baseline and looks misaligned),
+   so fall back to a lining-figure serif and force lining numerals. On screen
+   Spectral is present, so this is export-only. */
+.dom-share-card .dom-share-title {
+  font-family: "Spectral", "Times New Roman", Times, serif;
+  font-variant-numeric: lining-nums;
+}
+.dom-share-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.dom-share-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--ink3);
+}
+.dom-share-title {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  margin-top: 4px;
+  /* Keep "Month · Week N" on one line — the PNG export falls back to a wider
+     serif, which otherwise wraps the number onto the divider below. */
+  white-space: nowrap;
+}
+.dom-share-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  text-align: right;
+}
+/* Handle (small mono) over the active theme name (serif title) — mirrors the
+   header's left side (eyebrow over the month/week title). */
+.dom-share-user {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink3);
+}
+.dom-share-theme {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink2);
+}
+.dom-share-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.dom-share-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dom-share-cell > div:first-child {
+  box-shadow: var(--coverShadow);
+  width: 100%;
+  aspect-ratio: 1;
+}
+.dom-share-cell-title {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.dom-share-cell-artist {
+  font-family: var(--font-display);
+  font-size: 10px;
+  opacity: 0.7;
+}
+.dom-share-ft {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--ink3);
+}
+.dom-share-actions {
+  display: flex;
+  gap: 8px;
+}
+/* The share buttons sit on the dimmed scrim, so the ghost "Copy link" button
+   needs a solid (non-transparent) fill — otherwise the darkened page shows
+   through. Panel fill keeps it distinct from the solid-ink "Save image". */
+.dom-share-actions .dom-btn-ghost {
+  background-color: var(--panel);
+}
+.dom-share-actions .dom-btn-ghost:hover {
+  background-color: var(--bg);
+}
+
+/* ── Sign-in gate ───────────────────────────────────────────────────────── */
+
+.dom-signin {
+  width: min(420px, 100%);
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  padding: 36px 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dom-signin-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.dom-signin-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-signin-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 32px;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  margin: 2px 0 0;
+}
+.dom-signin-sub {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--ink2);
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+.dom-signin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dom-signin-or {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 4px 0;
+}
+.dom-signin-msg {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink2);
+  margin: 4px 0 0;
+}
+.dom-signin-msg[data-error="1"] {
+  color: var(--accent);
+}
+
+/* Account control in the top bar */
+.dom-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.dom-account-email {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink3);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Tweaks panel ───────────────────────────────────────────────────────── */
+
+/* Panel drops down from the header Tweaks button (top-right). */
+.dom-tweaks-panel {
+  position: fixed;
+  top: 92px;
+  right: 28px;
+  z-index: 60;
+  width: 260px;
+  background-color: var(--panel, #f6efe0);
+  border: 1px solid var(--line, #1a1612);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: none;
+  overflow: visible;
+  font-family: var(--font-mono);
+}
+.dom-tweaks-panel-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dom-tweaks-panel-title {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.dom-tweaks-close {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink2);
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 8px;
+}
+.dom-tweaks-close:hover {
+  background-color: var(--chip);
+}
+.dom-tweak-section {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-tweak-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dom-tweak-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+.dom-tweak-select {
+  border: 1px solid var(--line);
+  background-color: var(--bg);
+  color: var(--ink);
+  padding: 7px 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.dom-tweak-radios {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.dom-tweak-radio {
+  border: 1px solid var(--lineSoft);
+  color: var(--ink2);
+  padding: 5px 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.dom-tweak-radio[data-active="1"] {
+  background-color: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.dom-tweak-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.dom-tweak-switch {
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 4px 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.dom-tweak-switch[data-on="1"] {
+  background-color: var(--ink);
+  color: var(--bg);
+}
+
+/* ── Responsive collapse ────────────────────────────────────────────────── */
+
+@media (max-width: 1320px) {
+  .dom-root {
+    grid-template-columns: 1fr;
+  }
+  .dom-rail {
+    display: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .dom-root {
+    --pad: 18px;
+    --gap: 16px;
+  }
+  .dom-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .dom-grid > * {
+    min-height: 240px;
+  }
+  .dom-week-title h1 {
+    font-size: 32px;
+  }
+  .dom-nav-ko {
+    display: none;
+  }
+  .dom-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dom-fives {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .dom-detail {
+    grid-template-columns: 1fr;
+    /* Single-column: revert to content-driven height + whole-modal scroll
+       (the fixed two-column height doesn't apply when stacked). */
+    grid-template-rows: auto;
+    height: auto;
+    max-height: 95vh;
+    overflow-y: auto;
+  }
+  .dom-detail-left {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .dom-month {
+    padding: 18px 20px;
+  }
+  .dom-month-h1-name {
+    font-size: 56px;
+  }
+  .dom-month-hd {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .dom-month-hd-right {
+    gap: 18px;
+  }
+  .dom-month-feature {
+    grid-template-columns: 1fr;
+  }
+  .dom-month-feature-hero {
+    grid-template-columns: 200px 1fr;
+    gap: 18px;
+  }
+  .dom-feature-title {
+    font-size: 32px;
+  }
+  .dom-month-feature-side {
+    border-left: 0;
+    border-top: 1px solid var(--lineSoft);
+    padding-left: 0;
+    padding-top: 18px;
+  }
+}
+
+@media (max-width: 760px) {
+  .dom-root {
+    --pad: 12px;
+    --gap: 10px;
+  }
+  .dom-month-h1 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .dom-month-h1-name {
+    font-size: 44px;
+  }
+  .dom-month-hd-right {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .dom-month-feature-hero {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .dom-month-feature-hero .dom-cover {
+    max-width: 240px;
+  }
+  .dom-feature-title {
+    font-size: 28px;
+  }
+  .dom-month-cal-cell {
+    padding: 8px 8px 10px;
+    gap: 6px;
+  }
+  .dom-month-cal-cover {
+    max-width: 76px;
+  }
+  .dom-month-cal-info {
+    display: none;
+  }
+  .dom-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dom-stat-num {
+    font-size: 60px;
+  }
+  .dom-stat-lg .dom-stat-num {
+    font-size: 100px;
+  }
+  .dom-fives {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dom-search-result {
+    grid-template-columns: 72px 1fr;
+    gap: 12px;
+    padding: 10px;
+  }
+  .dom-search-result > div:first-child {
+    width: 72px;
+    height: 72px;
+  }
+  .dom-search-result-date {
+    display: none;
+  }
+  .dom-search-result-title {
+    font-size: 15px;
+  }
+  .dom-topbar {
+    grid-template-columns: 1fr auto;
+  }
+  .dom-topbar-actions {
+    display: none;
+  }
+  .dom-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dom-grid > * {
+    min-height: 200px;
+  }
+  /* On 2-col mobile grid, the label cell appears first then the 7 days. */
+  .dom-grid-label {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 18px 16px;
+    min-height: 0;
+    background-color: var(--chip);
+  }
+  .dom-grid-label-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .dom-grid-label .dom-month-name {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 28px;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .dom-grid-label .dom-month-sub {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--ink2);
+  }
+  .dom-grid-label .dom-month-tag {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    padding-top: 6px;
+    border-top: 1px solid var(--lineSoft);
+    margin-top: 2px;
+  }
+  .dom-week-title {
+    display: none;
+  }
+  .dom-week-hd {
+    justify-content: flex-end;
+  }
+}
+
+/* ── Home landing & guest mode ──────────────────────────────────────────── */
+
+a.dom-brand,
+a.dom-signin-brand {
+  text-decoration: none;
+  color: inherit;
+}
+a.dom-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dom-btn-lg {
+  padding: 14px 24px;
+  font-size: 15px;
+}
+
+.dom-home-hero {
+  width: min(640px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 48px 24px;
+  text-align: left;
+}
+.dom-home-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(44px, 8vw, 72px);
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+  margin: 0;
+}
+.dom-home-sub {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--ink2);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 46ch;
+}
+.dom-home-covers {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+.dom-home-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.dom-home-note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+  margin: 0;
+}
+
+.dom-guest-banner {
+  grid-column: 1 / -1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ink2);
+  background-color: var(--chip);
+  border: 1px solid var(--line);
+  padding: 8px 14px;
+}
+.dom-guest-banner a {
+  color: var(--ink);
+}
+
+.dom-signin-sub a {
+  color: var(--ink);
+}
+
+/* ── Empty-week hint & clickable empty days ─────────────────────────────── */
+
+button.dom-day-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  cursor: pointer;
+  color: var(--ink3);
+  transition: color 0.12s ease, background-color 0.12s ease;
+}
+button.dom-day-add:hover {
+  color: var(--ink);
+  background-color: var(--chip);
+}
+.dom-day-add-mark {
+  font-size: 22px;
+  line-height: 1;
+}
+.dom-day-add-lbl {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}

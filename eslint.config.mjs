@@ -9,9 +9,13 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".next-verify/**",
     "out/**",
     "build/**",
+    "mobile/**",
     "next-env.d.ts",
+    // Design reference bundle — Babel-in-browser prototype, not production code.
+    "design_handoff_day_of_music/**",
   ]),
 ]);
 

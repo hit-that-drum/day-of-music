@@ -1,0 +1,23 @@
+node_modules
+.next
+.git
+.idea
+.vercel
+coverage
+build
+out
+
+# Not part of the web app image
+mobile
+design_handoff_day_of_music
+
+# Secrets — pass env via compose / build args instead
+.env*
+!.env.example
+
+*.tsbuildinfo
+npm-debug.log*
+.DS_Store
+Dockerfile
+docker-compose.yml
+.dockerignore

@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/mobile/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -22,6 +23,7 @@
 
 # misc
 .DS_Store
+.idea/
 *.pem
 
 # debug
@@ -40,3 +42,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.next-verify/
