@@ -417,14 +417,12 @@ export function DayOfMusicApp() {
           weekStart={labelDate}
           days={days}
           splitByMonth={tweaks.weekSplit}
-          today={TODAY}
           onClose={() => setShowShare(false)}
         />
       )}
       {showMonthShare && (
         <MonthShareCard
           anchor={anchor}
-          today={TODAY}
           onClose={() => setShowMonthShare(false)}
         />
       )}

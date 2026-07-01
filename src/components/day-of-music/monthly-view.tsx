@@ -90,18 +90,18 @@ export function MonthlyView({
             <span className="dom-month-h1-name">{MONTHS_LONG[month]}</span>
             <span className="dom-month-h1-year">{year}</span>
           </h1>
-          <div className="dom-month-nav">
-            <button className="dom-wp-nav" onClick={onPrev} aria-label="Previous month">
-              ←
-            </button>
-            <button className="dom-wp-nav" onClick={onNext} aria-label="Next month">
-              →
-            </button>
-            {!isCurrentMonth && (
-              <Button onClick={() => onJump(today)}>THIS MONTH</Button>
-            )}
-            <Button onClick={onShare}>SHARE MONTH</Button>
-          </div>
+        </div>
+        <div className="dom-month-nav">
+          <button className="dom-wp-nav" onClick={onPrev} aria-label="Previous month">
+            ←
+          </button>
+          <button className="dom-wp-nav" onClick={onNext} aria-label="Next month">
+            →
+          </button>
+          {!isCurrentMonth && (
+            <Button onClick={() => onJump(today)}>THIS MONTH</Button>
+          )}
+          <Button onClick={onShare}>SHARE MONTH</Button>
         </div>
         <div className="dom-month-hd-right">
           <div className="dom-month-stat">

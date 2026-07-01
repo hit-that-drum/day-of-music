@@ -1068,13 +1068,16 @@
 .dom-month-hd {
   display: grid;
   grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
   gap: 24px;
-  align-items: end;
+  align-items: start;
   padding-bottom: 22px;
   margin-bottom: 28px;
   border-bottom: 1px solid var(--line);
 }
 .dom-month-hd-left {
+  grid-column: 1;
+  grid-row: 1 / span 2;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1100,13 +1103,19 @@
   font-weight: 400;
 }
 .dom-month-nav {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 0;
 }
 .dom-month-hd-right {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: end;
   display: flex;
   gap: 28px;
   align-items: flex-end;
@@ -2388,10 +2397,16 @@
   padding: 0;
   gap: 0;
 }
+.dom-share-card .dom-share-week .dom-day-body:hover {
+  background-color: transparent;
+}
 .dom-share-card .dom-share-week .dom-cover-wrap {
   width: 100%;
   max-width: none;
   box-shadow: none;
+}
+.dom-share-card .dom-share-week .dom-day-body:hover .dom-cover-wrap {
+  transform: none;
 }
 .dom-share-card .dom-share-week .dom-day-meta {
   padding: 12px 12px 14px;
@@ -2420,6 +2435,15 @@
   height: 44px;
   align-items: center;
   box-sizing: border-box;
+}
+.dom-share-card .dom-share-monthcal .dom-month-cal-cell:hover {
+  background-color: transparent;
+}
+.dom-share-card .dom-share-monthcal .dom-month-cal-cell[data-inmonth="0"]:hover {
+  background-color: var(--bg);
+}
+.dom-share-card .dom-share-monthcal .dom-month-cal-cell:hover .dom-month-cal-cover {
+  transform: none;
 }
 /* The PNG export falls back from Spectral to a system serif. Georgia uses
    old-style figures (the "3" drops below the baseline and looks misaligned),
@@ -2767,10 +2791,23 @@
     font-size: 56px;
   }
   .dom-month-hd {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
     gap: 16px;
   }
+  .dom-month-hd-left {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .dom-month-nav {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+  }
   .dom-month-hd-right {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: end;
     gap: 18px;
   }
   .dom-month-feature {
@@ -2804,7 +2841,24 @@
   .dom-month-h1-name {
     font-size: 44px;
   }
+  .dom-month-hd {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+  .dom-month-hd-left {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .dom-month-nav {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: end;
+    justify-content: flex-end;
+  }
   .dom-month-hd-right {
+    grid-column: 1;
+    grid-row: 3;
+    justify-self: stretch;
     flex-wrap: wrap;
     gap: 14px;
   }

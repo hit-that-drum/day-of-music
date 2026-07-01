@@ -23,11 +23,9 @@ import { Button } from "@/components/day-of-music/atoms";
 
 export function MonthShareCard({
   anchor,
-  today,
   onClose,
 }: {
   anchor: Date;
-  today: Date;
   onClose: () => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -102,13 +100,11 @@ export function MonthShareCard({
               {days.map((d, i) => {
                 const inMonth = d.getMonth() === month;
                 const album = inMonth ? albumsByDate[fmtDate(d)] : undefined;
-                const isToday = fmtDate(d) === fmtDate(today);
                 return (
                   <div
                     key={i}
                     className="dom-month-cal-cell"
                     data-inmonth={inMonth ? "1" : "0"}
-                    data-today={isToday ? "1" : "0"}
                     data-empty={album ? "0" : "1"}
                   >
                     {inMonth && (
@@ -116,7 +112,6 @@ export function MonthShareCard({
                         <div className="dom-month-cal-date">
                           <span className="dom-month-cal-num">{d.getDate()}</span>
                           <span className="dom-month-cal-date-right">
-                            {isToday && <span className="dom-month-cal-today">TODAY</span>}
                             {album && album.rating > 0 && (
                               <span className="dom-month-cal-rating">
                                 <span className="dom-month-cal-rating-star">★</span>

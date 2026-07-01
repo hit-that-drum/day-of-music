@@ -24,7 +24,6 @@ export function ShareCard({
   weekStart,
   days,
   splitByMonth,
-  today,
   onClose,
 }: {
   /** Day whose month + week-number label the header shows (the week's label day). */
@@ -33,7 +32,6 @@ export function ShareCard({
   days: Date[];
   /** When true, days outside the labelled month are blanked (split-by-month). */
   splitByMonth: boolean;
-  today: Date;
   onClose: () => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -97,13 +95,10 @@ export function ShareCard({
           {/* Week grid — identical markup/classes to the weekly board. */}
           <div className="dom-grid dom-share-week" style={{ ["--cols" as string]: cells.length }}>
             {cells.map(({ d, outOfMonth, album }) => {
-              const isToday = fmtDate(d) === fmtDate(today);
-
               return (
                 <div
                   key={fmtDate(d)}
                   className="dom-day"
-                  data-today={isToday && !outOfMonth ? "1" : "0"}
                   data-empty={album ? "0" : "1"}
                   data-outmonth={outOfMonth ? "1" : "0"}
                 >
