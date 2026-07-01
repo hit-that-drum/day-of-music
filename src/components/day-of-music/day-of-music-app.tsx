@@ -389,6 +389,7 @@ export function DayOfMusicApp() {
 
       {openAlbum && (
         <DayDetail
+          key={`${openAlbum.id}:${openAlbum.date}`}
           album={openAlbum}
           onClose={() => setOpenAlbum(null)}
           onUpdate={handleUpdate}

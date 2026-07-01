@@ -63,8 +63,8 @@ type JournalContextValue = {
   getByDate: (date: string) => Album | undefined;
   /** Log (or replace) the album in the active theme's slot at `date`. */
   logAlbum: (album: Album, entry: { date: string; rating: number; note: string }) => void;
-  /** Update rating/note for the slot at `date`. */
-  updateSlot: (date: string, patch: { rating?: number; note?: string }) => void;
+  /** Update the slot at `date` while keeping the same album id/date. */
+  updateSlot: (date: string, patch: Partial<Album>) => void;
   /** Move (or swap) the album between two dates within the active theme. */
   moveSlot: (fromDate: string, toDate: string) => void;
   /** Clear the slot at `date`. */
@@ -396,15 +396,20 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     [upsertMutate, guest, theme],
   );
 
-  // Update rating/note for the slot at a date (keeps the same album + date).
+  // Update the slot at a date (keeps the same album id + slot date).
   const updateSlot = useCallback<JournalContextValue["updateSlot"]>(
     (date, patch) => {
       const base = albumsByDate[date];
       if (!base) return;
+      const merged = { ...base, ...patch, date };
+      const metadataChanged = Object.keys(patch).some(
+        (key) => !["date", "note", "rating"].includes(key),
+      );
+      if (metadataChanged) upsertCustomAlbum(merged, !guest);
       // Re-persist the whole album so its metadata blob isn't dropped.
-      upsertMutate({ album: { ...base, ...patch, date }, theme });
+      upsertMutate({ album: merged, theme });
     },
-    [albumsByDate, upsertMutate, theme],
+    [albumsByDate, guest, upsertMutate, theme],
   );
 
   // Move (or swap) the album between two dates within the active theme. A move

@@ -83,6 +83,13 @@ export const GENRES = [
   "Alt Rock", "Folk", "Latin · Reggaeton", "R&B · Dance",
 ] as const;
 
+const EMPTY_GENRES = new Set(["", "-", "—", "–", "ㅡ"]);
+
+export function normalizeGenre(genre: string | undefined | null): string {
+  const trimmed = genre?.trim() ?? "";
+  return EMPTY_GENRES.has(trimmed) ? "" : trimmed;
+}
+
 // ── Date helpers (dayjs-backed) ─────────────────────────────────────────────
 // Signatures stay Date/string based so call sites don't depend on dayjs.
 

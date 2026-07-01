@@ -2,13 +2,20 @@
 
 "use client";
 
-import type { Album } from "@/lib/day-of-music/data";
+import { normalizeGenre, type Album } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button, Stars } from "@/components/day-of-music/atoms";
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
   const { albums } = useJournal();
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const todayUtc = Date.UTC(currentYear, today.getMonth(), today.getDate());
+  const yearStartUtc = Date.UTC(currentYear, 0, 1);
+  const daysSinceYearStart = Math.floor((todayUtc - yearStartUtc) / MS_PER_DAY) + 1;
   const total = albums.length;
   // Keep the numeric mean around so we don't parseFloat the display string back.
   const avgRatingNum = total
@@ -18,7 +25,8 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
 
   const byGenre: Record<string, number> = {};
   albums.forEach((a) => {
-    byGenre[a.genre] = (byGenre[a.genre] ?? 0) + 1;
+    const genre = normalizeGenre(a.genre);
+    if (genre) byGenre[genre] = (byGenre[genre] ?? 0) + 1;
   });
   const topTenGenres = Object.entries(byGenre).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
@@ -28,7 +36,7 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
     <div className="dom-profile">
       <div className="dom-week-hd">
         <div className="dom-week-title">
-          <span className="dom-eyebrow">올해의 청음 · 2026 in listening</span>
+          <span className="dom-eyebrow">올해의 청음 · {currentYear} in listening</span>
           <h1>My Year in Music</h1>
         </div>
         <div className="dom-week-actions">
@@ -42,7 +50,7 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
           <div className="dom-stat-label">albums logged</div>
           <div className="dom-stat-num">{String(total).padStart(2, "0")}</div>
           <div className="dom-stat-sub">
-            across {Object.keys(byGenre).length} genres · 14 days
+            across {Object.keys(byGenre).length} genres · {daysSinceYearStart} days
           </div>
         </div>
         <div className="dom-stat">

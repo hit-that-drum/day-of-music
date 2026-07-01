@@ -10,6 +10,7 @@ import {
   DOW,
   MONTHS_LONG,
   fmtDate,
+  normalizeGenre,
   weekOfMonth,
   type Album,
 } from "@/lib/day-of-music/data";
@@ -60,7 +61,7 @@ export function ShareCard({
 
   // Footer stats only count albums that belong to the labelled month.
   const week = cells.map((c) => c.album).filter((a): a is Album => Boolean(a));
-  const genreCount = new Set(week.map((a) => a.genre)).size;
+  const genreCount = new Set(week.map((a) => normalizeGenre(a.genre)).filter(Boolean)).size;
   const avg = week.length
     ? (week.reduce((s, a) => s + a.rating, 0) / week.length).toFixed(1)
     : "—";

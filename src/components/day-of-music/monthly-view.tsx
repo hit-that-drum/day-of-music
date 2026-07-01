@@ -10,6 +10,7 @@ import {
   MONTHS_LONG,
   addDays,
   fmtDate,
+  normalizeGenre,
   // parseDate,
   startOfWeek,
   type Album,
@@ -73,7 +74,7 @@ export function MonthlyView({
 
   const totalLogged = monthAlbums.length;
   const completion = Math.round((totalLogged / lastOfMonth.date()) * 100);
-  const genreCount = new Set(monthAlbums.map((a) => a.genre)).size;
+  const genreCount = new Set(monthAlbums.map((a) => normalizeGenre(a.genre)).filter(Boolean)).size;
   // Average rating across the month (mirrors the share card). "—" when empty.
   const avgRating = monthAlbums.length
     ? (monthAlbums.reduce((s, a) => s + a.rating, 0) / monthAlbums.length).toFixed(1)

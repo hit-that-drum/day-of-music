@@ -12,6 +12,7 @@ import {
   MONTHS_LONG,
   addDays,
   fmtDate,
+  normalizeGenre,
   startOfWeek,
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
@@ -51,7 +52,7 @@ export function MonthShareCard({
     const d = dayjs(a.date);
     return d.month() === month && d.year() === year;
   });
-  const genreCount = new Set(monthAlbums.map((a) => a.genre)).size;
+  const genreCount = new Set(monthAlbums.map((a) => normalizeGenre(a.genre)).filter(Boolean)).size;
   const avg = monthAlbums.length
     ? (monthAlbums.reduce((s, a) => s + a.rating, 0) / monthAlbums.length).toFixed(1)
     : "—";

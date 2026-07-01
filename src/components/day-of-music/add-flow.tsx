@@ -93,6 +93,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
   const [manualMode, setManualMode] = useState(false);
   const [manualTitle, setManualTitle] = useState("");
   const [manualArtist, setManualArtist] = useState("");
+  const [manualGenre, setManualGenre] = useState("");
   // Cover image as a (downscaled) data URL, or null for the typographic tile.
   const [manualArt, setManualArt] = useState<string | null>(null);
   // Stable id for the manual album, created once per modal open.
@@ -141,7 +142,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
       title: manualTitle.trim(),
       titleKo: "",
       artist: manualArtist.trim() || "Unknown artist",
-      genre: "—",
+      genre: manualGenre.trim(),
       year: new Date().getFullYear(),
       format: "Manual",
       cover: coverFromSeed(manualId),
@@ -417,6 +418,16 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
               value={manualArtist}
               onChange={(e) => setManualArtist(e.target.value)}
             />
+
+            <label className="dom-addflow-label" style={{ marginTop: 4 }}>
+              Genre · 장르
+            </label>
+            <input
+              className="dom-input"
+              placeholder="Genre, e.g. Pop, R&B, Indie Rock"
+              value={manualGenre}
+              onChange={(e) => setManualGenre(e.target.value)}
+            />
           </div>
         )}
 
@@ -515,7 +526,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
           {step < 3 ? (
             <Button
               disabled={
-                (step === 1 && (manualMode ? !manualTitle.trim() : !picked)) ||
+                (step === 1 && (manualMode ? !manualTitle.trim() || !manualGenre.trim() : !picked)) ||
                 (step === 2 && selectedDates.size === 0)
               }
               onClick={() => {

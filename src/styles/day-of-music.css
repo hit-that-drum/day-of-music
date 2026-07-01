@@ -1979,6 +1979,21 @@
   font-family: var(--font-body);
   font-size: 15px;
 }
+.dom-info-pane {
+  display: flex;
+  flex-direction: column;
+}
+.dom-info-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dom-info-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 10px;
+}
 .dom-rate-row {
   display: flex;
   gap: 4px;
@@ -2056,8 +2071,9 @@
   /* Shared modal width (--dom-modal-w) keeps every overlay modal the same size.
      Fixed height: the modal stays put while only its inner content changes
      (the body scrolls internally instead of resizing the modal). Tall enough
-     for the manual-entry form (cover + title + artist) to fit without scroll. */
-  height: min(680px, 88vh);
+     for the manual-entry form (cover + title + artist + genre) to show without
+     scrolling on desktop, while still fitting inside the overlay padding. */
+  height: min(820px, calc(100vh - 48px));
   background-color: var(--panel);
   border: 1px solid var(--line);
   padding: 32px 36px;
