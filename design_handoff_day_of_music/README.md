@@ -53,12 +53,12 @@ Each day has one album. The grid is the canvas: a Mon–Sun weekly view of album
 
 **Layout (mobile / iOS frame):**
 - Main grid is 2 columns. The first cell becomes a **label cell** showing `January / — Week 2 / 2026 · 큐레이션`. The remaining 7 cells fill the rest of the grid in DOW order (MON, TUE, WED, THU, FRI, SAT, SUN).
-- The page-level title ("January — Week 2") is hidden on mobile so the arrows + "Share week" button sit at the top right with minimal vertical space.
+- The page-level title ("January — Week 2") is hidden on mobile so the arrows + "SHARE WEEK" button sit at the top right with minimal vertical space.
 
 **Header (`.dom-week-hd`):**
 - Eyebrow: `큐레이션 · weekly view` (mono, 10px, 0.18em letter-spacing, uppercase, --ink3)
 - H1: `January — Week 2` (display serif, 500 weight, 44px, -0.03em letter-spacing, line-height 1)
-- Actions: prev/next icon buttons (36×36, 1px border) + "Share week" primary button
+- Actions: prev/next icon buttons (36×36, 1px border) + "SHARE WEEK" primary button
 
 **Day cell (`.dom-day`):**
 - Header row: day number (display, 13px, 600) + bar separator + DOW (mono, 11px, 0.14em) + Korean DOW right-aligned (mono, 9px)
@@ -333,7 +333,7 @@ The "today" reference date in the prototype is hardcoded to **Jan 8, 2026** (`ne
 | Add flow Save entry | Click | `onSave({ id, date, rating, note })` then close |
 | Search input | Type | Filter results live (title + artist + mood string match) |
 | Genre chip | Click | Filter by genre |
-| "Share week/month" | Click | Open ShareCard modal |
+| "SHARE WEEK/SHARE MONTH" | Click | Open ShareCard modal |
 
 ---
 

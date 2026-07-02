@@ -5,11 +5,18 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { DOW, formatDisplayDate, parseDate, type Album } from "@/lib/day-of-music/data";
+import {
+  DOW,
+  formatDisplayDate,
+  normalizeGenre,
+  parseDate,
+  type Album,
+} from "@/lib/day-of-music/data";
 import { fetchAlbumDetail } from "@/lib/day-of-music/music-search";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button } from "@/components/day-of-music/atoms";
+import { Modal } from "@/components/day-of-music/modal";
 
 type Tab = "tracklist" | "journal" | "info";
 
@@ -46,6 +53,11 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
   const [note, setNote] = useState(album.note);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [noteSaved, setNoteSaved] = useState(false);
+  const [editingInfo, setEditingInfo] = useState(false);
+  const [infoTitle, setInfoTitle] = useState(album.title);
+  const [infoArtist, setInfoArtist] = useState(album.artist);
+  const [infoGenre, setInfoGenre] = useState(normalizeGenre(album.genre));
+  const [infoYear, setInfoYear] = useState(String(album.year));
   // Holds the "Saved ✓" auto-clear timer so we can cancel it on unmount and
   // before re-arming — otherwise setNoteSaved could fire after unmount.
   const noteSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -54,6 +66,13 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
   const date = parseDate(album.date);
   const seed = album.tracks.length;
   const noteDirty = note !== album.note;
+  const isManual = album.id.startsWith("manual-") || album.format === "Manual";
+  const infoDirty =
+    infoTitle !== album.title ||
+    infoArtist !== album.artist ||
+    infoGenre !== normalizeGenre(album.genre) ||
+    infoYear !== String(album.year);
+  const infoValid = Boolean(infoTitle.trim() && infoGenre.trim());
 
   // iTunes albums arrive from Search with no tracklist (Search returns album
   // metadata only). The first time such an album is opened, pull its tracks +
@@ -103,6 +122,30 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
     noteSavedTimer.current = setTimeout(() => setNoteSaved(false), 1600);
   }
 
+  function saveInfo() {
+    const parsedYear = Number.parseInt(infoYear, 10);
+    const next = {
+      title: infoTitle.trim(),
+      artist: infoArtist.trim() || "Unknown artist",
+      genre: infoGenre.trim(),
+      year: Number.isFinite(parsedYear) ? parsedYear : album.year,
+    };
+    onUpdate(album.date, next);
+    setInfoTitle(next.title);
+    setInfoArtist(next.artist);
+    setInfoGenre(next.genre);
+    setInfoYear(String(next.year));
+    setEditingInfo(false);
+  }
+
+  function resetInfoDraft() {
+    setInfoTitle(album.title);
+    setInfoArtist(album.artist);
+    setInfoGenre(normalizeGenre(album.genre));
+    setInfoYear(String(album.year));
+    setEditingInfo(false);
+  }
+
   useEffect(
     () => () => {
       if (noteSavedTimer.current) clearTimeout(noteSavedTimer.current);
@@ -111,18 +154,8 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
   );
 
   return (
-    <div
-      className="dom-scrim"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label={`${album.title} detail`}
-    >
-      <div className="dom-detail" onClick={(e) => e.stopPropagation()}>
-        <button className="dom-detail-close" onClick={onClose} aria-label="Close">
-          ✕
-        </button>
-
+    <Modal label={`${album.title} detail`} onClose={onClose}>
+      <div className="dom-detail">
         <div className="dom-detail-left">
           <div className="dom-detail-cover">
             <Cover album={album} size="100%" />
@@ -228,19 +261,81 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
           )}
 
           {tab === "info" && (
-            <div>
-              <InfoRow label="Released" value={formatReleased(album, country)} />
-              <InfoRow label="Genre" value={album.genre} />
-              <InfoRow label="Format" value={album.format} />
-              {album.kind === "track" ? (
-                <>
-                  <InfoRow label="Type" value="Track" />
-                  {album.albumTitle && <InfoRow label="From album" value={album.albumTitle} />}
-                </>
+            <div className="dom-info-pane">
+              {editingInfo ? (
+                <div className="dom-info-edit">
+                  <label className="dom-edit-field">
+                    <span className="dom-edit-label">Title · 제목</span>
+                    <input
+                      className="dom-input"
+                      value={infoTitle}
+                      onChange={(e) => setInfoTitle(e.target.value)}
+                    />
+                  </label>
+                  <label className="dom-edit-field">
+                    <span className="dom-edit-label">Artist · 아티스트</span>
+                    <input
+                      className="dom-input"
+                      value={infoArtist}
+                      onChange={(e) => setInfoArtist(e.target.value)}
+                    />
+                  </label>
+                  <label className="dom-edit-field">
+                    <span className="dom-edit-label">Genre · 장르</span>
+                    <input
+                      className="dom-input"
+                      value={infoGenre}
+                      onChange={(e) => setInfoGenre(e.target.value)}
+                    />
+                  </label>
+                  <label className="dom-edit-field">
+                    <span className="dom-edit-label">Year · 연도</span>
+                    <input
+                      className="dom-input"
+                      inputMode="numeric"
+                      value={infoYear}
+                      onChange={(e) => setInfoYear(e.target.value)}
+                    />
+                  </label>
+                  <div className="dom-info-edit-actions">
+                    <Button variant="ghost" size="sm" onClick={resetInfoDraft}>
+                      Cancel
+                    </Button>
+                    <Button size="sm" onClick={saveInfo} disabled={!infoDirty || !infoValid}>
+                      Save Info
+                    </Button>
+                  </div>
+                </div>
               ) : (
-                <InfoRow label="Tracks" value={String(album.tracks.length)} />
+                <>
+                  <InfoRow label="Released" value={formatReleased(album, country)} />
+                  <InfoRow label="Genre" value={normalizeGenre(album.genre) || "—"} />
+                  <InfoRow label="Format" value={album.format} />
+                  {album.kind === "track" ? (
+                    <>
+                      <InfoRow label="Type" value="Track" />
+                      {album.albumTitle && <InfoRow label="From album" value={album.albumTitle} />}
+                    </>
+                  ) : (
+                    <InfoRow label="Tracks" value={String(album.tracks.length)} />
+                  )}
+                  <InfoRow label="Logged on" value={formatDisplayDate(album.date, country)} />
+                  {isManual && (
+                    <div className="dom-info-edit-actions">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          resetInfoDraft();
+                          setEditingInfo(true);
+                        }}
+                      >
+                        Revise Info
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
-              <InfoRow label="Logged on" value={formatDisplayDate(album.date, country)} />
             </div>
           )}
 
@@ -270,7 +365,7 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

@@ -31,10 +31,11 @@
   min-width: 0;
 }
 /* Bare-button reset — strips native chrome from icon/nav/cell buttons so they
-   can be styled from scratch. Excludes .dom-btn: its own border/background/
-   padding must win (otherwise this reset, being more specific than .dom-btn,
-   flattens real buttons inside .dom-root into plain text). */
-.dom-root button:not(.dom-btn) {
+   can be styled from scratch. Excludes .dom-btn and .dom-modal-close: their
+   own border/background/padding must win (otherwise this reset, being more
+   specific, flattens real buttons inside .dom-root into plain text — e.g. the
+   modal ✕ lost its box only when a modal mounted inside .dom-root). */
+.dom-root button:not(.dom-btn):not(.dom-modal-close) {
   font: inherit;
   color: inherit;
   cursor: pointer;
@@ -219,25 +220,42 @@
   font-size: 13px;
 }
 .dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:hover,
-.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:focus-visible,
-.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger[data-open="1"] {
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger:focus-visible,
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger[data-open="1"] {
   border: 0;
   border-bottom: 1px solid var(--lineSoft);
 }
-.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:hover .dom-select-caret,
-.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:focus-visible .dom-select-caret,
-.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger[data-open="1"] .dom-select-caret {
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger:hover
+  .dom-select-caret,
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger:focus-visible
+  .dom-select-caret,
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger[data-open="1"]
+  .dom-select-caret {
   background-color: var(--accent);
 }
-.dom-root .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-trigger {
+.dom-root
+  .dom-select-field[data-variant="underline"][data-size="large"]
+  .dom-select-trigger {
   min-height: 56px;
   font-size: 22px;
 }
-.dom-select-field[data-variant="underline"][data-size="large"] .dom-select-value {
+.dom-select-field[data-variant="underline"][data-size="large"]
+  .dom-select-value {
   padding: 13px 0;
   font-size: 22px;
 }
-.dom-select-field[data-variant="underline"][data-size="large"] .dom-select-caret {
+.dom-select-field[data-variant="underline"][data-size="large"]
+  .dom-select-caret {
   width: 56px;
   margin-left: 14px;
 }
@@ -254,13 +272,17 @@
   .dom-select-field[data-variant="underline"][data-size="large"] .dom-select {
     width: 100%;
   }
-  .dom-root .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-trigger {
+  .dom-root
+    .dom-select-field[data-variant="underline"][data-size="large"]
+    .dom-select-trigger {
     font-size: 18px;
   }
-  .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-value {
+  .dom-select-field[data-variant="underline"][data-size="large"]
+    .dom-select-value {
     font-size: 18px;
   }
-  .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-caret {
+  .dom-select-field[data-variant="underline"][data-size="large"]
+    .dom-select-caret {
     width: 48px;
   }
 }
@@ -300,7 +322,9 @@
   letter-spacing: -0.005em;
   border: 1px solid var(--ink);
   cursor: pointer;
-  transition: transform 0.12s ease, background-color 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    background-color 0.12s ease;
   white-space: nowrap;
 }
 .dom-btn:hover {
@@ -1068,13 +1092,16 @@
 .dom-month-hd {
   display: grid;
   grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
   gap: 24px;
-  align-items: end;
+  align-items: start;
   padding-bottom: 22px;
   margin-bottom: 28px;
   border-bottom: 1px solid var(--line);
 }
 .dom-month-hd-left {
+  grid-column: 1;
+  grid-row: 1 / span 2;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1100,26 +1127,19 @@
   font-weight: 400;
 }
 .dom-month-nav {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
-}
-.dom-month-today {
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--ink2);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 6px 12px;
-  cursor: pointer;
-}
-.dom-month-today:hover {
-  background-color: var(--chip);
+  margin-top: 0;
 }
 .dom-month-hd-right {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: end;
   display: flex;
   gap: 28px;
   align-items: flex-end;
@@ -1623,17 +1643,210 @@
 .dom-profile-section {
   margin-top: 28px;
 }
+.dom-profile-section-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 0 22px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--lineSoft);
+}
 .dom-section-title {
   font-family: var(--font-display);
   font-weight: 500;
   font-size: 28px;
   letter-spacing: -0.02em;
-  margin: 0 0 16px;
+  line-height: 1.1;
+  margin: 0;
+}
+.dom-section-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.dom-accordion {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.dom-accordion-item + .dom-accordion-item {
+  border-top: 1px solid var(--line);
+}
+.dom-accordion-trigger {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 66px;
+  padding: 14px 0;
+  text-align: left;
+}
+.dom-accordion-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.dom-accordion-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dom-accordion-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.dom-accordion-icon {
+  color: var(--ink3);
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+.dom-accordion-trigger:hover .dom-accordion-icon,
+.dom-accordion-trigger[aria-expanded="true"] .dom-accordion-icon {
+  color: var(--ink);
+}
+.dom-accordion-trigger[aria-expanded="true"] .dom-accordion-icon {
+  transform: rotate(180deg);
+}
+.dom-accordion-panel {
+  border-top: 1px solid var(--lineSoft);
+  padding-bottom: 26px;
+}
+.dom-stat-empty {
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink3);
+}
+.dom-theme-list {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.dom-theme-row {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 104px;
+  padding: 20px 0;
+  text-align: left;
+}
+.dom-theme-row + .dom-theme-row {
+  border-top: 1px solid var(--line);
+}
+.dom-theme-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.dom-theme-row-meta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.dom-theme-row-icon {
+  color: var(--ink3);
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+.dom-theme-row:hover .dom-theme-row-icon {
+  color: var(--ink);
+  transform: translateX(3px);
+}
+.dom-theme-recap-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 12px;
+}
+.dom-theme-recap-title > div {
+  min-width: 0;
+}
+.dom-theme-recap-title h3 {
+  margin: 3px 0 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+.dom-theme-recap-emoji {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 24px;
+}
+.dom-theme-recap-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.dom-stat-compact {
+  min-width: 0;
+  padding: 16px;
+}
+.dom-stat-compact .dom-stat-num {
+  font-size: 48px;
+  letter-spacing: 0;
+}
+.dom-theme-genre-card {
+  grid-column: span 1;
+}
+.dom-theme-genre-card .dom-bar {
+  grid-template-columns: minmax(74px, 0.9fr) minmax(58px, 1fr) 24px;
+  gap: 8px;
+}
+.dom-theme-genre-card .dom-bar-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dom-theme-fives-title {
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
 }
 .dom-fives {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 16px;
+}
+.dom-fives.dom-fives-compact {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
 }
 .dom-fives-item {
   display: flex;
@@ -1683,7 +1896,9 @@
   align-items: center;
   padding: 14px;
   border: 1px solid var(--lineSoft);
-  transition: background-color 0.12s, border-color 0.12s;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
   width: 100%;
 }
 .dom-search-result:hover {
@@ -1813,14 +2028,47 @@
     opacity: 0;
   }
 }
+
+/* ── Modal chrome (shared) ──────────────────────────────────────────────────
+   .dom-modal is the panel wrapper every overlay modal renders through (see
+   modal.tsx). It reserves a gap above the panel where the close button floats,
+   flush right — one spot for every modal, clear of any panel content. */
+.dom-modal {
+  position: relative;
+  width: 100%;
+  max-width: var(--dom-modal-w);
+  padding-top: 52px;
+  animation: dom-rise 0.25s ease;
+}
+.dom-modal-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  background-color: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+.dom-modal-close:hover {
+  background-color: var(--chip);
+}
+
 .dom-detail {
   background-color: var(--panel);
   border: 1px solid var(--line);
   width: 100%;
   max-width: var(--dom-modal-w);
   /* Fixed height so every tab (tracklist / journal / info) is the same size —
-     matched to the journal tab; taller content (long tracklist) scrolls inside. */
-  height: min(660px, 90vh);
+     matched to the journal tab; taller content (long tracklist) scrolls inside.
+     100px = scrim padding (48) + the modal chrome's close-button gap (52). */
+  height: min(660px, calc(100vh - 100px));
   display: grid;
   grid-template-columns: 460px minmax(0, 1fr);
   /* Bound the single row to the modal's height so the right column's
@@ -1828,7 +2076,6 @@
      content height and a long list (and the actions below it) gets clipped. */
   grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
-  animation: dom-rise 0.25s ease;
 }
 .dom-detail-left {
   padding: 36px;
@@ -1907,22 +2154,6 @@
   color: var(--ink3);
   letter-spacing: 0.08em;
 }
-.dom-detail-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--line);
-  font-family: var(--font-mono);
-  background-color: var(--panel);
-}
-.dom-detail-close:hover {
-  background-color: var(--chip);
-}
 .dom-tabs {
   display: flex;
   gap: 18px;
@@ -1982,6 +2213,21 @@
 .dom-info-value {
   font-family: var(--font-body);
   font-size: 15px;
+}
+.dom-info-pane {
+  display: flex;
+  flex-direction: column;
+}
+.dom-info-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dom-info-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 10px;
 }
 .dom-rate-row {
   display: flex;
@@ -2056,20 +2302,18 @@
 }
 .dom-addflow {
   width: 100%;
-  max-width: var(--dom-modal-w);
-  /* Shared modal width (--dom-modal-w) keeps every overlay modal the same size.
-     Fixed height: the modal stays put while only its inner content changes
+  /* Fixed height: the modal stays put while only its inner content changes
      (the body scrolls internally instead of resizing the modal). Tall enough
-     for the manual-entry form (cover + title + artist) to fit without scroll. */
-  height: min(680px, 88vh);
+     for the manual-entry form (cover + title + artist + genre) to show without
+     scrolling on desktop, while still fitting inside the overlay padding plus
+     the modal chrome's close-button gap (48 + 52 = 100px). */
+  height: min(820px, calc(100vh - 100px));
   background-color: var(--panel);
   border: 1px solid var(--line);
   padding: 32px 36px;
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  animation: dom-rise 0.25s ease;
 }
 .dom-addflow-eyebrow {
   font-family: var(--font-mono);
@@ -2129,7 +2373,9 @@
   padding: 8px;
   align-items: center;
   border: 1px solid transparent;
-  transition: background-color 0.12s, border-color 0.12s;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
   width: 100%;
 }
 .dom-addflow-result:hover {
@@ -2171,7 +2417,9 @@
   text-transform: uppercase;
   cursor: pointer;
   flex: none;
-  transition: background-color 0.12s ease, color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
 }
 .dom-addflow-seeall:hover {
   background-color: var(--chip);
@@ -2190,7 +2438,10 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
 }
 .dom-addflow-manual-link:hover {
   background-color: var(--chip);
@@ -2236,7 +2487,9 @@
   letter-spacing: 0.04em;
   cursor: pointer;
   overflow: hidden;
-  transition: border-color 0.12s ease, color 0.12s ease;
+  transition:
+    border-color 0.12s ease,
+    color 0.12s ease;
 }
 .dom-addflow-imagedrop:hover {
   border-color: var(--accent);
@@ -2265,7 +2518,10 @@
   color: var(--ink2);
   cursor: pointer;
   font-size: 14px;
-  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
 }
 .dom-addflow-weeknav-btn:hover {
   background-color: var(--chip);
@@ -2297,7 +2553,9 @@
   gap: 4px;
   padding: 12px 4px;
   border: 1px solid var(--lineSoft);
-  transition: background-color 0.12s, border-color 0.12s;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
 }
 .dom-addflow-date:hover {
   background-color: var(--chip);
@@ -2347,24 +2605,15 @@
 /* ── Share Week card ────────────────────────────────────────────────────── */
 
 .dom-share {
-  position: relative;
-  /* Reserve space above the card so the close button sits in this gap instead
-     of overlapping the card header (@username / theme meta). */
-  padding-top: 52px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   align-items: center;
-  animation: dom-rise 0.25s ease;
-}
-/* Float the close button into the reserved space above the card, flush to its
-   right edge — clear of the card's top-right meta. */
-.dom-share > .dom-detail-close {
-  top: 0;
-  right: 0;
 }
 .dom-share-card {
-  width: min(var(--dom-modal-w), 96vw);
+  /* Fill the modal wrapper (or the fixed-width export stage) — both are
+     bounded by --dom-modal-w, so the poster lays out identically in each. */
+  width: 100%;
   background-color: var(--panel);
   border: 1px solid var(--line);
   padding: 28px;
@@ -2401,10 +2650,16 @@
   padding: 0;
   gap: 0;
 }
+.dom-share-card .dom-share-week .dom-day-body:hover {
+  background-color: transparent;
+}
 .dom-share-card .dom-share-week .dom-cover-wrap {
   width: 100%;
   max-width: none;
   box-shadow: none;
+}
+.dom-share-card .dom-share-week .dom-day-body:hover .dom-cover-wrap {
+  transform: none;
 }
 .dom-share-card .dom-share-week .dom-day-meta {
   padding: 12px 12px 14px;
@@ -2434,6 +2689,20 @@
   align-items: center;
   box-sizing: border-box;
 }
+.dom-share-card .dom-share-monthcal .dom-month-cal-cell:hover {
+  background-color: transparent;
+}
+.dom-share-card
+  .dom-share-monthcal
+  .dom-month-cal-cell[data-inmonth="0"]:hover {
+  background-color: var(--bg);
+}
+.dom-share-card
+  .dom-share-monthcal
+  .dom-month-cal-cell:hover
+  .dom-month-cal-cover {
+  transform: none;
+}
 /* The PNG export falls back from Spectral to a system serif. Georgia uses
    old-style figures (the "3" drops below the baseline and looks misaligned),
    so fall back to a lining-figure serif and force lining numerals. On screen
@@ -2441,6 +2710,13 @@
 .dom-share-card .dom-share-title {
   font-family: "Spectral", "Times New Roman", Times, serif;
   font-variant-numeric: lining-nums;
+}
+/* Stats poster (Share Card): five-star albums strip under the stat blocks.
+   The items themselves reuse the recap modal's .dom-fives markup. */
+.dom-share-fives {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 .dom-share-hd {
   display: flex;
@@ -2756,8 +3032,17 @@
   .dom-stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .dom-theme-recap-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dom-theme-genre-card {
+    grid-column: span 2;
+  }
   .dom-fives {
     grid-template-columns: repeat(4, 1fr);
+  }
+  .dom-fives.dom-fives-compact {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .dom-detail {
     grid-template-columns: 1fr;
@@ -2780,10 +3065,23 @@
     font-size: 56px;
   }
   .dom-month-hd {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
     gap: 16px;
   }
+  .dom-month-hd-left {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .dom-month-nav {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+  }
   .dom-month-hd-right {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: end;
     gap: 18px;
   }
   .dom-month-feature {
@@ -2817,7 +3115,24 @@
   .dom-month-h1-name {
     font-size: 44px;
   }
+  .dom-month-hd {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+  .dom-month-hd-left {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .dom-month-nav {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: end;
+    justify-content: flex-end;
+  }
   .dom-month-hd-right {
+    grid-column: 1;
+    grid-row: 3;
+    justify-self: stretch;
     flex-wrap: wrap;
     gap: 14px;
   }
@@ -2844,6 +3159,34 @@
   .dom-stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .dom-profile-section-hd {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .dom-theme-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 6px;
+  }
+  .dom-theme-row-meta {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .dom-theme-row-icon {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .dom-theme-modal {
+    padding: 24px 20px;
+  }
+  .dom-theme-recap-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dom-theme-genre-card {
+    grid-column: span 2;
+  }
+  .dom-stat-compact .dom-stat-num {
+    font-size: 42px;
+  }
   .dom-stat-num {
     font-size: 60px;
   }
@@ -2852,6 +3195,9 @@
   }
   .dom-fives {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .dom-fives.dom-fives-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .dom-search-result {
     grid-template-columns: 72px 1fr;
@@ -3020,7 +3366,9 @@ button.dom-day-add {
   width: 100%;
   cursor: pointer;
   color: var(--ink3);
-  transition: color 0.12s ease, background-color 0.12s ease;
+  transition:
+    color 0.12s ease,
+    background-color 0.12s ease;
 }
 button.dom-day-add:hover {
   color: var(--ink);

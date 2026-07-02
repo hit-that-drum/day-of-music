@@ -169,7 +169,7 @@ function WeekHeader({ monthLabel, weekNum, onPrev, onNext, onShare, listMode }) 
       <div className="dom-week-actions">
         <button className="dom-iconbtn" onClick={onPrev} aria-label="Previous">←</button>
         <button className="dom-iconbtn" onClick={onNext} aria-label="Next">→</button>
-        <button className="dom-btn" onClick={onShare}>{listMode ? 'Share month' : 'Share week'}</button>
+        <button className="dom-btn" onClick={onShare}>{listMode ? 'SHARE MONTH' : 'SHARE WEEK'}</button>
       </div>
     </div>
   );
