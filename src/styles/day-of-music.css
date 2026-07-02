@@ -31,10 +31,11 @@
   min-width: 0;
 }
 /* Bare-button reset — strips native chrome from icon/nav/cell buttons so they
-   can be styled from scratch. Excludes .dom-btn: its own border/background/
-   padding must win (otherwise this reset, being more specific than .dom-btn,
-   flattens real buttons inside .dom-root into plain text). */
-.dom-root button:not(.dom-btn) {
+   can be styled from scratch. Excludes .dom-btn and .dom-modal-close: their
+   own border/background/padding must win (otherwise this reset, being more
+   specific, flattens real buttons inside .dom-root into plain text — e.g. the
+   modal ✕ lost its box only when a modal mounted inside .dom-root). */
+.dom-root button:not(.dom-btn):not(.dom-modal-close) {
   font: inherit;
   color: inherit;
   cursor: pointer;
@@ -1777,38 +1778,6 @@
   color: var(--ink);
   transform: translateX(3px);
 }
-/* Theme recap modal — same overlay idiom (scrim + panel) and shared width
-   token as Day Detail / Add / Share, so every modal reads as one family. */
-.dom-theme-modal {
-  position: relative;
-  width: 100%;
-  max-width: var(--dom-modal-w);
-  max-height: calc(100vh - 48px);
-  background-color: var(--panel);
-  border: 1px solid var(--line);
-  padding: 32px 36px;
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  animation: dom-rise 0.25s ease;
-}
-.dom-theme-modal-hd {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  /* Keep the meta clear of the absolute-positioned close button. */
-  padding-right: 48px;
-}
-.dom-theme-modal-hd-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.dom-theme-modal-body {
-  min-height: 0;
-  overflow-y: auto;
-}
 .dom-theme-recap-title {
   display: flex;
   align-items: center;
@@ -1862,9 +1831,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.dom-theme-fives {
-  margin-top: 18px;
-}
 .dom-theme-fives-title {
   margin-bottom: 10px;
   font-family: var(--font-mono);
@@ -1872,12 +1838,6 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink3);
-}
-.dom-theme-empty {
-  margin-top: 0;
-  padding: 18px;
-  border: 1px solid var(--lineSoft);
-  background: var(--bg);
 }
 .dom-fives {
   display: grid;
@@ -2068,14 +2028,47 @@
     opacity: 0;
   }
 }
+
+/* ── Modal chrome (shared) ──────────────────────────────────────────────────
+   .dom-modal is the panel wrapper every overlay modal renders through (see
+   modal.tsx). It reserves a gap above the panel where the close button floats,
+   flush right — one spot for every modal, clear of any panel content. */
+.dom-modal {
+  position: relative;
+  width: 100%;
+  max-width: var(--dom-modal-w);
+  padding-top: 52px;
+  animation: dom-rise 0.25s ease;
+}
+.dom-modal-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  background-color: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+.dom-modal-close:hover {
+  background-color: var(--chip);
+}
+
 .dom-detail {
   background-color: var(--panel);
   border: 1px solid var(--line);
   width: 100%;
   max-width: var(--dom-modal-w);
   /* Fixed height so every tab (tracklist / journal / info) is the same size —
-     matched to the journal tab; taller content (long tracklist) scrolls inside. */
-  height: min(660px, 90vh);
+     matched to the journal tab; taller content (long tracklist) scrolls inside.
+     100px = scrim padding (48) + the modal chrome's close-button gap (52). */
+  height: min(660px, calc(100vh - 100px));
   display: grid;
   grid-template-columns: 460px minmax(0, 1fr);
   /* Bound the single row to the modal's height so the right column's
@@ -2083,7 +2076,6 @@
      content height and a long list (and the actions below it) gets clipped. */
   grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
-  animation: dom-rise 0.25s ease;
 }
 .dom-detail-left {
   padding: 36px;
@@ -2161,22 +2153,6 @@
   font-size: 12px;
   color: var(--ink3);
   letter-spacing: 0.08em;
-}
-.dom-detail-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--line);
-  font-family: var(--font-mono);
-  background-color: var(--panel);
-}
-.dom-detail-close:hover {
-  background-color: var(--chip);
 }
 .dom-tabs {
   display: flex;
@@ -2326,21 +2302,18 @@
 }
 .dom-addflow {
   width: 100%;
-  max-width: var(--dom-modal-w);
-  /* Shared modal width (--dom-modal-w) keeps every overlay modal the same size.
-     Fixed height: the modal stays put while only its inner content changes
+  /* Fixed height: the modal stays put while only its inner content changes
      (the body scrolls internally instead of resizing the modal). Tall enough
      for the manual-entry form (cover + title + artist + genre) to show without
-     scrolling on desktop, while still fitting inside the overlay padding. */
-  height: min(820px, calc(100vh - 48px));
+     scrolling on desktop, while still fitting inside the overlay padding plus
+     the modal chrome's close-button gap (48 + 52 = 100px). */
+  height: min(820px, calc(100vh - 100px));
   background-color: var(--panel);
   border: 1px solid var(--line);
   padding: 32px 36px;
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  animation: dom-rise 0.25s ease;
 }
 .dom-addflow-eyebrow {
   font-family: var(--font-mono);
@@ -2632,24 +2605,15 @@
 /* ── Share Week card ────────────────────────────────────────────────────── */
 
 .dom-share {
-  position: relative;
-  /* Reserve space above the card so the close button sits in this gap instead
-     of overlapping the card header (@username / theme meta). */
-  padding-top: 52px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   align-items: center;
-  animation: dom-rise 0.25s ease;
-}
-/* Float the close button into the reserved space above the card, flush to its
-   right edge — clear of the card's top-right meta. */
-.dom-share > .dom-detail-close {
-  top: 0;
-  right: 0;
 }
 .dom-share-card {
-  width: min(var(--dom-modal-w), 96vw);
+  /* Fill the modal wrapper (or the fixed-width export stage) — both are
+     bounded by --dom-modal-w, so the poster lays out identically in each. */
+  width: 100%;
   background-color: var(--panel);
   border: 1px solid var(--line);
   padding: 28px;
@@ -2753,18 +2717,6 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-/* Off-screen stage for direct PNG export (theme SHARE CARD): laid out at the
-   poster's standard width but parked outside the viewport while it renders. */
-.dom-share-export-stage {
-  /* Same width token the scrim provides, so the poster lays out identically
-     to its in-modal counterpart. */
-  --dom-modal-w: 1100px;
-  position: fixed;
-  top: 0;
-  left: -200vw;
-  width: var(--dom-modal-w);
-  pointer-events: none;
 }
 .dom-share-hd {
   display: flex;

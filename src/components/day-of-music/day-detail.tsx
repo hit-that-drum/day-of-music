@@ -16,6 +16,7 @@ import { fetchAlbumDetail } from "@/lib/day-of-music/music-search";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button } from "@/components/day-of-music/atoms";
+import { Modal } from "@/components/day-of-music/modal";
 
 type Tab = "tracklist" | "journal" | "info";
 
@@ -153,18 +154,8 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
   );
 
   return (
-    <div
-      className="dom-scrim"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label={`${album.title} detail`}
-    >
-      <div className="dom-detail" onClick={(e) => e.stopPropagation()}>
-        <button className="dom-detail-close" onClick={onClose} aria-label="Close">
-          ✕
-        </button>
-
+    <Modal label={`${album.title} detail`} onClose={onClose}>
+      <div className="dom-detail">
         <div className="dom-detail-left">
           <div className="dom-detail-cover">
             <Cover album={album} size="100%" />
@@ -374,7 +365,7 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

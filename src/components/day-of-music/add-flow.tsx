@@ -30,6 +30,7 @@ import {
 import { useCountry } from "@/lib/day-of-music/profile";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button } from "@/components/day-of-music/atoms";
+import { Modal } from "@/components/day-of-music/modal";
 
 export type NewEntry = {
   /** One or more days to log this album on. The same album/rating/note is
@@ -256,11 +257,8 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
   );
 
   return (
-    <div className="dom-scrim" onClick={onClose} role="dialog" aria-modal="true" aria-label="Log an album">
-      <div className="dom-addflow" onClick={(e) => e.stopPropagation()}>
-        <button className="dom-detail-close" onClick={onClose} aria-label="Close">
-          ✕
-        </button>
+    <Modal label="Log an album" onClose={onClose}>
+      <div className="dom-addflow">
         <div className="dom-addflow-eyebrow">log an album · 새 앨범 기록</div>
         <h1 className="dom-addflow-title">Step {step} of 3</h1>
 
@@ -553,7 +551,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

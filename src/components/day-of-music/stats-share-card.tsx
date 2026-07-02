@@ -18,6 +18,7 @@ import {
 } from "@/lib/day-of-music/save-card";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button, Stars } from "@/components/day-of-music/atoms";
+import { Modal } from "@/components/day-of-music/modal";
 
 type StatsPosterProps = {
   /** Poster headline, e.g. "2026 · Year in Music" or the theme's name. */
@@ -29,6 +30,9 @@ type StatsPosterProps = {
   stats: AlbumStats<JournalAlbum>;
   /** Theme cards list their five-star albums; the year card stays stats-only. */
   showFives?: boolean;
+  /** When set, five-star items become buttons that hand the album off (e.g.
+      to the Day Detail modal). Omit for static/exported posters. */
+  onOpenAlbum?: (album: JournalAlbum) => void;
   ref?: Ref<HTMLDivElement>;
 };
 
@@ -38,6 +42,7 @@ export function StatsPoster({
   sub,
   stats,
   showFives = false,
+  onOpenAlbum,
   ref,
 }: StatsPosterProps) {
   const { username } = useProfile();
@@ -115,20 +120,34 @@ export function StatsPoster({
           {/* Same item markup as the recap modal's fives list, so each
               album carries its info (title · artist) on the poster too. */}
           <div className="dom-fives dom-fives-compact">
-            {fives.map((a) => (
-              <div
-                key={`${a.theme}:${a.date}:${a.id}`}
-                className="dom-fives-item"
-              >
-                <div>
-                  <Cover album={a} size="100%" />
+            {fives.map((a) => {
+              const key = `${a.theme}:${a.date}:${a.id}`;
+              const content = (
+                <>
+                  <div>
+                    <Cover album={a} size="100%" />
+                  </div>
+                  <div className="dom-fives-info">
+                    <div className="dom-fives-title">{a.title}</div>
+                    <div className="dom-fives-artist">{a.artist}</div>
+                  </div>
+                </>
+              );
+              return onOpenAlbum ? (
+                <button
+                  key={key}
+                  type="button"
+                  className="dom-fives-item"
+                  onClick={() => onOpenAlbum(a)}
+                >
+                  {content}
+                </button>
+              ) : (
+                <div key={key} className="dom-fives-item">
+                  {content}
                 </div>
-                <div className="dom-fives-info">
-                  <div className="dom-fives-title">{a.title}</div>
-                  <div className="dom-fives-artist">{a.artist}</div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -162,29 +181,14 @@ export function StatsShareCard({
   }
 
   return (
-    <div
-      className="dom-scrim"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="SHARE CARD"
-    >
-      <div className="dom-share" onClick={(e) => e.stopPropagation()}>
-        <button
-          className="dom-detail-close"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          ✕
-        </button>
-        <StatsPoster {...posterProps} ref={cardRef} />
-        <div className="dom-share-actions">
-          <Button variant="ghost" onClick={() => void copyCurrentLink()}>
-            Copy link
-          </Button>
-          <Button onClick={handleSaveImage}>Save image</Button>
-        </div>
+    <Modal label="SHARE CARD" onClose={onClose} className="dom-share">
+      <StatsPoster {...posterProps} ref={cardRef} />
+      <div className="dom-share-actions">
+        <Button variant="ghost" onClick={() => void copyCurrentLink()}>
+          Copy link
+        </Button>
+        <Button onClick={handleSaveImage}>Save image</Button>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -21,6 +21,7 @@ import { useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
 import { copyCurrentLink, saveCardAsImage, shareFileName } from "@/lib/day-of-music/save-card";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button } from "@/components/day-of-music/atoms";
+import { Modal } from "@/components/day-of-music/modal";
 
 export function MonthShareCard({
   anchor,
@@ -63,110 +64,105 @@ export function MonthShareCard({
   }
 
   return (
-    <div className="dom-scrim" onClick={onClose} role="dialog" aria-modal="true" aria-label="SHARE MONTH">
-      <div className="dom-share dom-share-month" onClick={(e) => e.stopPropagation()}>
-        <button className="dom-detail-close" onClick={onClose} aria-label="Close">
-          ✕
-        </button>
-        <div className="dom-share-card dom-share-card-month" ref={cardRef}>
-          <div className="dom-share-hd">
-            <div>
-              <div className="dom-share-eyebrow">DAY · OF · MUSIC</div>
-              <div className="dom-share-title">
-                {monthLabel} · {year}
-              </div>
-            </div>
-            <div className="dom-share-meta">
-              <span className="dom-share-user">@{username.trim() || DEFAULT_USERNAME}</span>
-              <span className="dom-share-theme">
-                {themeEmoji ? `${themeEmoji} ${themeName}` : themeName}
-              </span>
+    <Modal label="SHARE MONTH" onClose={onClose} className="dom-share dom-share-month">
+      <div className="dom-share-card dom-share-card-month" ref={cardRef}>
+        <div className="dom-share-hd">
+          <div>
+            <div className="dom-share-eyebrow">DAY · OF · MUSIC</div>
+            <div className="dom-share-title">
+              {monthLabel} · {year}
             </div>
           </div>
-
-          {/* Month grid — identical markup/classes to the monthly board. */}
-          <div className="dom-month-cal dom-share-monthcal">
-            <div className="dom-month-cal-hd">
-              {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((d, i) => (
-                <div key={d} className="dom-month-cal-dow">
-                  <span>{d}</span>
-                  <span className="dom-month-cal-dowKo">{DOW_KO[(i + 1) % 7]}</span>
-                </div>
-              ))}
-            </div>
-            <div
-              className="dom-month-cal-grid"
-              style={{ gridTemplateRows: `repeat(${numWeeks}, minmax(120px, auto))` }}
-            >
-              {days.map((d, i) => {
-                const inMonth = d.getMonth() === month;
-                const album = inMonth ? albumsByDate[fmtDate(d)] : undefined;
-                return (
-                  <div
-                    key={i}
-                    className="dom-month-cal-cell"
-                    data-inmonth={inMonth ? "1" : "0"}
-                    data-empty={album ? "0" : "1"}
-                  >
-                    {inMonth && (
-                      <>
-                        <div className="dom-month-cal-date">
-                          <span className="dom-month-cal-num">{d.getDate()}</span>
-                          <span className="dom-month-cal-date-right">
-                            {album && album.rating > 0 && (
-                              <span className="dom-month-cal-rating">
-                                <span className="dom-month-cal-rating-star">★</span>
-                                {album.rating}
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                        {album && (
-                          <div className="dom-month-cal-cover">
-                            <Cover album={album} size="100%" />
-                          </div>
-                        )}
-                        {album && (
-                          <div className="dom-month-cal-info">
-                            <div className="dom-month-cal-title">{album.title}</div>
-                            <div className="dom-month-cal-artist">
-                              {album.artist}
-                              {album.titleKo && (
-                                <span className="dom-month-cal-artist-ko"> · {album.titleKo}</span>
-                              )}
-                            </div>
-                            {album.kind === "track" && album.albumTitle && (
-                              <div className="dom-from">from 〈{album.albumTitle}〉</div>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="dom-share-ft">
-            <div>
-              {monthAlbums.length} albums · {genreCount} genres
-            </div>
-            <div className="dom-day-album-rating">
-              <span>★</span> 
-              {avg}
-            </div>
+          <div className="dom-share-meta">
+            <span className="dom-share-user">@{username.trim() || DEFAULT_USERNAME}</span>
+            <span className="dom-share-theme">
+              {themeEmoji ? `${themeEmoji} ${themeName}` : themeName}
+            </span>
           </div>
         </div>
-        <div className="dom-share-actions">
-          <Button variant="ghost" onClick={() => void copyCurrentLink()}>
-            Copy link
-          </Button>
-          <Button onClick={handleSaveImage}>
-            Save image
-          </Button>
+
+        {/* Month grid — identical markup/classes to the monthly board. */}
+        <div className="dom-month-cal dom-share-monthcal">
+          <div className="dom-month-cal-hd">
+            {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((d, i) => (
+              <div key={d} className="dom-month-cal-dow">
+                <span>{d}</span>
+                <span className="dom-month-cal-dowKo">{DOW_KO[(i + 1) % 7]}</span>
+              </div>
+            ))}
+          </div>
+          <div
+            className="dom-month-cal-grid"
+            style={{ gridTemplateRows: `repeat(${numWeeks}, minmax(120px, auto))` }}
+          >
+            {days.map((d, i) => {
+              const inMonth = d.getMonth() === month;
+              const album = inMonth ? albumsByDate[fmtDate(d)] : undefined;
+              return (
+                <div
+                  key={i}
+                  className="dom-month-cal-cell"
+                  data-inmonth={inMonth ? "1" : "0"}
+                  data-empty={album ? "0" : "1"}
+                >
+                  {inMonth && (
+                    <>
+                      <div className="dom-month-cal-date">
+                        <span className="dom-month-cal-num">{d.getDate()}</span>
+                        <span className="dom-month-cal-date-right">
+                          {album && album.rating > 0 && (
+                            <span className="dom-month-cal-rating">
+                              <span className="dom-month-cal-rating-star">★</span>
+                              {album.rating}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      {album && (
+                        <div className="dom-month-cal-cover">
+                          <Cover album={album} size="100%" />
+                        </div>
+                      )}
+                      {album && (
+                        <div className="dom-month-cal-info">
+                          <div className="dom-month-cal-title">{album.title}</div>
+                          <div className="dom-month-cal-artist">
+                            {album.artist}
+                            {album.titleKo && (
+                              <span className="dom-month-cal-artist-ko"> · {album.titleKo}</span>
+                            )}
+                          </div>
+                          {album.kind === "track" && album.albumTitle && (
+                            <div className="dom-from">from 〈{album.albumTitle}〉</div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="dom-share-ft">
+          <div>
+            {monthAlbums.length} albums · {genreCount} genres
+          </div>
+          <div className="dom-day-album-rating">
+            <span>★</span> 
+            {avg}
+          </div>
         </div>
       </div>
-    </div>
+      <div className="dom-share-actions">
+        <Button variant="ghost" onClick={() => void copyCurrentLink()}>
+          Copy link
+        </Button>
+        <Button onClick={handleSaveImage}>
+          Save image
+        </Button>
+      </div>
+    </Modal>
   );
 }
