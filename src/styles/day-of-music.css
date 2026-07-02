@@ -219,25 +219,42 @@
   font-size: 13px;
 }
 .dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:hover,
-.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:focus-visible,
-.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger[data-open="1"] {
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger:focus-visible,
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger[data-open="1"] {
   border: 0;
   border-bottom: 1px solid var(--lineSoft);
 }
-.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:hover .dom-select-caret,
-.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:focus-visible .dom-select-caret,
-.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger[data-open="1"] .dom-select-caret {
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger:hover
+  .dom-select-caret,
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger:focus-visible
+  .dom-select-caret,
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger[data-open="1"]
+  .dom-select-caret {
   background-color: var(--accent);
 }
-.dom-root .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-trigger {
+.dom-root
+  .dom-select-field[data-variant="underline"][data-size="large"]
+  .dom-select-trigger {
   min-height: 56px;
   font-size: 22px;
 }
-.dom-select-field[data-variant="underline"][data-size="large"] .dom-select-value {
+.dom-select-field[data-variant="underline"][data-size="large"]
+  .dom-select-value {
   padding: 13px 0;
   font-size: 22px;
 }
-.dom-select-field[data-variant="underline"][data-size="large"] .dom-select-caret {
+.dom-select-field[data-variant="underline"][data-size="large"]
+  .dom-select-caret {
   width: 56px;
   margin-left: 14px;
 }
@@ -254,13 +271,17 @@
   .dom-select-field[data-variant="underline"][data-size="large"] .dom-select {
     width: 100%;
   }
-  .dom-root .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-trigger {
+  .dom-root
+    .dom-select-field[data-variant="underline"][data-size="large"]
+    .dom-select-trigger {
     font-size: 18px;
   }
-  .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-value {
+  .dom-select-field[data-variant="underline"][data-size="large"]
+    .dom-select-value {
     font-size: 18px;
   }
-  .dom-select-field[data-variant="underline"][data-size="large"] .dom-select-caret {
+  .dom-select-field[data-variant="underline"][data-size="large"]
+    .dom-select-caret {
     width: 48px;
   }
 }
@@ -300,7 +321,9 @@
   letter-spacing: -0.005em;
   border: 1px solid var(--ink);
   cursor: pointer;
-  transition: transform 0.12s ease, background-color 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    background-color 0.12s ease;
   white-space: nowrap;
 }
 .dom-btn:hover {
@@ -1619,17 +1642,246 @@
 .dom-profile-section {
   margin-top: 28px;
 }
+.dom-profile-section-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 0 22px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--lineSoft);
+}
 .dom-section-title {
   font-family: var(--font-display);
   font-weight: 500;
   font-size: 28px;
   letter-spacing: -0.02em;
-  margin: 0 0 16px;
+  line-height: 1.1;
+  margin: 0;
+}
+.dom-section-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.dom-accordion {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.dom-accordion-item + .dom-accordion-item {
+  border-top: 1px solid var(--line);
+}
+.dom-accordion-trigger {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 66px;
+  padding: 14px 0;
+  text-align: left;
+}
+.dom-accordion-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.dom-accordion-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dom-accordion-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.dom-accordion-icon {
+  color: var(--ink3);
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+.dom-accordion-trigger:hover .dom-accordion-icon,
+.dom-accordion-trigger[aria-expanded="true"] .dom-accordion-icon {
+  color: var(--ink);
+}
+.dom-accordion-trigger[aria-expanded="true"] .dom-accordion-icon {
+  transform: rotate(180deg);
+}
+.dom-accordion-panel {
+  border-top: 1px solid var(--lineSoft);
+  padding-bottom: 26px;
+}
+.dom-stat-empty {
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink3);
+}
+.dom-theme-list {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.dom-theme-row {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 104px;
+  padding: 20px 0;
+  text-align: left;
+}
+.dom-theme-row + .dom-theme-row {
+  border-top: 1px solid var(--line);
+}
+.dom-theme-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.dom-theme-row-meta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.dom-theme-row-icon {
+  color: var(--ink3);
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+.dom-theme-row:hover .dom-theme-row-icon {
+  color: var(--ink);
+  transform: translateX(3px);
+}
+/* Theme recap modal — same overlay idiom (scrim + panel) and shared width
+   token as Day Detail / Add / Share, so every modal reads as one family. */
+.dom-theme-modal {
+  position: relative;
+  width: 100%;
+  max-width: var(--dom-modal-w);
+  max-height: calc(100vh - 48px);
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  padding: 32px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  animation: dom-rise 0.25s ease;
+}
+.dom-theme-modal-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  /* Keep the meta clear of the absolute-positioned close button. */
+  padding-right: 48px;
+}
+.dom-theme-modal-body {
+  min-height: 0;
+  overflow-y: auto;
+}
+.dom-theme-recap-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 12px;
+}
+.dom-theme-recap-title > div {
+  min-width: 0;
+}
+.dom-theme-recap-title h3 {
+  margin: 3px 0 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+.dom-theme-recap-emoji {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 24px;
+}
+.dom-theme-recap-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.dom-stat-compact {
+  min-width: 0;
+  padding: 16px;
+}
+.dom-stat-compact .dom-stat-num {
+  font-size: 48px;
+  letter-spacing: 0;
+}
+.dom-theme-genre-card {
+  grid-column: span 1;
+}
+.dom-theme-genre-card .dom-bar {
+  grid-template-columns: minmax(74px, 0.9fr) minmax(58px, 1fr) 24px;
+  gap: 8px;
+}
+.dom-theme-genre-card .dom-bar-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dom-theme-fives {
+  margin-top: 18px;
+}
+.dom-theme-fives-title {
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-theme-empty {
+  margin-top: 0;
+  padding: 18px;
+  border: 1px solid var(--lineSoft);
+  background: var(--bg);
 }
 .dom-fives {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 16px;
+}
+.dom-fives.dom-fives-compact {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
 }
 .dom-fives-item {
   display: flex;
@@ -1679,7 +1931,9 @@
   align-items: center;
   padding: 14px;
   border: 1px solid var(--lineSoft);
-  transition: background-color 0.12s, border-color 0.12s;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
   width: 100%;
 }
 .dom-search-result:hover {
@@ -2141,7 +2395,9 @@
   padding: 8px;
   align-items: center;
   border: 1px solid transparent;
-  transition: background-color 0.12s, border-color 0.12s;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
   width: 100%;
 }
 .dom-addflow-result:hover {
@@ -2183,7 +2439,9 @@
   text-transform: uppercase;
   cursor: pointer;
   flex: none;
-  transition: background-color 0.12s ease, color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
 }
 .dom-addflow-seeall:hover {
   background-color: var(--chip);
@@ -2202,7 +2460,10 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
 }
 .dom-addflow-manual-link:hover {
   background-color: var(--chip);
@@ -2248,7 +2509,9 @@
   letter-spacing: 0.04em;
   cursor: pointer;
   overflow: hidden;
-  transition: border-color 0.12s ease, color 0.12s ease;
+  transition:
+    border-color 0.12s ease,
+    color 0.12s ease;
 }
 .dom-addflow-imagedrop:hover {
   border-color: var(--accent);
@@ -2277,7 +2540,10 @@
   color: var(--ink2);
   cursor: pointer;
   font-size: 14px;
-  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
 }
 .dom-addflow-weeknav-btn:hover {
   background-color: var(--chip);
@@ -2309,7 +2575,9 @@
   gap: 4px;
   padding: 12px 4px;
   border: 1px solid var(--lineSoft);
-  transition: background-color 0.12s, border-color 0.12s;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
 }
 .dom-addflow-date:hover {
   background-color: var(--chip);
@@ -2455,10 +2723,15 @@
 .dom-share-card .dom-share-monthcal .dom-month-cal-cell:hover {
   background-color: transparent;
 }
-.dom-share-card .dom-share-monthcal .dom-month-cal-cell[data-inmonth="0"]:hover {
+.dom-share-card
+  .dom-share-monthcal
+  .dom-month-cal-cell[data-inmonth="0"]:hover {
   background-color: var(--bg);
 }
-.dom-share-card .dom-share-monthcal .dom-month-cal-cell:hover .dom-month-cal-cover {
+.dom-share-card
+  .dom-share-monthcal
+  .dom-month-cal-cell:hover
+  .dom-month-cal-cover {
   transform: none;
 }
 /* The PNG export falls back from Spectral to a system serif. Georgia uses
@@ -2783,8 +3056,17 @@
   .dom-stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .dom-theme-recap-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dom-theme-genre-card {
+    grid-column: span 2;
+  }
   .dom-fives {
     grid-template-columns: repeat(4, 1fr);
+  }
+  .dom-fives.dom-fives-compact {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .dom-detail {
     grid-template-columns: 1fr;
@@ -2901,6 +3183,34 @@
   .dom-stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .dom-profile-section-hd {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .dom-theme-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 6px;
+  }
+  .dom-theme-row-meta {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .dom-theme-row-icon {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .dom-theme-modal {
+    padding: 24px 20px;
+  }
+  .dom-theme-recap-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dom-theme-genre-card {
+    grid-column: span 2;
+  }
+  .dom-stat-compact .dom-stat-num {
+    font-size: 42px;
+  }
   .dom-stat-num {
     font-size: 60px;
   }
@@ -2909,6 +3219,9 @@
   }
   .dom-fives {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .dom-fives.dom-fives-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .dom-search-result {
     grid-template-columns: 72px 1fr;
@@ -3077,7 +3390,9 @@ button.dom-day-add {
   width: 100%;
   cursor: pointer;
   color: var(--ink3);
-  transition: color 0.12s ease, background-color 0.12s ease;
+  transition:
+    color 0.12s ease,
+    background-color 0.12s ease;
 }
 button.dom-day-add:hover {
   color: var(--ink);
