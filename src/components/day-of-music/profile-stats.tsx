@@ -2,55 +2,28 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
-import { normalizeGenre, type Album } from "@/lib/day-of-music/data";
+import { getAlbumStats, type AlbumStats } from "@/lib/day-of-music/album-stats";
+import { type Album } from "@/lib/day-of-music/data";
+import { saveCardAsImage, shareFileName } from "@/lib/day-of-music/save-card";
 import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
 import { useThemes } from "@/lib/day-of-music/themes";
 import { Cover } from "@/components/day-of-music/cover";
+import {
+  StatsPoster,
+  StatsShareCard,
+} from "@/components/day-of-music/stats-share-card";
 import { Button, Stars } from "@/components/day-of-music/atoms";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-type AlbumStats<T extends Album> = {
-  total: number;
-  avgRatingNum: number;
-  avgRating: string;
-  genreCount: number;
-  topTenGenres: [string, number][];
-  fives: T[];
-};
 
 type ThemeRecap = AlbumStats<JournalAlbum> & {
   id: string;
   name: string;
   emoji: string;
 };
-
-function getAlbumStats<T extends Album>(albums: T[]): AlbumStats<T> {
-  const total = albums.length;
-  const avgRatingNum = total
-    ? albums.reduce((s, a) => s + a.rating, 0) / total
-    : 0;
-
-  const byGenre: Record<string, number> = {};
-  albums.forEach((a) => {
-    const genre = normalizeGenre(a.genre);
-    if (genre) byGenre[genre] = (byGenre[genre] ?? 0) + 1;
-  });
-
-  return {
-    total,
-    avgRatingNum,
-    avgRating: total ? avgRatingNum.toFixed(2) : "—",
-    genreCount: Object.keys(byGenre).length,
-    topTenGenres: Object.entries(byGenre)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10),
-    fives: albums.filter((a) => a.rating === 5),
-  };
-}
 
 function fallbackThemeName(id: string): string {
   if (!id) return "Untitled theme";
@@ -67,6 +40,11 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
   // Which theme's recap modal is open. Stored as an id (not the recap object)
   // so the modal always renders the freshest stats after a log/edit.
   const [openThemeId, setOpenThemeId] = useState<string | null>(null);
+  const [shareYear, setShareYear] = useState(false);
+  // Theme whose poster is being exported straight to a PNG. The poster mounts
+  // off-screen (no second modal on top of the recap) just long enough to save.
+  const [exportThemeId, setExportThemeId] = useState<string | null>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentYearLabel = String(currentYear);
@@ -97,17 +75,43 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
   const openTheme = openThemeId
     ? (themeRecaps.find((t) => t.id === openThemeId) ?? null)
     : null;
+  const exportTheme = exportThemeId
+    ? (themeRecaps.find((t) => t.id === exportThemeId) ?? null)
+    : null;
 
-  // Esc closes the theme recap modal. The app-level Esc handler only closes
-  // its own overlays (day detail / add / share / tweaks), so no conflict here.
+  // Esc closes this page's overlays (year share card first — it opens on
+  // top). The app-level Esc handler only closes its own overlays (day detail /
+  // add / share / tweaks), so no conflict here.
   useEffect(() => {
-    if (!openThemeId) return;
+    if (!openThemeId && !shareYear) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpenThemeId(null);
+      if (e.key !== "Escape") return;
+      if (shareYear) setShareYear(false);
+      else setOpenThemeId(null);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openThemeId]);
+  }, [openThemeId, shareYear]);
+
+  // Once the off-screen poster is mounted, rasterize + download it, then
+  // unmount it. saveCardAsImage never throws (it toasts success/failure).
+  // The timeout is an escape hatch for a stalled rasterizer, so the SHARE
+  // CARD button can't stay locked on "SAVING…" forever.
+  const exportThemeName = exportTheme?.name;
+  useEffect(() => {
+    if (!exportThemeId || !exportThemeName) return;
+    const node = exportRef.current;
+    if (!node) {
+      setExportThemeId(null);
+      return;
+    }
+    void saveCardAsImage(
+      node,
+      shareFileName([exportThemeName, currentYear, "recap"]),
+    ).finally(() => setExportThemeId(null));
+    const bail = setTimeout(() => setExportThemeId(null), 30_000);
+    return () => clearTimeout(bail);
+  }, [exportThemeId, exportThemeName, currentYear]);
 
   return (
     <div className="dom-profile">
@@ -119,8 +123,7 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
           <h1>My Year in Music</h1>
         </div>
         <div className="dom-week-actions">
-          <Button variant="ghost">Export</Button>
-          <Button>Share card</Button>
+          <Button onClick={() => setShareYear(true)}>SHARE CARD</Button>
         </div>
       </div>
 
@@ -238,9 +241,19 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
                   <h3>{openTheme.name}</h3>
                 </div>
               </div>
-              <span className="dom-theme-row-meta">
-                {openTheme.total ? `${openTheme.total} logs` : "No logs yet"}
-              </span>
+              <div className="dom-theme-modal-hd-actions">
+                <span className="dom-theme-row-meta">
+                  {openTheme.total ? `${openTheme.total} logs` : "No logs yet"}
+                </span>
+                {openTheme.total > 0 && (
+                  <Button
+                    disabled={exportThemeId !== null}
+                    onClick={() => setExportThemeId(openTheme.id)}
+                  >
+                    {exportThemeId ? "SAVING…" : "SHARE CARD"}
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="dom-theme-modal-body">
@@ -352,6 +365,32 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {shareYear && (
+        <StatsShareCard
+          title={`${currentYear} · Year in Music`}
+          themeLabel={themeLaneLabel}
+          sub={`across ${themeLaneLabel} · ${daysSinceYearStart} days`}
+          stats={allStats}
+          filenameParts={["Year-in-Music", currentYear]}
+          onClose={() => setShareYear(false)}
+        />
+      )}
+
+      {/* Off-screen poster for the theme SHARE CARD: mounted only while the
+          PNG export runs, so no second modal stacks on the recap. */}
+      {exportTheme && (
+        <div className="dom-share-export-stage" aria-hidden="true">
+          <StatsPoster
+            ref={exportRef}
+            title={`${exportTheme.name} · ${currentYear}`}
+            themeLabel={`${exportTheme.emoji} ${exportTheme.name}`}
+            sub={`in ${exportTheme.name} this year`}
+            stats={exportTheme}
+            showFives
+          />
         </div>
       )}
     </div>

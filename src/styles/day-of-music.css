@@ -1800,6 +1800,11 @@
   /* Keep the meta clear of the absolute-positioned close button. */
   padding-right: 48px;
 }
+.dom-theme-modal-hd-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 .dom-theme-modal-body {
   min-height: 0;
   overflow-y: auto;
@@ -2741,6 +2746,25 @@
 .dom-share-card .dom-share-title {
   font-family: "Spectral", "Times New Roman", Times, serif;
   font-variant-numeric: lining-nums;
+}
+/* Stats poster (Share Card): five-star albums strip under the stat blocks.
+   The items themselves reuse the recap modal's .dom-fives markup. */
+.dom-share-fives {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* Off-screen stage for direct PNG export (theme SHARE CARD): laid out at the
+   poster's standard width but parked outside the viewport while it renders. */
+.dom-share-export-stage {
+  /* Same width token the scrim provides, so the poster lays out identically
+     to its in-modal counterpart. */
+  --dom-modal-w: 1100px;
+  position: fixed;
+  top: 0;
+  left: -200vw;
+  width: var(--dom-modal-w);
+  pointer-events: none;
 }
 .dom-share-hd {
   display: flex;
