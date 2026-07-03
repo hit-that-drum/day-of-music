@@ -96,7 +96,7 @@ export function WeekPoster({
               <div className="dom-day-body dom-day-empty dom-day-blank" aria-hidden="true" />
             ) : album ? (
               <div className="dom-day-body">
-                <div className="dom-cover-wrap" style={{ maxWidth: 220 }}>
+                <div className="dom-cover-wrap">
                   <Cover album={toAlbum(album)} size="100%" />
                 </div>
                 <div className="dom-day-meta">

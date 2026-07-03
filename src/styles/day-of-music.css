@@ -878,12 +878,21 @@
 .dom-day-empty:hover {
   background: transparent;
 }
+/* Cover bleeds to the cell edges — negative margins cancel .dom-day-body's
+   14px top + side padding, same technique as .dom-month-cal-cover, so the two
+   boards read as one visual language. align-self:stretch is load-bearing:
+   the body sets align-items:center, under which the negative margins only
+   recenter a width:100% item instead of widening it (and width:auto
+   collapses to 0). Stretching makes the MARGIN box fill the cell's content
+   width, so the -14px margins push the border box out over the padding —
+   exactly how the month cell (default stretch) gets its bleed. */
 .dom-cover-wrap {
-  box-shadow: var(--coverShadow);
   transition: transform 0.2s ease;
   flex: none;
-  width: 100%;
-  max-width: 220px;
+  align-self: stretch;
+  width: auto;
+  max-width: none;
+  margin: -14px -14px 0;
 }
 .dom-day-body:hover .dom-cover-wrap {
   transform: translateY(-2px);
@@ -1895,8 +1904,8 @@
   display: grid;
   grid-template-columns: 120px 1fr 80px;
   gap: 18px;
-  align-items: center;
-  padding: 14px;
+  align-items: stretch;
+  padding: 0 14px;
   border: 1px solid var(--lineSoft);
   transition:
     background-color 0.12s,
@@ -1907,10 +1916,26 @@
   background-color: var(--chip);
   border-color: var(--line);
 }
+/* Cover bleeds to the row's top/bottom + left edge, matching weekly cards. */
 .dom-search-result > div:first-child {
-  box-shadow: var(--coverShadow);
+  align-self: stretch;
   width: 120px;
-  height: 120px;
+  min-height: 120px;
+  height: auto;
+  margin-left: -14px;
+  overflow: hidden;
+}
+.dom-search-result > div:first-child .dom-cover {
+  height: 100%;
+}
+.dom-search-result > div:first-child .dom-cover:has(img) .dom-cover-inner {
+  width: 100% !important;
+  height: 100% !important;
+  transform: none !important;
+}
+.dom-search-result-info,
+.dom-search-result-date {
+  padding-block: 14px;
 }
 .dom-search-result-title {
   font-family: var(--font-display);
@@ -2655,10 +2680,11 @@
 .dom-share-card .dom-share-week .dom-day-body:hover {
   background-color: transparent;
 }
+/* The poster's day-body has 0 padding (above), so the base .dom-cover-wrap's
+   -14px bleed margins (sized for the real board's 14px padding) would push
+   past the cell edge here — cancel them back to 0. */
 .dom-share-card .dom-share-week .dom-cover-wrap {
-  width: 100%;
-  max-width: none;
-  box-shadow: none;
+  margin: 0;
 }
 .dom-share-card .dom-share-week .dom-day-body:hover .dom-cover-wrap {
   transform: none;
@@ -3204,11 +3230,17 @@
   .dom-search-result {
     grid-template-columns: 72px 1fr;
     gap: 12px;
-    padding: 10px;
+    padding: 0 10px;
   }
   .dom-search-result > div:first-child {
     width: 72px;
-    height: 72px;
+    min-height: 72px;
+    height: auto;
+    margin-left: -10px;
+  }
+  .dom-search-result-info,
+  .dom-search-result-date {
+    padding-block: 10px;
   }
   .dom-search-result-date {
     display: none;

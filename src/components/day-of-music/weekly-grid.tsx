@@ -285,7 +285,7 @@ function DayCell({
           onClick={() => onOpen(album)}
           aria-label={`Open ${album.title}`}
         >
-          <div className="dom-cover-wrap" style={{ maxWidth: 220 }}>
+          <div className="dom-cover-wrap">
             <Cover album={album} size="100%" />
           </div>
           <div className="dom-day-meta">
