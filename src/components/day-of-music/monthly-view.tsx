@@ -10,11 +10,13 @@ import {
   MONTHS_LONG,
   addDays,
   fmtDate,
+  normalizeGenre,
   // parseDate,
   startOfWeek,
   type Album,
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
+import { Button } from "@/components/day-of-music/atoms";
 import { Cover } from "@/components/day-of-music/cover";
 
 export function MonthlyView({
@@ -72,7 +74,7 @@ export function MonthlyView({
 
   const totalLogged = monthAlbums.length;
   const completion = Math.round((totalLogged / lastOfMonth.date()) * 100);
-  const genreCount = new Set(monthAlbums.map((a) => a.genre)).size;
+  const genreCount = new Set(monthAlbums.map((a) => normalizeGenre(a.genre)).filter(Boolean)).size;
   // Average rating across the month (mirrors the share card). "—" when empty.
   const avgRating = monthAlbums.length
     ? (monthAlbums.reduce((s, a) => s + a.rating, 0) / monthAlbums.length).toFixed(1)
@@ -89,22 +91,18 @@ export function MonthlyView({
             <span className="dom-month-h1-name">{MONTHS_LONG[month]}</span>
             <span className="dom-month-h1-year">{year}</span>
           </h1>
-          <div className="dom-month-nav">
-            <button className="dom-wp-nav" onClick={onPrev} aria-label="Previous month">
-              ←
-            </button>
-            <button className="dom-wp-nav" onClick={onNext} aria-label="Next month">
-              →
-            </button>
-            {!isCurrentMonth && (
-              <button className="dom-month-today" onClick={() => onJump(today)}>
-                this month · 이번 달
-              </button>
-            )}
-            <button className="dom-month-today" onClick={onShare}>
-              Share · 공유
-            </button>
-          </div>
+        </div>
+        <div className="dom-month-nav">
+          <button className="dom-wp-nav" onClick={onPrev} aria-label="Previous month">
+            ←
+          </button>
+          <button className="dom-wp-nav" onClick={onNext} aria-label="Next month">
+            →
+          </button>
+          {!isCurrentMonth && (
+            <Button onClick={() => onJump(today)}>THIS MONTH</Button>
+          )}
+          <Button onClick={onShare}>SHARE MONTH</Button>
         </div>
         <div className="dom-month-hd-right">
           <div className="dom-month-stat">

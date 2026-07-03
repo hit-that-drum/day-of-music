@@ -2,7 +2,7 @@
 
 import type { ComponentProps, ReactNode } from "react";
 
-import type { Album } from "@/lib/day-of-music/data";
+import { normalizeGenre, type Album } from "@/lib/day-of-music/data";
 
 export type ButtonVariant = "solid" | "ghost" | "danger" | "danger-ghost";
 export type ButtonSize = "md" | "sm" | "lg";
@@ -96,9 +96,16 @@ export function MetaLine({
   size?: number;
   showFormat?: boolean;
 }) {
+  const genre = normalizeGenre(album.genre);
+
   return (
     <div className="dom-meta" style={{ fontSize: size }}>
-      {album.genre} <span className="dom-dot">·</span> {album.year}
+      {genre ? (
+        <>
+          {genre} <span className="dom-dot">·</span>{" "}
+        </>
+      ) : null}
+      {album.year}
       {showFormat ? (
         <>
           {" "}
