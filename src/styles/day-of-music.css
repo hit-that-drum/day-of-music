@@ -26,34 +26,41 @@
   overflow-x: hidden;
 }
 
-.dom-root * {
-  box-sizing: border-box;
-  min-width: 0;
-}
-/* Bare-button reset — strips native chrome from icon/nav/cell buttons so they
-   can be styled from scratch. Excludes .dom-btn and .dom-modal-close: their
-   own border/background/padding must win (otherwise this reset, being more
-   specific, flattens real buttons inside .dom-root into plain text — e.g. the
-   modal ✕ lost its box only when a modal mounted inside .dom-root). */
-.dom-root button:not(.dom-btn):not(.dom-modal-close) {
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  background: transparent;
-  border: 0;
-  padding: 0;
-  text-align: left;
-}
-.dom-root input,
-.dom-root textarea {
-  font: inherit;
-  color: inherit;
-}
-.dom-root ol,
-.dom-root ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+/* Base resets live in a cascade layer so every component rule — regardless of
+   specificity — beats them. Layered styles always lose to unlayered author
+   styles, so a single-class rule like .dom-tab or .dom-month-cal-cell can set
+   border/padding without out-specifying the reset. Never move these out of the
+   layer, and never add :not() exclusions for specificity's sake — that arms
+   race is what kept breaking the monthly calendar. */
+@layer dom-reset {
+  .dom-root * {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+  /* Bare-button reset — strips native chrome from icon/nav/cell buttons so
+     they can be styled from scratch. .dom-btn and .dom-modal-close stay
+     excluded so they keep UA defaults for anything their own rules don't set
+     (e.g. centered text). */
+  .dom-root button:not(.dom-btn):not(.dom-modal-close) {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    text-align: left;
+  }
+  .dom-root input,
+  .dom-root textarea {
+    font: inherit;
+    color: inherit;
+  }
+  .dom-root ol,
+  .dom-root ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
 }
 
 /* ── Root frame ─────────────────────────────────────────────────────────── */
@@ -141,8 +148,8 @@
   background-color: var(--chip);
 }
 .dom-nav-btn[data-active="1"] {
-  background-color: var(--ink) !important;
-  color: var(--bg) !important;
+  background-color: var(--ink);
+  color: var(--bg);
 }
 .dom-nav-label {
   font-family: var(--font-display);
@@ -1355,12 +1362,7 @@
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
-/* Three classes (0,3,0) so these beat the global `.dom-root button:not(.dom-btn)`
-   reset (0,2,1) — the board's cells are <button>s, and without the extra
-   `.dom-month-cal` qualifier the reset wins and zeroes the cell borders +
-   padding (killing the grid lines + the cover's side margin). The Share poster's
-   cells are <div>s, so they were never affected. */
-.dom-month-cal .dom-month-cal-grid .dom-month-cal-cell {
+.dom-month-cal-cell {
   border-bottom: 1px solid var(--line);
   border-right: 1px solid var(--line);
   padding: 10px 12px 12px;
@@ -3214,10 +3216,25 @@
   .dom-search-result-title {
     font-size: 15px;
   }
+  /* Brand and nav can't share a row on phones — stack them. */
   .dom-topbar {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    row-gap: 10px;
+    padding: 14px 16px;
   }
   .dom-topbar-actions {
+    display: none;
+  }
+  .dom-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .dom-nav-btn {
+    padding: 8px 8px;
+  }
+  .dom-nav-ko,
+  .dom-brand-ko {
     display: none;
   }
   .dom-grid {

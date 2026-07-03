@@ -65,12 +65,3 @@ export function shareFileName(parts: (string | number)[]): string {
     `${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
   return ["Day-of-Music", ...parts.map((x) => slug(String(x))), ts].join("_") + ".png";
 }
-
-export async function copyCurrentLink(): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(window.location.href);
-    toast.success("Link copied");
-  } catch {
-    toast.error("Couldn't copy link");
-  }
-}

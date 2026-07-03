@@ -188,26 +188,38 @@ export function ensureFonts(): void {
   document.head.appendChild(link);
 }
 
+// The full CSS-variable map for a theme, keyed by custom-property name.
+// applyTheme writes it onto a live element; the public share page renders it
+// as an inline style so a server-rendered card matches the sharer's theme.
+export function themeStyleVars(
+  aestheticKey: AestheticKey,
+  typeKey: TypeKey,
+): Record<string, string> {
+  const a = AESTHETICS[aestheticKey] ?? AESTHETICS.editorial;
+  const t = TYPE_PAIRS[typeKey] ?? TYPE_PAIRS.editorial;
+  const vars: Record<string, string> = {};
+
+  (Object.entries(a.tokens) as [keyof AestheticTokens, string | number | boolean][]).forEach(
+    ([k, v]) => {
+      vars[`--${k}`] = typeof v === "boolean" ? (v ? "1" : "0") : String(v);
+    },
+  );
+  vars["--font-display"] = t.display;
+  vars["--font-body"] = t.body;
+  vars["--font-mono"] = t.mono;
+  vars["--font-sans"] = t.sans;
+  vars["--cover-display"] = t.display;
+  vars["--cover-mono"] = t.mono;
+  return vars;
+}
+
 export function applyTheme(
   rootEl: HTMLElement | null,
   aestheticKey: AestheticKey,
   typeKey: TypeKey,
 ): void {
   if (!rootEl) return;
-  const a = AESTHETICS[aestheticKey] ?? AESTHETICS.editorial;
-  const t = TYPE_PAIRS[typeKey] ?? TYPE_PAIRS.editorial;
-  const set = (k: string, v: string) => rootEl.style.setProperty(k, v);
-
-  (Object.entries(a.tokens) as [keyof AestheticTokens, string | number | boolean][]).forEach(
-    ([k, v]) => {
-      if (typeof v === "boolean") set(`--${k}`, v ? "1" : "0");
-      else set(`--${k}`, String(v));
-    },
+  Object.entries(themeStyleVars(aestheticKey, typeKey)).forEach(([k, v]) =>
+    rootEl.style.setProperty(k, v),
   );
-  set("--font-display", t.display);
-  set("--font-body", t.body);
-  set("--font-mono", t.mono);
-  set("--font-sans", t.sans);
-  set("--cover-display", t.display);
-  set("--cover-mono", t.mono);
 }
