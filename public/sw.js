@@ -1,4 +1,7 @@
-const CACHE_NAME = "day-of-music-v1";
+// v2: the version bump matters — activating this version deletes the v1 cache,
+// which could hold stale dev-server chunks (dev chunk URLs aren't content-hashed,
+// so cache-first pinned an old CSS/JS snapshot forever on dev origins).
+const CACHE_NAME = "day-of-music-v2";
 const PRECACHE_URLS = [
   "/",
   "/favicon.ico",
@@ -59,16 +62,32 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
+// Stale-while-revalidate. Production /_next/static/ URLs are content-hashed so
+// the revalidate is a no-op there, but if this worker ever controls a dev
+// origin (chunk URLs stay the same while their content changes), the refetch
+// keeps the cache converging on the current build instead of pinning the first
+// response forever.
 async function cacheFirst(request) {
-  const cached = await caches.match(request);
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+
+  const refresh = fetch(request)
+    .then((response) => {
+      if (response.ok) {
+        cache.put(request, response.clone());
+      }
+      return response;
+    })
+    .catch(() => undefined);
 
   if (cached) {
     return cached;
   }
 
-  const response = await fetch(request);
-  const cache = await caches.open(CACHE_NAME);
-  cache.put(request, response.clone());
+  const response = await refresh;
+  if (!response) {
+    throw new Error("offline and not cached");
+  }
   return response;
 }
 

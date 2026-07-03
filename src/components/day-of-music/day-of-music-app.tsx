@@ -378,7 +378,7 @@ export function DayOfMusicApp() {
             />
           )}
           {screen === "search" && <SearchView onOpen={handleOpen} />}
-          {screen === "logs" && <ProfileStats onOpen={handleOpen} />}
+          {screen === "logs" && <ProfileStats />}
           {screen === "profile" && <ProfilePage />}
         </main>
 

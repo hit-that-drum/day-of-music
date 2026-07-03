@@ -6,7 +6,6 @@ import { useMemo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { getAlbumStats, type AlbumStats } from "@/lib/day-of-music/album-stats";
-import { type Album } from "@/lib/day-of-music/data";
 import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
 import { useThemes } from "@/lib/day-of-music/themes";
 import { StatsShareCard } from "@/components/day-of-music/stats-share-card";
@@ -29,7 +28,7 @@ function fallbackThemeName(id: string): string {
     .join(" ");
 }
 
-export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
+export function ProfileStats() {
   const { allAlbums } = useJournal();
   const { themes } = useThemes();
   // Which theme's recap modal is open. Stored as an id (not the recap object)
@@ -169,8 +168,7 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
       </div>
 
       {/* Theme analysis — the exact same share-card modal as the year card
-          below (one component, so the two can never drift apart). Five-star
-          items stay clickable via onOpenAlbum. */}
+          below (one component, so the two can never drift apart). */}
       {openTheme && (
         <StatsShareCard
           title={`${openTheme.name} · ${currentYear}`}
@@ -180,12 +178,6 @@ export function ProfileStats({ onOpen }: { onOpen: (album: Album) => void }) {
           showFives
           filenameParts={[openTheme.name, currentYear, "recap"]}
           onClose={() => setOpenThemeId(null)}
-          onOpenAlbum={(a) => {
-            // Hand off to the Day Detail modal — close this one first so
-            // overlays don't stack.
-            setOpenThemeId(null);
-            onOpen(a);
-          }}
         />
       )}
 
