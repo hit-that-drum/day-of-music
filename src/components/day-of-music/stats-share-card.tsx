@@ -30,9 +30,6 @@ type StatsPosterProps = {
   stats: AlbumStats<JournalAlbum>;
   /** Theme cards list their five-star albums; the year card stays stats-only. */
   showFives?: boolean;
-  /** When set, five-star items become buttons that hand the album off (e.g.
-      to the Day Detail modal). Omit for static/exported posters. */
-  onOpenAlbum?: (album: JournalAlbum) => void;
   ref?: Ref<HTMLDivElement>;
 };
 
@@ -42,7 +39,6 @@ export function StatsPoster({
   sub,
   stats,
   showFives = false,
-  onOpenAlbum,
   ref,
 }: StatsPosterProps) {
   const { username } = useProfile();
@@ -120,34 +116,20 @@ export function StatsPoster({
           {/* Same item markup as the recap modal's fives list, so each
               album carries its info (title · artist) on the poster too. */}
           <div className="dom-fives dom-fives-compact">
-            {fives.map((a) => {
-              const key = `${a.theme}:${a.date}:${a.id}`;
-              const content = (
-                <>
-                  <div>
-                    <Cover album={a} size="100%" />
-                  </div>
-                  <div className="dom-fives-info">
-                    <div className="dom-fives-title">{a.title}</div>
-                    <div className="dom-fives-artist">{a.artist}</div>
-                  </div>
-                </>
-              );
-              return onOpenAlbum ? (
-                <button
-                  key={key}
-                  type="button"
-                  className="dom-fives-item"
-                  onClick={() => onOpenAlbum(a)}
-                >
-                  {content}
-                </button>
-              ) : (
-                <div key={key} className="dom-fives-item">
-                  {content}
+            {fives.map((a) => (
+              <div
+                key={`${a.theme}:${a.date}:${a.id}`}
+                className="dom-fives-item"
+              >
+                <div>
+                  <Cover album={a} size="100%" />
                 </div>
-              );
-            })}
+                <div className="dom-fives-info">
+                  <div className="dom-fives-title">{a.title}</div>
+                  <div className="dom-fives-artist">{a.artist}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
