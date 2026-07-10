@@ -952,12 +952,11 @@
   font-size: 11px;
   color: var(--ink3);
   line-height: 1.2;
-  /* Secondary context — keep it to one line so a long album title can't blow
-     out the cell (on screen and in the PNG export). Truncate with an ellipsis. */
+  /* Show the album context in full (on screen and in the PNG export): let a
+     long title wrap to as many lines as it needs instead of clipping it with
+     an ellipsis. */
   width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: break-word;
 }
 .dom-meta .dom-dot {
   opacity: 0.5;
@@ -1902,9 +1901,9 @@
 }
 .dom-search-result {
   display: grid;
-  grid-template-columns: 120px 1fr 80px;
+  grid-template-columns: 135px minmax(0, 1fr) 80px;
   gap: 18px;
-  align-items: stretch;
+  align-items: center;
   padding: 0 14px;
   border: 1px solid var(--lineSoft);
   transition:
@@ -1916,22 +1915,19 @@
   background-color: var(--chip);
   border-color: var(--line);
 }
-/* Cover bleeds to the row's top/bottom + left edge, matching weekly cards. */
+/* Journal result artwork stays a fixed square. */
 .dom-search-result > div:first-child {
-  align-self: stretch;
-  width: 120px;
-  min-height: 120px;
-  height: auto;
+  width: 135px;
+  height: 135px;
+  aspect-ratio: 1 / 1;
+  flex: none;
   margin-left: -14px;
   overflow: hidden;
 }
 .dom-search-result > div:first-child .dom-cover {
+  width: 100%;
   height: 100%;
-}
-.dom-search-result > div:first-child .dom-cover:has(img) .dom-cover-inner {
-  width: 100% !important;
-  height: 100% !important;
-  transform: none !important;
+  aspect-ratio: 1 / 1;
 }
 .dom-search-result-info,
 .dom-search-result-date {
@@ -2731,6 +2727,22 @@
   .dom-month-cal-cover {
   transform: none;
 }
+/* The monthly board collapses to a covers-only layout at narrow viewports (a
+   media query hides .dom-month-cal-info and shrinks the cover). The poster must
+   always export the full desktop layout — title + artist under a full-bleed
+   cover — no matter how small the viewer's screen is. These rules out-specify
+   the media-query rules (which carry no extra specificity), so they win in the
+   fixed-width export stage regardless of the actual viewport width. */
+.dom-share-card .dom-share-monthcal .dom-month-cal-info {
+  display: flex;
+}
+.dom-share-card .dom-share-monthcal .dom-month-cal-cover {
+  max-width: none;
+}
+.dom-share-card .dom-share-monthcal .dom-month-cal-cell {
+  padding: 10px 12px 12px;
+  gap: 8px;
+}
 /* The PNG export falls back from Spectral to a system serif. Georgia uses
    old-style figures (the "3" drops below the baseline and looks misaligned),
    so fall back to a lining-figure serif and force lining numerals. On screen
@@ -3228,14 +3240,13 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .dom-search-result {
-    grid-template-columns: 72px 1fr;
+    grid-template-columns: 135px minmax(0, 1fr);
     gap: 12px;
     padding: 0 10px;
   }
   .dom-search-result > div:first-child {
-    width: 72px;
-    min-height: 72px;
-    height: auto;
+    width: 135px;
+    height: 135px;
     margin-left: -10px;
   }
   .dom-search-result-info,
