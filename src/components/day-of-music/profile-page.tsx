@@ -4,11 +4,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
-import { Button, IconButton, buttonClass } from "@/components/day-of-music/atoms";
+import { Button, IconButton } from "@/components/day-of-music/atoms";
 import { DomSelectField } from "@/components/day-of-music/dom-select";
 import {
   COUNTRIES,
@@ -23,7 +22,7 @@ import { useThemes, type Theme } from "@/lib/day-of-music/themes";
 const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.label }));
 
 export function ProfilePage() {
-  const { configured, user, signOut } = useAuth();
+  const { configured, user } = useAuth();
   const { username, country, save, synced } = useProfile();
   const { themes, saveThemes } = useThemes();
   const guest = configured && !user;
@@ -50,27 +49,12 @@ export function ProfilePage() {
                 <span className="dom-settings-key">Status</span>
                 <span className="dom-settings-val">Signed in · synced</span>
               </div>
-              <div className="dom-settings-actions">
-                <Button variant="ghost" onClick={signOut}>
-                  Sign out
-                </Button>
-              </div>
             </>
           ) : guest ? (
-            <>
-              <p className="dom-settings-note">
-                You&apos;re browsing as a guest. Sign in to sync your logs and profile
-                across devices.
-              </p>
-              <div className="dom-settings-actions">
-                <Link href="/signin" className={buttonClass("ghost")}>
-                  Sign in
-                </Link>
-                <Link href="/signup" className={buttonClass()}>
-                  Sign up
-                </Link>
-              </div>
-            </>
+            <p className="dom-settings-note">
+              You&apos;re browsing as a guest. Sign in to sync your logs and profile
+              across devices.
+            </p>
           ) : (
             <p className="dom-settings-note">
               Local mode — your settings are saved on this device only.
@@ -133,20 +117,20 @@ function SettingsForm({
           placeholder={DEFAULT_USERNAME}
         />
       </label>
-      <DomSelectField
-        label="Store country · 스토어 국가"
-        ariaLabel="Store country"
-        className="dom-store-country-field"
-        labelClassName="dom-edit-label"
-        value={country}
-        options={COUNTRY_OPTIONS}
-        onChange={setCountry}
-        searchable
-        searchPlaceholder="Search country · 국가 검색"
-        variant="underline"
-        size="medium"
-      />
-      <div className="dom-settings-actions">
+      <div className="dom-store-country-save-row">
+        <DomSelectField
+          label="Store country · 스토어 국가"
+          ariaLabel="Store country"
+          className="dom-store-country-field"
+          labelClassName="dom-edit-label"
+          value={country}
+          options={COUNTRY_OPTIONS}
+          onChange={setCountry}
+          searchable
+          searchPlaceholder="Search country · 국가 검색"
+          variant="underline"
+          size="medium"
+        />
         <Button disabled={!dirty} onClick={() => onSave({ username: name.trim(), country })}>
           Save changes
         </Button>

@@ -1592,9 +1592,26 @@
   gap: 8px;
   margin-top: 2px;
 }
+.dom-store-country-save-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+.dom-store-country-save-row > .dom-btn {
+  min-height: 48px;
+}
 @media (max-width: 720px) {
   .dom-profile-settings {
     grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 440px) {
+  .dom-store-country-save-row {
+    grid-template-columns: 1fr;
+  }
+  .dom-store-country-save-row > .dom-btn {
+    justify-self: start;
   }
 }
 .dom-stats-grid {
