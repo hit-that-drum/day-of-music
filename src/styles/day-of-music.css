@@ -295,26 +295,49 @@
 }
 
 /* Theme manager rows (Profile) */
-.dom-theme-row {
-  display: flex;
+.dom-theme-editor-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) repeat(3, 36px);
   align-items: center;
   gap: 8px;
 }
-/* Scoped to beat .dom-input { width: 100% } so the row's controls fit inside. */
-.dom-theme-row .dom-input {
-  flex: 1;
+.dom-theme-editor-row .dom-input {
   min-width: 0;
-  width: auto;
 }
-.dom-theme-row .dom-theme-emoji {
-  flex: none;
+.dom-theme-editor-row .dom-theme-emoji {
   width: 48px;
   text-align: center;
   padding-left: 6px;
   padding-right: 6px;
 }
-.dom-theme-row .dom-iconbtn {
-  flex: none;
+.dom-theme-editor-row .dom-iconbtn {
+  width: 36px;
+}
+.dom-btn-with-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+@media (max-width: 520px) {
+  .dom-theme-editor-row {
+    grid-template-columns: 48px minmax(0, 1fr) repeat(3, 36px);
+  }
+  .dom-theme-editor-row .dom-input:not(.dom-theme-emoji) {
+    grid-column: 2 / -1;
+  }
+  .dom-theme-editor-row .dom-iconbtn {
+    grid-row: 2;
+  }
+  .dom-theme-editor-row .dom-iconbtn:nth-child(3) {
+    grid-column: 3;
+  }
+  .dom-theme-editor-row .dom-iconbtn:nth-child(4) {
+    grid-column: 4;
+  }
+  .dom-theme-editor-row .dom-iconbtn:nth-child(5) {
+    grid-column: 5;
+  }
 }
 
 /* ── Buttons & inputs ───────────────────────────────────────────────────── */

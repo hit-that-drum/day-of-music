@@ -5,9 +5,10 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
-import { Button, buttonClass } from "@/components/day-of-music/atoms";
+import { Button, IconButton, buttonClass } from "@/components/day-of-music/atoms";
 import { DomSelectField } from "@/components/day-of-music/dom-select";
 import {
   COUNTRIES,
@@ -194,7 +195,7 @@ function ThemeManager({
   return (
     <>
       {list.map((t, i) => (
-        <div key={t.id} className="dom-theme-row">
+        <div key={t.id} className="dom-theme-editor-row">
           <input
             className="dom-input dom-theme-emoji"
             value={t.emoji}
@@ -209,35 +210,30 @@ function ThemeManager({
             onChange={(e) => update(i, { name: e.target.value })}
             aria-label="Theme name"
           />
-          <button
-            className="dom-iconbtn"
+          <IconButton
+            icon={ArrowUp}
             onClick={() => move(i, -1)}
             disabled={i === 0}
             aria-label="Move up"
-          >
-            ↑
-          </button>
-          <button
-            className="dom-iconbtn"
+          />
+          <IconButton
+            icon={ArrowDown}
             onClick={() => move(i, 1)}
             disabled={i === list.length - 1}
             aria-label="Move down"
-          >
-            ↓
-          </button>
-          <button
-            className="dom-iconbtn"
+          />
+          <IconButton
+            icon={Trash2}
             onClick={() => remove(i)}
             disabled={list.length <= 1}
             aria-label="Delete theme"
-          >
-            ✕
-          </button>
+          />
         </div>
       ))}
       <div className="dom-settings-actions">
-        <Button variant="ghost" onClick={add}>
-          ＋ Add theme
+        <Button className="dom-btn-with-icon" variant="ghost" onClick={add}>
+          <Plus size={16} strokeWidth={2} aria-hidden="true" />
+          Add theme
         </Button>
         <Button disabled={!dirty} onClick={() => onSave(list)}>
           Save themes
