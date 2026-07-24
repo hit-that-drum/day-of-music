@@ -104,6 +104,9 @@ export const statsSharePayloadSchema = shareBaseSchema.extend({
     avgRatingNum: z.number().min(0).max(5),
     genreCount: z.number().int().min(0),
     topGenres: z.array(z.tuple([z.string().max(100), z.number().int().min(0)])).max(5),
+    /** Kept separate from `fives`: year cards show the count without embedding
+     *  the full five-star album list. Optional for existing v1 share links. */
+    fiveStarCount: z.number().int().min(0).optional(),
     fives: z.array(sharedAlbumSchema).max(200),
   }),
 });
@@ -168,6 +171,7 @@ export function buildStatsSharePayload(args: {
       avgRatingNum: stats.avgRatingNum,
       genreCount: stats.genreCount,
       topGenres: stats.topTenGenres.slice(0, 5),
+      fiveStarCount: stats.fives.length,
       fives: args.showFives ? stats.fives.map(sanitizeAlbum) : [],
     },
   };

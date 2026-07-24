@@ -1,6 +1,7 @@
 // atoms.tsx — small shared presentational atoms for Day of Music.
 
 import type { ComponentProps, ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 
 import { normalizeGenre, type Album } from "@/lib/day-of-music/data";
 
@@ -39,6 +40,27 @@ export function Button({
   ...props
 }: ComponentProps<"button"> & { variant?: ButtonVariant; size?: ButtonSize }) {
   return <button type={type} className={buttonClass(variant, size, className)} {...props} />;
+}
+
+export function IconButton({
+  icon: Icon,
+  iconSize = 18,
+  type = "button",
+  className,
+  ...props
+}: Omit<ComponentProps<"button">, "children"> & {
+  icon: LucideIcon;
+  iconSize?: number;
+}) {
+  return (
+    <button
+      type={type}
+      className={["dom-iconbtn", className].filter(Boolean).join(" ")}
+      {...props}
+    >
+      <Icon size={iconSize} strokeWidth={2} aria-hidden="true" />
+    </button>
+  );
 }
 
 export function Chip({

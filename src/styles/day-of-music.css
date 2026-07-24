@@ -77,13 +77,10 @@
   padding: var(--pad);
   display: grid;
   grid-template-rows: auto 1fr;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--gap);
   max-width: 100vw;
   overflow-x: hidden;
-}
-.dom-root[data-rail="0"] {
-  grid-template-columns: minmax(0, 1fr);
 }
 .dom-root[data-grid="1"] {
   background-image:
@@ -295,26 +292,49 @@
 }
 
 /* Theme manager rows (Profile) */
-.dom-theme-row {
-  display: flex;
+.dom-theme-editor-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) repeat(3, 36px);
   align-items: center;
   gap: 8px;
 }
-/* Scoped to beat .dom-input { width: 100% } so the row's controls fit inside. */
-.dom-theme-row .dom-input {
-  flex: 1;
+.dom-theme-editor-row .dom-input {
   min-width: 0;
-  width: auto;
 }
-.dom-theme-row .dom-theme-emoji {
-  flex: none;
+.dom-theme-editor-row .dom-theme-emoji {
   width: 48px;
   text-align: center;
   padding-left: 6px;
   padding-right: 6px;
 }
-.dom-theme-row .dom-iconbtn {
-  flex: none;
+.dom-theme-editor-row .dom-iconbtn {
+  width: 36px;
+}
+.dom-btn-with-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+@media (max-width: 520px) {
+  .dom-theme-editor-row {
+    grid-template-columns: 48px minmax(0, 1fr) repeat(3, 36px);
+  }
+  .dom-theme-editor-row .dom-input:not(.dom-theme-emoji) {
+    grid-column: 2 / -1;
+  }
+  .dom-theme-editor-row .dom-iconbtn {
+    grid-row: 2;
+  }
+  .dom-theme-editor-row .dom-iconbtn:nth-child(3) {
+    grid-column: 3;
+  }
+  .dom-theme-editor-row .dom-iconbtn:nth-child(4) {
+    grid-column: 4;
+  }
+  .dom-theme-editor-row .dom-iconbtn:nth-child(5) {
+    grid-column: 5;
+  }
 }
 
 /* ── Buttons & inputs ───────────────────────────────────────────────────── */
@@ -952,12 +972,11 @@
   font-size: 11px;
   color: var(--ink3);
   line-height: 1.2;
-  /* Secondary context — keep it to one line so a long album title can't blow
-     out the cell (on screen and in the PNG export). Truncate with an ellipsis. */
+  /* Show the album context in full (on screen and in the PNG export): let a
+     long title wrap to as many lines as it needs instead of clipping it with
+     an ellipsis. */
   width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: break-word;
 }
 .dom-meta .dom-dot {
   opacity: 0.5;
@@ -1000,104 +1019,6 @@
 .dom-day-blank {
   flex: 1;
   background-color: var(--bg);
-}
-
-/* ── Journal rail (right sidebar) ───────────────────────────────────────── */
-
-.dom-rail {
-  background-color: var(--panel);
-  border: 1px solid var(--line);
-  padding: 22px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  align-self: start;
-  position: sticky;
-  top: 24px;
-}
-.dom-rail-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.dom-rail-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ink3);
-}
-.dom-rail-today {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-}
-.dom-rail-today > div:first-child {
-  box-shadow: var(--coverShadow);
-  align-self: center;
-}
-.dom-rail-today-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.dom-rail-today-title {
-  font-family: var(--font-display);
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-.dom-rail-today-artist {
-  font-family: var(--font-display);
-  font-size: 13px;
-  opacity: 0.75;
-}
-.dom-rail-note {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 14px;
-  line-height: 1.45;
-  margin: 0;
-  color: var(--ink2);
-}
-.dom-rail-recent {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.dom-rail-recent-row {
-  display: grid;
-  grid-template-columns: 40px 1fr auto;
-  gap: 10px;
-  align-items: center;
-  padding: 6px 4px;
-  transition: background-color 0.12s;
-  width: 100%;
-}
-.dom-rail-recent-row:hover {
-  background-color: var(--chip);
-}
-.dom-rail-recent-row > div:first-child {
-  box-shadow: var(--coverShadow);
-  width: 40px;
-  height: 40px;
-}
-.dom-rail-recent-title {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.2;
-}
-.dom-rail-recent-artist {
-  font-family: var(--font-display);
-  font-size: 10px;
-  opacity: 0.7;
-}
-.dom-rail-recent-date {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink3);
 }
 
 /* ── Monthly Overview — editorial calendar ─────────────────────────────── */
@@ -1570,9 +1491,26 @@
   gap: 8px;
   margin-top: 2px;
 }
+.dom-store-country-save-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+.dom-store-country-save-row > .dom-btn {
+  min-height: 48px;
+}
 @media (max-width: 720px) {
   .dom-profile-settings {
     grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 440px) {
+  .dom-store-country-save-row {
+    grid-template-columns: 1fr;
+  }
+  .dom-store-country-save-row > .dom-btn {
+    justify-self: start;
   }
 }
 .dom-stats-grid {
@@ -1902,9 +1840,9 @@
 }
 .dom-search-result {
   display: grid;
-  grid-template-columns: 120px 1fr 80px;
+  grid-template-columns: 135px minmax(0, 1fr) 80px;
   gap: 18px;
-  align-items: stretch;
+  align-items: center;
   padding: 0 14px;
   border: 1px solid var(--lineSoft);
   transition:
@@ -1916,22 +1854,19 @@
   background-color: var(--chip);
   border-color: var(--line);
 }
-/* Cover bleeds to the row's top/bottom + left edge, matching weekly cards. */
+/* Journal result artwork stays a fixed square. */
 .dom-search-result > div:first-child {
-  align-self: stretch;
-  width: 120px;
-  min-height: 120px;
-  height: auto;
+  width: 135px;
+  height: 135px;
+  aspect-ratio: 1 / 1;
+  flex: none;
   margin-left: -14px;
   overflow: hidden;
 }
 .dom-search-result > div:first-child .dom-cover {
+  width: 100%;
   height: 100%;
-}
-.dom-search-result > div:first-child .dom-cover:has(img) .dom-cover-inner {
-  width: 100% !important;
-  height: 100% !important;
-  transform: none !important;
+  aspect-ratio: 1 / 1;
 }
 .dom-search-result-info,
 .dom-search-result-date {
@@ -2731,6 +2666,22 @@
   .dom-month-cal-cover {
   transform: none;
 }
+/* The monthly board collapses to a covers-only layout at narrow viewports (a
+   media query hides .dom-month-cal-info and shrinks the cover). The poster must
+   always export the full desktop layout — title + artist under a full-bleed
+   cover — no matter how small the viewer's screen is. These rules out-specify
+   the media-query rules (which carry no extra specificity), so they win in the
+   fixed-width export stage regardless of the actual viewport width. */
+.dom-share-card .dom-share-monthcal .dom-month-cal-info {
+  display: flex;
+}
+.dom-share-card .dom-share-monthcal .dom-month-cal-cover {
+  max-width: none;
+}
+.dom-share-card .dom-share-monthcal .dom-month-cal-cell {
+  padding: 10px 12px 12px;
+  gap: 8px;
+}
 /* The PNG export falls back from Spectral to a system serif. Georgia uses
    old-style figures (the "3" drops below the baseline and looks misaligned),
    so fall back to a lining-figure serif and force lining numerals. On screen
@@ -3031,15 +2982,6 @@
 
 /* ── Responsive collapse ────────────────────────────────────────────────── */
 
-@media (max-width: 1320px) {
-  .dom-root {
-    grid-template-columns: 1fr;
-  }
-  .dom-rail {
-    display: none;
-  }
-}
-
 @media (max-width: 1100px) {
   .dom-root {
     --pad: 18px;
@@ -3228,14 +3170,13 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .dom-search-result {
-    grid-template-columns: 72px 1fr;
+    grid-template-columns: 135px minmax(0, 1fr);
     gap: 12px;
     padding: 0 10px;
   }
   .dom-search-result > div:first-child {
-    width: 72px;
-    min-height: 72px;
-    height: auto;
+    width: 135px;
+    height: 135px;
     margin-left: -10px;
   }
   .dom-search-result-info,
