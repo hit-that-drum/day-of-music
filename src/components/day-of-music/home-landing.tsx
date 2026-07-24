@@ -48,7 +48,7 @@ export function HomeLanding() {
 
   return (
     <div className="dom-stage" ref={rootRef}>
-      <div className="dom-root" data-grid="1" data-rail="0">
+      <div className="dom-root" data-grid="1">
         <header className="dom-topbar">
           <div className="dom-brand">
             <span className="dom-brand-mark">●</span>

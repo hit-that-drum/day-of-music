@@ -30,7 +30,6 @@ export function SharedCardView({ payload }: { payload: SharePayload }) {
 
       <main
         className="dom-root"
-        data-rail="0"
         data-grid="0"
         style={{
           display: "flex",

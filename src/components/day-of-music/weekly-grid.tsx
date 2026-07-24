@@ -3,6 +3,7 @@
 "use client";
 
 import { useCallback, useState, type DragEvent } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import {
   DOW,
@@ -15,7 +16,7 @@ import {
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { Cover } from "@/components/day-of-music/cover";
-import { Button, MetaLine } from "@/components/day-of-music/atoms";
+import { Button, IconButton, MetaLine } from "@/components/day-of-music/atoms";
 import { WeekPicker } from "@/components/day-of-music/week-picker";
 
 type WeeklyGridProps = {
@@ -181,12 +182,8 @@ function WeekHeader({
         </div>
       </div>
       <div className="dom-week-actions">
-        <button className="dom-iconbtn" onClick={onPrev} aria-label="Previous week">
-          ←
-        </button>
-        <button className="dom-iconbtn" onClick={onNext} aria-label="Next week">
-          →
-        </button>
+        <IconButton icon={ArrowLeft} onClick={onPrev} aria-label="Previous week" />
+        <IconButton icon={ArrowRight} onClick={onNext} aria-label="Next week" />
         <Button onClick={onShare}>SHARE WEEK</Button>
       </div>
     </div>

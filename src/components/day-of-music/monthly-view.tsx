@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import dayjs from "dayjs";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import {
   // DOW, — used only by the temporarily-disabled feature section below
@@ -16,7 +17,7 @@ import {
   type Album,
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
-import { Button } from "@/components/day-of-music/atoms";
+import { Button, IconButton } from "@/components/day-of-music/atoms";
 import { Cover } from "@/components/day-of-music/cover";
 
 export function MonthlyView({
@@ -93,12 +94,8 @@ export function MonthlyView({
           </h1>
         </div>
         <div className="dom-month-nav">
-          <button className="dom-wp-nav" onClick={onPrev} aria-label="Previous month">
-            ←
-          </button>
-          <button className="dom-wp-nav" onClick={onNext} aria-label="Next month">
-            →
-          </button>
+          <IconButton icon={ArrowLeft} onClick={onPrev} aria-label="Previous month" />
+          <IconButton icon={ArrowRight} onClick={onNext} aria-label="Next month" />
           {!isCurrentMonth && (
             <Button onClick={() => onJump(today)}>THIS MONTH</Button>
           )}

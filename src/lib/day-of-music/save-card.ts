@@ -8,7 +8,26 @@ import { toast } from "sonner";
 
 import { googleFontsHref } from "@/lib/day-of-music/theme";
 
+// The reference export width — matches --dom-modal-w (the poster's full-size
+// desktop layout). Every export is rendered at this width so the saved image is
+// identical regardless of the viewer's screen size, instead of shrinking with
+// the modal on narrow screens.
+const EXPORT_WIDTH = 1100;
+
 export async function saveCardAsImage(node: HTMLElement, filename: string): Promise<void> {
+  // Render the poster on an off-screen stage locked to the reference width. The
+  // stage is a child of the node's own parent, so the clone stays inside the
+  // themed .dom-root subtree and inherits every CSS var (--panel, --line, the
+  // theme colors …) exactly as on screen — it just lays out at a fixed width.
+  const parent = node.parentElement ?? document.body;
+  const stage = document.createElement("div");
+  stage.style.cssText = `position:fixed;left:-100000px;top:0;width:${EXPORT_WIDTH}px;pointer-events:none;`;
+  const clone = node.cloneNode(true) as HTMLElement;
+  clone.style.width = `${EXPORT_WIDTH}px`;
+  clone.style.maxWidth = "none";
+  stage.appendChild(clone);
+  parent.appendChild(stage);
+
   try {
     let fontEmbedCSS: string | undefined;
     try {
@@ -32,8 +51,8 @@ export async function saveCardAsImage(node: HTMLElement, filename: string): Prom
     // First pass warms the clone's styles + decoded fonts; the second pass then
     // measures and rasterizes consistently. This is the documented html-to-image
     // workaround for first-render text drift (clipping / overlap).
-    await toPng(node, opts);
-    const dataUrl = await toPng(node, opts);
+    await toPng(clone, opts);
+    const dataUrl = await toPng(clone, opts);
     const link = document.createElement("a");
     link.download = filename;
     link.href = dataUrl;
@@ -41,6 +60,8 @@ export async function saveCardAsImage(node: HTMLElement, filename: string): Prom
     toast.success("Image saved");
   } catch {
     toast.error("Couldn't save image");
+  } finally {
+    parent.removeChild(stage);
   }
 }
 

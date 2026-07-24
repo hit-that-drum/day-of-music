@@ -16,7 +16,6 @@ import {
 export type Tweaks = {
   aesthetic: AestheticKey;
   typography: TypeKey;
-  showJournal: boolean;
   /** When on, weeks never span two months: a week that crosses a month
    *  boundary is shown as two separate pages (e.g. "December — Week 5" then
    *  "January — Week 1"). Off keeps the continuous Mon–Sun week. */
@@ -82,16 +81,6 @@ export function TweaksPanel({
       />
 
       <div className="dom-tweak-section">Layout</div>
-      <div className="dom-tweak-toggle-row">
-        <span className="dom-tweak-label">Show journal rail</span>
-        <button
-          className="dom-tweak-switch"
-          data-on={tweaks.showJournal ? "1" : "0"}
-          onClick={() => onChange("showJournal", !tweaks.showJournal)}
-        >
-          {tweaks.showJournal ? "On" : "Off"}
-        </button>
-      </div>
       <div className="dom-tweak-toggle-row">
         <span className="dom-tweak-label">Split weeks by month</span>
         <button

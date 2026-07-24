@@ -6,6 +6,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import {
   DOW_KO,
@@ -15,6 +16,7 @@ import {
   startOfWeek,
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
+import { IconButton } from "@/components/day-of-music/atoms";
 
 const DOW_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const;
 
@@ -70,23 +72,23 @@ export function WeekPicker({
       <div className="dom-wp-backdrop" onClick={onClose} aria-hidden="true" />
       <div className="dom-wp" role="dialog" aria-label="Jump to a week">
         <div className="dom-wp-hd">
-          <button
+          <IconButton
+            icon={ArrowLeft}
+            iconSize={14}
             className="dom-wp-nav"
             onClick={() => setCursor((c) => c.subtract(1, "month"))}
             aria-label="Previous month"
-          >
-            ←
-          </button>
+          />
           <span className="dom-wp-title">
             {MONTHS_LONG[monthIndex]} {cursor.year()}
           </span>
-          <button
+          <IconButton
+            icon={ArrowRight}
+            iconSize={14}
             className="dom-wp-nav"
             onClick={() => setCursor((c) => c.add(1, "month"))}
             aria-label="Next month"
-          >
-            →
-          </button>
+          />
         </div>
 
         <div className="dom-wp-dow">

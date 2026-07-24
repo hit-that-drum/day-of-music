@@ -71,7 +71,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <div className="dom-stage">
-      <div className="dom-root" data-grid="1" data-rail="0" style={{ placeItems: "center" }}>
+      <div className="dom-root" data-grid="1" style={{ placeItems: "center" }}>
         <div className="dom-signin">
           <Link href="/" className="dom-signin-brand">
             <span className="dom-brand-mark">●</span>

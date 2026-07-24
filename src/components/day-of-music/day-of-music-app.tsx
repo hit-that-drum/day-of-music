@@ -1,7 +1,6 @@
 // day-of-music-app.tsx — app shell for Day of Music.
-// Wires theme tokens, week navigation, keyboard shortcuts, the Journal rail,
-// the Day Detail modal, and the Tweaks panel. The Weekly Grid is the live screen;
-// the other tabs are placeholders for now.
+// Wires theme tokens, week navigation, keyboard shortcuts, the Day Detail
+// modal, and the Tweaks panel.
 
 "use client";
 
@@ -23,7 +22,6 @@ import { useActiveTheme } from "@/lib/day-of-music/themes";
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { AddFlow, type NewEntry } from "@/components/day-of-music/add-flow";
 import { DayDetail } from "@/components/day-of-music/day-detail";
-import { JournalRail } from "@/components/day-of-music/journal-rail";
 import { MonthlyView } from "@/components/day-of-music/monthly-view";
 import { ProfileStats } from "@/components/day-of-music/profile-stats";
 import { ProfilePage } from "@/components/day-of-music/profile-page";
@@ -48,7 +46,6 @@ const TWEAKS_KEY = "dom.tweaks.v1";
 const DEFAULT_TWEAKS: Tweaks = {
   aesthetic: "editorial",
   typography: "editorial",
-  showJournal: true,
   weekSplit: false,
 };
 
@@ -57,8 +54,14 @@ function loadTweaks(): Tweaks {
   try {
     const raw = window.localStorage.getItem(TWEAKS_KEY);
     if (!raw) return DEFAULT_TWEAKS;
-    // Merge over defaults so older saved blobs missing newer keys still work.
-    return { ...DEFAULT_TWEAKS, ...(JSON.parse(raw) as Partial<Tweaks>) };
+    const saved = JSON.parse(raw) as Partial<Tweaks>;
+    // Copy only active settings so retired keys from older saved blobs do not
+    // remain in the live snapshot.
+    return {
+      aesthetic: saved.aesthetic ?? DEFAULT_TWEAKS.aesthetic,
+      typography: saved.typography ?? DEFAULT_TWEAKS.typography,
+      weekSplit: saved.weekSplit ?? DEFAULT_TWEAKS.weekSplit,
+    };
   } catch {
     return DEFAULT_TWEAKS;
   }
@@ -323,7 +326,6 @@ export function DayOfMusicApp() {
       <div
         className="dom-root"
         data-grid={tweaks.aesthetic === "editorial" || tweaks.aesthetic === "dark" ? "1" : "0"}
-        data-rail={screen === "week" && tweaks.showJournal ? "1" : "0"}
       >
         <TopBar
           screen={screen}
@@ -382,9 +384,6 @@ export function DayOfMusicApp() {
           {screen === "profile" && <ProfilePage />}
         </main>
 
-        {screen === "week" && tweaks.showJournal && (
-          <JournalRail today={TODAY} onOpen={handleOpen} />
-        )}
       </div>
 
       {openAlbum && (
