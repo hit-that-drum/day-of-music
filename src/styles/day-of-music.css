@@ -77,13 +77,10 @@
   padding: var(--pad);
   display: grid;
   grid-template-rows: auto 1fr;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--gap);
   max-width: 100vw;
   overflow-x: hidden;
-}
-.dom-root[data-rail="0"] {
-  grid-template-columns: minmax(0, 1fr);
 }
 .dom-root[data-grid="1"] {
   background-image:
@@ -1022,104 +1019,6 @@
 .dom-day-blank {
   flex: 1;
   background-color: var(--bg);
-}
-
-/* ── Journal rail (right sidebar) ───────────────────────────────────────── */
-
-.dom-rail {
-  background-color: var(--panel);
-  border: 1px solid var(--line);
-  padding: 22px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  align-self: start;
-  position: sticky;
-  top: 24px;
-}
-.dom-rail-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.dom-rail-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ink3);
-}
-.dom-rail-today {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-}
-.dom-rail-today > div:first-child {
-  box-shadow: var(--coverShadow);
-  align-self: center;
-}
-.dom-rail-today-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.dom-rail-today-title {
-  font-family: var(--font-display);
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-.dom-rail-today-artist {
-  font-family: var(--font-display);
-  font-size: 13px;
-  opacity: 0.75;
-}
-.dom-rail-note {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 14px;
-  line-height: 1.45;
-  margin: 0;
-  color: var(--ink2);
-}
-.dom-rail-recent {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.dom-rail-recent-row {
-  display: grid;
-  grid-template-columns: 40px 1fr auto;
-  gap: 10px;
-  align-items: center;
-  padding: 6px 4px;
-  transition: background-color 0.12s;
-  width: 100%;
-}
-.dom-rail-recent-row:hover {
-  background-color: var(--chip);
-}
-.dom-rail-recent-row > div:first-child {
-  box-shadow: var(--coverShadow);
-  width: 40px;
-  height: 40px;
-}
-.dom-rail-recent-title {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.2;
-}
-.dom-rail-recent-artist {
-  font-family: var(--font-display);
-  font-size: 10px;
-  opacity: 0.7;
-}
-.dom-rail-recent-date {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink3);
 }
 
 /* ── Monthly Overview — editorial calendar ─────────────────────────────── */
@@ -3082,15 +2981,6 @@
 }
 
 /* ── Responsive collapse ────────────────────────────────────────────────── */
-
-@media (max-width: 1320px) {
-  .dom-root {
-    grid-template-columns: 1fr;
-  }
-  .dom-rail {
-    display: none;
-  }
-}
 
 @media (max-width: 1100px) {
   .dom-root {
