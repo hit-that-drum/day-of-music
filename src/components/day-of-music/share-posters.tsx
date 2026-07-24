@@ -213,6 +213,9 @@ export function StatsPoster({
   // Every five-star album goes on the poster — the card just grows taller and
   // the export captures the full node, not the viewport.
   const fives = showFives ? stats.fives : [];
+  // Year cards intentionally omit the album list from their payload, so the
+  // aggregate count must not be inferred from that optional list.
+  const fiveStarCount = stats.fiveStarCount ?? stats.fives.length;
 
   return (
     <div className="dom-share-card dom-share-card-stats" ref={ref}>
@@ -234,9 +237,9 @@ export function StatsPoster({
         </div>
         <div className="dom-stat dom-stat-compact">
           <div className="dom-stat-label">five-stars</div>
-          <div className="dom-stat-num">{stats.fives.length}</div>
+          <div className="dom-stat-num">{fiveStarCount}</div>
           <div className="dom-stat-sub">
-            {stats.total ? Math.round((stats.fives.length / stats.total) * 100) : 0}% of catalog
+            {stats.total ? Math.round((fiveStarCount / stats.total) * 100) : 0}% of catalog
           </div>
         </div>
         <div className="dom-stat dom-stat-compact dom-theme-genre-card">
