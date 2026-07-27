@@ -12,6 +12,21 @@ import { Button } from "@/components/day-of-music/atoms";
 
 type Mode = "signin" | "signup";
 
+// Password policy for new accounts. Signup enforces these; signin does not, so
+// accounts created under an older policy can still get in. This is first-line
+// UX only — the authoritative policy must also be set in the Supabase dashboard
+// (Auth → Password), since a client can bypass anything here.
+const PASSWORD_RULES: { id: string; label: string; test: (pw: string) => boolean }[] = [
+  { id: "length", label: "At least 8 characters", test: (pw) => pw.length >= 8 },
+  { id: "letter", label: "Contains a letter", test: (pw) => /\p{L}/u.test(pw) },
+  { id: "number", label: "Contains a number", test: (pw) => /\d/.test(pw) },
+];
+
+/** Rules the password fails, in policy order. Empty array means it passes. */
+function passwordIssues(pw: string) {
+  return PASSWORD_RULES.filter((rule) => !rule.test(pw));
+}
+
 const COPY: Record<
   Mode,
   { eyebrow: string; title: string; sub: string; cta: string; altText: string; altCta: string; altHref: string }
@@ -45,10 +60,19 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [message, setMessage] = useState("");
 
   const copy = COPY[mode];
+  // Block submit until signup passwords satisfy the policy. Signin stays open.
+  const signupInvalid = mode === "signup" && passwordIssues(password).length > 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !password) return;
+    // Enforce the password policy on signup only, so existing accounts aren't
+    // locked out at sign-in. The checklist below already shows what's missing.
+    if (mode === "signup" && passwordIssues(password).length > 0) {
+      setStatus("error");
+      setMessage("Please meet the password requirements below.");
+      return;
+    }
     setStatus("busy");
     setMessage("");
 
@@ -106,10 +130,27 @@ export function AuthForm({ mode }: { mode: Mode }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              minLength={6}
+              minLength={mode === "signup" ? 8 : undefined}
+              aria-describedby={mode === "signup" ? "dom-pw-rules" : undefined}
               required
             />
-            <Button type="submit" disabled={!configured || status === "busy"}>
+            {mode === "signup" && (
+              <ul className="dom-pw-rules" id="dom-pw-rules" aria-label="Password requirements">
+                {PASSWORD_RULES.map((rule) => {
+                  const met = rule.test(password);
+                  return (
+                    <li key={rule.id} className="dom-pw-rule" data-met={met ? "1" : "0"}>
+                      <span className="dom-pw-rule-mark" aria-hidden="true">
+                        {met ? "✓" : "○"}
+                      </span>
+                      <span>{rule.label}</span>
+                      <span className="dom-visually-hidden">{met ? " (met)" : " (not met)"}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <Button type="submit" disabled={!configured || status === "busy" || signupInvalid}>
               {status === "busy" ? "One moment…" : copy.cta}
             </Button>
           </form>
