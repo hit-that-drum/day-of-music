@@ -8,7 +8,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
-import { Button } from "@/components/day-of-music/atoms";
+import { BrandMark, Button } from "@/components/day-of-music/atoms";
+import { PASSWORD_RULES, passwordIssues } from "@/lib/day-of-music/password";
 
 type Mode = "signin" | "signup";
 
@@ -45,10 +46,19 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [message, setMessage] = useState("");
 
   const copy = COPY[mode];
+  // Block submit until signup passwords satisfy the policy. Signin stays open.
+  const signupInvalid = mode === "signup" && passwordIssues(password).length > 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !password) return;
+    // Enforce the password policy on signup only, so existing accounts aren't
+    // locked out at sign-in. The checklist below already shows what's missing.
+    if (mode === "signup" && passwordIssues(password).length > 0) {
+      setStatus("error");
+      setMessage("Please meet the password requirements below.");
+      return;
+    }
     setStatus("busy");
     setMessage("");
 
@@ -74,7 +84,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       <div className="dom-root" data-grid="1" style={{ placeItems: "center" }}>
         <div className="dom-signin">
           <Link href="/" className="dom-signin-brand">
-            <span className="dom-brand-mark">●</span>
+            <BrandMark />
             <span className="dom-brand-name">Day of Music</span>
             <span className="dom-brand-ko">하루의 음악</span>
           </Link>
@@ -106,10 +116,27 @@ export function AuthForm({ mode }: { mode: Mode }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              minLength={6}
+              minLength={mode === "signup" ? 8 : undefined}
+              aria-describedby={mode === "signup" ? "dom-pw-rules" : undefined}
               required
             />
-            <Button type="submit" disabled={!configured || status === "busy"}>
+            {mode === "signup" && (
+              <ul className="dom-pw-rules" id="dom-pw-rules" aria-label="Password requirements">
+                {PASSWORD_RULES.map((rule) => {
+                  const met = rule.test(password);
+                  return (
+                    <li key={rule.id} className="dom-pw-rule" data-met={met ? "1" : "0"}>
+                      <span className="dom-pw-rule-mark" aria-hidden="true">
+                        {met ? "✓" : "○"}
+                      </span>
+                      <span>{rule.label}</span>
+                      <span className="dom-visually-hidden">{met ? " (met)" : " (not met)"}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <Button type="submit" disabled={!configured || status === "busy" || signupInvalid}>
               {status === "busy" ? "One moment…" : copy.cta}
             </Button>
           </form>

@@ -16,6 +16,13 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
+    // Declared explicitly (not via the app/icon file convention) so the tab
+    // favicon link is emitted deterministically in dev and prod. Points at the
+    // transparent vinyl PNGs in public/icons; browsers pick the size they need.
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
     apple: [
       {
         url: "/icons/apple-touch-icon.png",

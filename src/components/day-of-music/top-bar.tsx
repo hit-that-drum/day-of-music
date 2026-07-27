@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import type { ScreenId } from "@/components/day-of-music/day-of-music-app";
-import { Button, buttonClass } from "@/components/day-of-music/atoms";
+import { BrandMark, Button, buttonClass } from "@/components/day-of-music/atoms";
 
 const SCREENS: { id: ScreenId; label: string; ko: string }[] = [
   { id: "week", label: "Week", ko: "주간" },
@@ -33,7 +33,7 @@ export function TopBar({
   return (
     <header className="dom-topbar">
       <Link href="/" className="dom-brand">
-        <span className="dom-brand-mark">●</span>
+        <BrandMark />
         <span className="dom-brand-name">Day of Music</span>
         <span className="dom-brand-ko">하루의 음악</span>
       </Link>

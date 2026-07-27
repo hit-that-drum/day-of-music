@@ -1,10 +1,11 @@
-// v2: the version bump matters — activating this version deletes the v1 cache,
-// which could hold stale dev-server chunks (dev chunk URLs aren't content-hashed,
-// so cache-first pinned an old CSS/JS snapshot forever on dev origins).
-const CACHE_NAME = "day-of-music-v2";
+// v3: bumped when the app icons were replaced (favicon.ico removed in favour of
+// app/icon.png; the vinyl PWA icons regenerated). Activating a new version
+// deletes the older cache, so clients re-fetch the new icons instead of serving
+// the old cache-first snapshot — the same mechanism that clears stale dev-server
+// chunks (dev chunk URLs aren't content-hashed).
+const CACHE_NAME = "day-of-music-v3";
 const PRECACHE_URLS = [
   "/",
-  "/favicon.ico",
   "/icons/apple-touch-icon.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -50,8 +51,7 @@ self.addEventListener("fetch", (event) => {
 
   if (
     url.pathname.startsWith("/_next/static/") ||
-    url.pathname.startsWith("/icons/") ||
-    url.pathname === "/favicon.ico"
+    url.pathname.startsWith("/icons/")
   ) {
     event.respondWith(cacheFirst(request));
     return;

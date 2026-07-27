@@ -13,7 +13,7 @@ import {
   StatsPoster,
   WeekPoster,
 } from "@/components/day-of-music/share-posters";
-import { buttonClass } from "@/components/day-of-music/atoms";
+import { BrandMark, buttonClass } from "@/components/day-of-music/atoms";
 
 export function SharedCardView({ payload }: { payload: SharePayload }) {
   const vars = themeStyleVars(
@@ -41,7 +41,7 @@ export function SharedCardView({ payload }: { payload: SharePayload }) {
         }}
       >
         <Link href="/" className="dom-signin-brand">
-          <span className="dom-brand-mark">●</span>
+          <BrandMark />
           <span className="dom-brand-name">Day of Music</span>
           <span className="dom-brand-ko">하루의 음악</span>
         </Link>
