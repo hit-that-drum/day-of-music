@@ -8,24 +8,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
-import { Button } from "@/components/day-of-music/atoms";
+import { BrandMark, Button } from "@/components/day-of-music/atoms";
+import { PASSWORD_RULES, passwordIssues } from "@/lib/day-of-music/password";
 
 type Mode = "signin" | "signup";
-
-// Password policy for new accounts. Signup enforces these; signin does not, so
-// accounts created under an older policy can still get in. This is first-line
-// UX only — the authoritative policy must also be set in the Supabase dashboard
-// (Auth → Password), since a client can bypass anything here.
-const PASSWORD_RULES: { id: string; label: string; test: (pw: string) => boolean }[] = [
-  { id: "length", label: "At least 8 characters", test: (pw) => pw.length >= 8 },
-  { id: "letter", label: "Contains a letter", test: (pw) => /\p{L}/u.test(pw) },
-  { id: "number", label: "Contains a number", test: (pw) => /\d/.test(pw) },
-];
-
-/** Rules the password fails, in policy order. Empty array means it passes. */
-function passwordIssues(pw: string) {
-  return PASSWORD_RULES.filter((rule) => !rule.test(pw));
-}
 
 const COPY: Record<
   Mode,
@@ -98,7 +84,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       <div className="dom-root" data-grid="1" style={{ placeItems: "center" }}>
         <div className="dom-signin">
           <Link href="/" className="dom-signin-brand">
-            <span className="dom-brand-mark">●</span>
+            <BrandMark />
             <span className="dom-brand-name">Day of Music</span>
             <span className="dom-brand-ko">하루의 음악</span>
           </Link>

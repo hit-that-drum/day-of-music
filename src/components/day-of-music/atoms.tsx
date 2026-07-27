@@ -63,6 +63,17 @@ export function IconButton({
   );
 }
 
+/** Brand logo mark (the vinyl record) shown beside the "Day of Music" wordmark.
+ *  A tiny static asset from /public, so a plain <img> is preferred over the
+ *  weight of next/image. Rendered in the top bar, landing, auth card, and the
+ *  public share page — one source so the mark stays identical everywhere. */
+export function BrandMark() {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- small static /public logo; next/image adds no value here
+    <img className="dom-brand-mark" src="/icons/icon-192.png" alt="" width={24} height={24} />
+  );
+}
+
 export function Chip({
   children,
   active,

@@ -28,6 +28,10 @@ type AuthContextValue = {
   signInWithPassword: (email: string, password: string) => Promise<AuthResult>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  /** Set/change the signed-in user's password (no re-auth; session-based). */
+  updatePassword: (password: string) => Promise<AuthResult>;
+  /** Permanently delete the account + its data (server route, service role). */
+  deleteAccount: () => Promise<AuthResult>;
   /** Merge keys into the account's user_metadata so profile prefs sync. */
   updateUserMetadata: (patch: Record<string, unknown>) => Promise<void>;
 };
@@ -67,7 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/week` },
+      // Confirmation link returns through /auth/callback, which exchanges the
+      // PKCE code for a session (and handles cross-device opens gracefully).
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
     return { error: error?.message ?? null };
   }, []);
@@ -82,10 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
-    // detectSessionInUrl picks the session up when Google redirects back.
+    // Google redirects back to /auth/callback, which exchanges the PKCE code
+    // for a session before sending the user on to /week.
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/week` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
   }, []);
 
@@ -94,6 +101,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
     await supabase.auth.signOut();
     setSession(null);
+  }, []);
+
+  const updatePassword = useCallback(async (password: string) => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return { error: "Supabase is not configured." };
+    // Session-based: GoTrue changes the password for the currently signed-in
+    // user. For OAuth-only accounts this sets a password for the first time.
+    const { error } = await supabase.auth.updateUser({ password });
+    return { error: error?.message ?? null };
+  }, []);
+
+  const deleteAccount = useCallback(async () => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return { error: "Supabase is not configured." };
+    // Deleting a user needs the service_role key, which must never reach the
+    // client — so hand off to the server route with our access token. The
+    // route verifies the token, then deletes the account (FK cascade wipes the
+    // journal/share rows).
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return { error: "You're not signed in." };
+    const res = await fetch("/api/account", {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as { error?: string } | null;
+      return { error: body?.error ?? "Account deletion failed." };
+    }
+    await supabase.auth.signOut();
+    setSession(null);
+    return { error: null };
   }, []);
 
   const updateUserMetadata = useCallback(async (patch: Record<string, unknown>) => {
@@ -115,9 +154,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithPassword,
       signInWithGoogle,
       signOut,
+      updatePassword,
+      deleteAccount,
       updateUserMetadata,
     }),
-    [configured, loading, session, signUpWithPassword, signInWithPassword, signInWithGoogle, signOut, updateUserMetadata],
+    [
+      configured,
+      loading,
+      session,
+      signUpWithPassword,
+      signInWithPassword,
+      signInWithGoogle,
+      signOut,
+      updatePassword,
+      deleteAccount,
+      updateUserMetadata,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

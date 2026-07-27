@@ -4,11 +4,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { Button, IconButton } from "@/components/day-of-music/atoms";
+import { Modal } from "@/components/day-of-music/modal";
 import { DomSelectField } from "@/components/day-of-music/dom-select";
+import { PASSWORD_RULES, passwordIssues } from "@/lib/day-of-music/password";
 import {
   COUNTRIES,
   DEFAULT_USERNAME,
@@ -49,6 +53,7 @@ export function ProfilePage() {
                 <span className="dom-settings-key">Status</span>
                 <span className="dom-settings-val">Signed in · synced</span>
               </div>
+              <AccountActions email={user.email ?? ""} />
             </>
           ) : guest ? (
             <p className="dom-settings-note">
@@ -86,6 +91,135 @@ export function ProfilePage() {
         </section>
       </div>
     </div>
+  );
+}
+
+// Change-password + delete-account controls for a signed-in user. Password
+// change is session-based (no re-auth). Deletion is irreversible, so it routes
+// through a confirm modal that requires typing the exact email.
+function AccountActions({ email }: { email: string }) {
+  const { updatePassword, deleteAccount } = useAuth();
+  const router = useRouter();
+
+  const [pwOpen, setPwOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+  const pwInvalid = passwordIssues(password).length > 0;
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [delBusy, setDelBusy] = useState(false);
+  const confirmed = confirmText.trim() === email;
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (pwInvalid || pwBusy) return;
+    setPwBusy(true);
+    const { error } = await updatePassword(password);
+    setPwBusy(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    toast.success("비밀번호가 변경되었어요.");
+    setPassword("");
+    setPwOpen(false);
+  }
+
+  async function handleDelete() {
+    if (!confirmed || delBusy) return;
+    setDelBusy(true);
+    const { error } = await deleteAccount();
+    if (error) {
+      setDelBusy(false);
+      toast.error(error);
+      return;
+    }
+    toast.success("계정이 삭제되었습니다.");
+    router.replace("/");
+  }
+
+  return (
+    <>
+      <div className="dom-settings-actions">
+        <Button variant="ghost" onClick={() => setPwOpen((v) => !v)} aria-expanded={pwOpen}>
+          {pwOpen ? "Cancel" : "Change password · 비밀번호 변경"}
+        </Button>
+        <Button variant="danger-ghost" onClick={() => setConfirmOpen(true)}>
+          Delete account · 회원 탈퇴
+        </Button>
+      </div>
+
+      {pwOpen && (
+        <form className="dom-signin-form" onSubmit={handleChangePassword} style={{ marginTop: 8 }}>
+          <input
+            className="dom-input"
+            type="password"
+            placeholder="New password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+            minLength={8}
+            aria-describedby="dom-change-pw-rules"
+            required
+          />
+          <ul className="dom-pw-rules" id="dom-change-pw-rules" aria-label="Password requirements">
+            {PASSWORD_RULES.map((rule) => {
+              const met = rule.test(password);
+              return (
+                <li key={rule.id} className="dom-pw-rule" data-met={met ? "1" : "0"}>
+                  <span className="dom-pw-rule-mark" aria-hidden="true">
+                    {met ? "✓" : "○"}
+                  </span>
+                  <span>{rule.label}</span>
+                  <span className="dom-visually-hidden">{met ? " (met)" : " (not met)"}</span>
+                </li>
+              );
+            })}
+          </ul>
+          <Button type="submit" disabled={pwInvalid || pwBusy}>
+            {pwBusy ? "One moment…" : "Update password"}
+          </Button>
+        </form>
+      )}
+
+      {confirmOpen && (
+        <Modal
+          label="Delete account confirmation"
+          className="dom-danger-modal-wrap"
+          onClose={() => {
+            if (!delBusy) setConfirmOpen(false);
+          }}
+        >
+          <div className="dom-danger-modal">
+            <h2 className="dom-danger-modal-title">회원 탈퇴 · Delete account</h2>
+            <p className="dom-danger-modal-body">
+              This permanently deletes your account and all of its journal entries and
+              shared cards. This <strong>cannot be undone</strong>. Type{" "}
+              <strong>{email}</strong> to confirm.
+            </p>
+            <input
+              className="dom-input"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder={email}
+              autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              aria-label="Type your email to confirm deletion"
+            />
+            <div className="dom-settings-actions" style={{ marginTop: 4 }}>
+              <Button variant="ghost" onClick={() => setConfirmOpen(false)} disabled={delBusy}>
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={handleDelete} disabled={!confirmed || delBusy}>
+                {delBusy ? "Deleting…" : "Delete forever"}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </>
   );
 }
 
