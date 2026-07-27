@@ -8,6 +8,11 @@
 # NEXT_PUBLIC_SUPABASE_ANON_KEY in a .env file next to this compose file and
 # rebuild when they change: they are inlined into the bundle at build time.
 # Without them the app runs unauthenticated with localStorage persistence.
+#
+# SUPABASE_SERVICE_ROLE_KEY is different: it's a server-only secret read at
+# RUNTIME by the DELETE /api/account route, so it's injected via `environment`
+# (not a build arg) and never reaches the browser bundle. Leave it unset to
+# keep account deletion disabled (the route returns 503).
 
 services:
   web:
@@ -17,6 +22,8 @@ services:
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+    environment:
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
     ports:
       - "3000:3000"
     restart: unless-stopped
