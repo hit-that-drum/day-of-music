@@ -13,6 +13,7 @@ import { Button, IconButton } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
 import { DomSelectField } from "@/components/day-of-music/dom-select";
 import { PASSWORD_RULES, passwordIssues } from "@/lib/day-of-music/password";
+import { GoogleIcon, KakaoIcon } from "@/components/day-of-music/brand-icons";
 import {
   COUNTRIES,
   DEFAULT_USERNAME,
@@ -25,11 +26,22 @@ import { useThemes, type Theme } from "@/lib/day-of-music/themes";
 // at module scope so the option list is stable across renders.
 const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.label }));
 
+// Display labels for the OAuth providers we support (icons live in brand-icons).
+const PROVIDER_LABELS: Record<string, string> = { google: "Google", kakao: "Kakao" };
+
 export function ProfilePage() {
   const { configured, user } = useAuth();
   const { username, country, save, synced } = useProfile();
   const { themes, saveThemes } = useThemes();
   const guest = configured && !user;
+
+  // Which provider(s) this account signed in with — drives the "signed in with"
+  // row and whether there's a password to change.
+  const providers = (user?.identities ?? []).map((i) => i.provider);
+  const socialProviders = providers.filter((p) => p !== "email");
+  // Only email/password accounts can change a password. If we can't tell (no
+  // identities), default to showing it so real email users aren't blocked.
+  const canChangePassword = providers.length === 0 || providers.includes("email");
 
   return (
     <div className="dom-profile">
@@ -49,11 +61,24 @@ export function ProfilePage() {
                 <span className="dom-settings-key">Email</span>
                 <span className="dom-settings-val">{user.email}</span>
               </div>
+              {socialProviders.length > 0 && (
+                <div className="dom-settings-row">
+                  <span className="dom-settings-key">Sign-in</span>
+                  <span className="dom-settings-val dom-provider-val">
+                    {socialProviders.map((p) => (
+                      <span key={p} className="dom-provider-badge">
+                        {p === "google" ? <GoogleIcon /> : p === "kakao" ? <KakaoIcon /> : null}
+                        {PROVIDER_LABELS[p] ?? p}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              )}
               <div className="dom-settings-row">
                 <span className="dom-settings-key">Status</span>
                 <span className="dom-settings-val">Signed in · synced</span>
               </div>
-              <AccountActions email={user.email ?? ""} />
+              <AccountActions email={user.email ?? ""} canChangePassword={canChangePassword} />
             </>
           ) : guest ? (
             <p className="dom-settings-note">
@@ -97,7 +122,13 @@ export function ProfilePage() {
 // Change-password + delete-account controls for a signed-in user. Password
 // change is session-based (no re-auth). Deletion is irreversible, so it routes
 // through a confirm modal that requires typing the exact email.
-function AccountActions({ email }: { email: string }) {
+function AccountActions({
+  email,
+  canChangePassword,
+}: {
+  email: string;
+  canChangePassword: boolean;
+}) {
   const { updatePassword, deleteAccount } = useAuth();
   const router = useRouter();
 
@@ -142,15 +173,17 @@ function AccountActions({ email }: { email: string }) {
   return (
     <>
       <div className="dom-settings-actions">
-        <Button variant="ghost" onClick={() => setPwOpen((v) => !v)} aria-expanded={pwOpen}>
-          {pwOpen ? "Cancel" : "Change password · 비밀번호 변경"}
-        </Button>
+        {canChangePassword && (
+          <Button variant="ghost" onClick={() => setPwOpen((v) => !v)} aria-expanded={pwOpen}>
+            {pwOpen ? "Cancel" : "Change password · 비밀번호 변경"}
+          </Button>
+        )}
         <Button variant="danger-ghost" onClick={() => setConfirmOpen(true)}>
           Delete account · 회원 탈퇴
         </Button>
       </div>
 
-      {pwOpen && (
+      {canChangePassword && pwOpen && (
         <form className="dom-signin-form" onSubmit={handleChangePassword} style={{ marginTop: 8 }}>
           <input
             className="dom-input"
