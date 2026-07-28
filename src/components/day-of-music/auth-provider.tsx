@@ -27,6 +27,7 @@ type AuthContextValue = {
   signUpWithPassword: (email: string, password: string) => Promise<AuthResult>;
   signInWithPassword: (email: string, password: string) => Promise<AuthResult>;
   signInWithGoogle: () => Promise<void>;
+  signInWithKakao: () => Promise<void>;
   signOut: () => Promise<void>;
   /** Set/change the signed-in user's password (no re-auth; session-based). */
   updatePassword: (password: string) => Promise<AuthResult>;
@@ -96,6 +97,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const signInWithKakao = useCallback(async () => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+    // Same flow as Google — Kakao redirects back to /auth/callback, which
+    // exchanges the PKCE code for a session before sending the user to /week.
+    await supabase.auth.signInWithOAuth({
+      provider: "kakao",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+  }, []);
+
   const signOut = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
@@ -153,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUpWithPassword,
       signInWithPassword,
       signInWithGoogle,
+      signInWithKakao,
       signOut,
       updatePassword,
       deleteAccount,
@@ -165,6 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUpWithPassword,
       signInWithPassword,
       signInWithGoogle,
+      signInWithKakao,
       signOut,
       updatePassword,
       deleteAccount,

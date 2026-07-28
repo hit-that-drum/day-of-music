@@ -1493,6 +1493,17 @@
   gap: 8px;
   margin-top: 2px;
 }
+/* "Signed in with" value — provider icon + name, right-aligned in the row. */
+.dom-provider-val {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+.dom-provider-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .dom-store-country-save-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
