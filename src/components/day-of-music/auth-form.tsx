@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { BrandMark, Button } from "@/components/day-of-music/atoms";
 import { PASSWORD_RULES, passwordIssues } from "@/lib/day-of-music/password";
+import { GoogleIcon, KakaoIcon } from "@/components/day-of-music/brand-icons";
 
 type Mode = "signin" | "signup";
 
@@ -39,7 +40,8 @@ const COPY: Record<
 
 export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
-  const { configured, signInWithPassword, signUpWithPassword, signInWithGoogle } = useAuth();
+  const { configured, signInWithPassword, signUpWithPassword, signInWithGoogle, signInWithKakao } =
+    useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "busy" | "error" | "sent">("idle");
@@ -142,8 +144,23 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </form>
 
           <div className="dom-signin-or">or</div>
-          <Button variant="ghost" onClick={signInWithGoogle} disabled={!configured}>
+          <Button
+            className="dom-btn-with-icon"
+            variant="ghost"
+            onClick={signInWithGoogle}
+            disabled={!configured}
+          >
+            <GoogleIcon />
             Continue with Google
+          </Button>
+          <Button
+            className="dom-btn-with-icon"
+            variant="ghost"
+            onClick={signInWithKakao}
+            disabled={!configured}
+          >
+            <KakaoIcon />
+            Continue with Kakao
           </Button>
 
           {message && (
