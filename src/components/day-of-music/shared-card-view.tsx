@@ -1,7 +1,7 @@
 // shared-card-view.tsx — the public share page body (/s/<token> and /s?d=…).
 // Server-rendered: the poster comes straight from the validated snapshot, and
 // the sharer's theme is reproduced as inline CSS variables (same map
-// applyTheme uses), so no client JS or providers are needed to view a card.
+// applyTheme uses). Only the viewer-aware CTA is a small client boundary.
 
 import type { CSSProperties } from "react";
 import Link from "next/link";
@@ -13,7 +13,8 @@ import {
   StatsPoster,
   WeekPoster,
 } from "@/components/day-of-music/share-posters";
-import { BrandMark, buttonClass } from "@/components/day-of-music/atoms";
+import { BrandMark } from "@/components/day-of-music/atoms";
+import { SharedCardCta } from "@/components/day-of-music/shared-card-cta";
 
 export function SharedCardView({ payload }: { payload: SharePayload }) {
   const vars = themeStyleVars(
@@ -25,7 +26,11 @@ export function SharedCardView({ payload }: { payload: SharePayload }) {
     <div className="dom-stage" style={vars}>
       {/* React hoists these to <head>; same families ensureFonts() loads. */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossOrigin="anonymous"
+      />
       <link rel="stylesheet" precedence="dom-fonts" href={googleFontsHref()} />
 
       <main
@@ -58,11 +63,7 @@ export function SharedCardView({ payload }: { payload: SharePayload }) {
           )}
         </div>
 
-        <div className="dom-share-actions">
-          <Link href="/week" className={buttonClass("solid")}>
-            Make your own →
-          </Link>
-        </div>
+        <SharedCardCta />
       </main>
     </div>
   );

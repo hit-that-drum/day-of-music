@@ -1490,6 +1490,7 @@
 }
 .dom-settings-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 2px;
 }
@@ -2939,6 +2940,173 @@
   margin: 0;
 }
 
+/* Profile → shared-link manager. The list is capped to the database limit, and
+   scrolls inside the panel so its controls remain reachable on small screens. */
+.dom-share-manager-wrap {
+  --dom-modal-w: 760px;
+}
+.dom-share-manager {
+  width: 100%;
+  max-height: min(720px, calc(100vh - 100px));
+  overflow: hidden;
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.dom-share-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+}
+.dom-share-manager-header h2 {
+  margin: 6px 0 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 28px;
+  letter-spacing: -0.03em;
+}
+.dom-share-manager-count {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--ink2);
+}
+.dom-share-manager-meter {
+  width: 100%;
+  height: 5px;
+  overflow: hidden;
+  background-color: var(--lineSoft);
+}
+.dom-share-manager-meter > span {
+  display: block;
+  height: 100%;
+  background-color: var(--accent);
+  transition: width 0.2s ease;
+}
+.dom-share-summary-card {
+  min-height: 100%;
+}
+.dom-share-summary-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 0 10px;
+}
+.dom-share-summary-count {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  font-family: var(--font-mono);
+  color: var(--ink);
+}
+.dom-share-summary-count strong {
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.dom-share-summary-count span {
+  font-size: 24px;
+  color: var(--ink3);
+}
+.dom-share-summary-action {
+  margin-top: auto;
+  padding-top: 12px;
+}
+.dom-share-manager-note {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink2);
+}
+.dom-share-manager-state {
+  min-height: 180px;
+  border: 1px dashed var(--line);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--ink2);
+}
+.dom-share-manager-state p {
+  margin: 0;
+}
+.dom-share-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  min-height: 0;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+}
+.dom-share-list-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-share-list-info {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(90px, 0.7fr) minmax(170px, 1.2fr) auto;
+  align-items: baseline;
+  gap: 12px;
+}
+.dom-share-list-info strong {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+}
+.dom-share-list-info span,
+.dom-share-list-info code {
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+.dom-share-list-info code {
+  white-space: nowrap;
+}
+.dom-share-list-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+@media (max-width: 680px) {
+  .dom-share-manager {
+    padding: 22px 18px;
+  }
+  .dom-share-list-item {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .dom-share-list-info {
+    grid-template-columns: 1fr auto;
+  }
+  .dom-share-list-info code {
+    display: none;
+  }
+  .dom-share-list-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
 /* Account control in the top bar */
 .dom-account {
   display: inline-flex;
@@ -3410,6 +3578,35 @@ a.dom-btn {
   color: var(--ink3);
   margin: 0;
 }
+.dom-home-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 2px 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink3);
+}
+.dom-home-footer a,
+.dom-auth-terms a {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
+.dom-home-legal {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dom-auth-terms {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--ink3);
+}
 
 .dom-guest-banner {
   grid-column: 1 / -1;
@@ -3427,6 +3624,225 @@ a.dom-btn {
 
 .dom-signin-sub a {
   color: var(--ink);
+}
+
+/* ── Legal document ─────────────────────────────────────────────────────── */
+
+.dom-legal-root {
+  --font-display: var(--font-mono);
+  --font-body: var(--font-mono);
+  font-family: var(--font-mono);
+  gap: 18px;
+}
+.dom-legal-topbar {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.dom-legal-back {
+  color: var(--ink2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+.dom-legal-back:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.dom-legal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+}
+.dom-legal-nav a {
+  color: var(--ink2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+.dom-legal-nav a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.dom-legal {
+  width: min(880px, 100%);
+  justify-self: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: clamp(28px, 6vw, 72px);
+}
+.dom-legal-heading {
+  padding-bottom: 32px;
+  border-bottom: 2px solid var(--line);
+}
+.dom-legal-heading h1 {
+  margin: 8px 0 12px;
+  font-family: var(--font-display);
+  font-size: clamp(36px, 6vw, 58px);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+.dom-legal-heading > p:last-child {
+  margin: 0;
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+.dom-legal-summary {
+  margin: 32px 0 40px;
+  padding: 20px 22px;
+  background: var(--chip);
+  border-left: 3px solid var(--accent);
+}
+.dom-legal-summary strong {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+  font-size: 16px;
+}
+.dom-legal-summary p {
+  margin: 0;
+}
+.dom-legal section {
+  padding: 28px 0;
+  border-top: 1px solid var(--lineSoft);
+}
+.dom-legal-summary + section {
+  border-top: 0;
+}
+.dom-legal h2 {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.dom-legal p,
+.dom-legal li {
+  color: var(--ink2);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.8;
+  word-break: keep-all;
+}
+.dom-legal section > p {
+  margin: 0;
+}
+.dom-legal a {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
+.dom-legal ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 1.45em;
+  list-style: decimal;
+}
+.dom-legal-notes,
+.dom-legal-remedies {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding-left: 1.25em;
+  list-style: square;
+}
+.dom-legal-table-wrap {
+  width: 100%;
+  margin-top: 18px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+}
+.dom-legal-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  background: var(--panel);
+}
+.dom-legal-table th,
+.dom-legal-table td {
+  padding: 14px 16px;
+  border-right: 1px solid var(--lineSoft);
+  border-bottom: 1px solid var(--lineSoft);
+  color: var(--ink2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.65;
+  text-align: left;
+  vertical-align: top;
+  word-break: keep-all;
+}
+.dom-legal-table th {
+  color: var(--ink);
+  font-weight: 600;
+}
+.dom-legal-table thead th {
+  background: var(--chip);
+}
+.dom-legal-table tr:last-child > * {
+  border-bottom: 0;
+}
+.dom-legal-table tr > *:last-child {
+  border-right: 0;
+}
+.dom-legal-section-note {
+  margin-top: 16px !important;
+  color: var(--ink3) !important;
+  font-size: 12px !important;
+}
+.dom-legal-contact {
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--lineSoft);
+  background: var(--chip);
+}
+.dom-legal-contact p {
+  margin: 0;
+}
+.dom-legal-document-footer {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 2px solid var(--line);
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+}
+.dom-legal-document-footer p {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .dom-legal-topbar {
+    grid-template-columns: 1fr;
+  }
+  .dom-legal-nav {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .dom-legal {
+    padding: 28px 22px;
+  }
+  .dom-legal p,
+  .dom-legal li {
+    font-size: 14px;
+    word-break: normal;
+  }
+  .dom-legal-table th,
+  .dom-legal-table td {
+    word-break: normal;
+  }
+  .dom-home-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 /* ── Empty-week hint & clickable empty days ─────────────────────────────── */
