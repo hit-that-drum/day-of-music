@@ -389,7 +389,7 @@ export default function PrivacyPage() {
               </p>
               <p>
                 이메일:{" "}
-                <a href="mailto:day-of-music@gmail.com">day-of-music@gmail.com</a>
+                <a href="mailto:dayofmusic365@gmail.com">dayofmusic365@gmail.com</a>
               </p>
             </div>
             <p>
