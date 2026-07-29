@@ -16,7 +16,15 @@ type Mode = "signin" | "signup";
 
 const COPY: Record<
   Mode,
-  { eyebrow: string; title: string; sub: string; cta: string; altText: string; altCta: string; altHref: string }
+  {
+    eyebrow: string;
+    title: string;
+    sub: string;
+    cta: string;
+    altText: string;
+    altCta: string;
+    altHref: string;
+  }
 > = {
   signin: {
     eyebrow: "로그인 · sign in",
@@ -40,16 +48,24 @@ const COPY: Record<
 
 export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
-  const { configured, signInWithPassword, signUpWithPassword, signInWithGoogle, signInWithKakao } =
-    useAuth();
+  const {
+    configured,
+    signInWithPassword,
+    signUpWithPassword,
+    signInWithGoogle,
+    signInWithKakao,
+  } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [status, setStatus] = useState<"idle" | "busy" | "error" | "sent">("idle");
+  const [status, setStatus] = useState<"idle" | "busy" | "error" | "sent">(
+    "idle",
+  );
   const [message, setMessage] = useState("");
 
   const copy = COPY[mode];
   // Block submit until signup passwords satisfy the policy. Signin stays open.
-  const signupInvalid = mode === "signup" && passwordIssues(password).length > 0;
+  const signupInvalid =
+    mode === "signup" && passwordIssues(password).length > 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -75,7 +91,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
     if (mode === "signup") {
       // Depending on project settings, Supabase may require email confirmation.
       setStatus("sent");
-      setMessage(`Account created. If ${email.trim()} needs confirmation, check your inbox.`);
+      setMessage(
+        `Account created. If ${email.trim()} needs confirmation, check your inbox.`,
+      );
       return;
     }
     router.push("/week");
@@ -96,8 +114,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
           {!configured && (
             <p className="dom-signin-msg" data-error="1">
-              Auth isn&apos;t configured yet — add Supabase keys to .env.local. You can
-              still <Link href="/week">use the app as a guest</Link>.
+              Auth isn&apos;t configured yet — add Supabase keys to .env.local.
+              You can still <Link href="/week">use the app as a guest</Link>.
             </p>
           )}
 
@@ -117,28 +135,43 @@ export function AuthForm({ mode }: { mode: Mode }) {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              autoComplete={
+                mode === "signup" ? "new-password" : "current-password"
+              }
               minLength={mode === "signup" ? 8 : undefined}
               aria-describedby={mode === "signup" ? "dom-pw-rules" : undefined}
               required
             />
             {mode === "signup" && (
-              <ul className="dom-pw-rules" id="dom-pw-rules" aria-label="Password requirements">
+              <ul
+                className="dom-pw-rules"
+                id="dom-pw-rules"
+                aria-label="Password requirements"
+              >
                 {PASSWORD_RULES.map((rule) => {
                   const met = rule.test(password);
                   return (
-                    <li key={rule.id} className="dom-pw-rule" data-met={met ? "1" : "0"}>
+                    <li
+                      key={rule.id}
+                      className="dom-pw-rule"
+                      data-met={met ? "1" : "0"}
+                    >
                       <span className="dom-pw-rule-mark" aria-hidden="true">
                         {met ? "✓" : "○"}
                       </span>
                       <span>{rule.label}</span>
-                      <span className="dom-visually-hidden">{met ? " (met)" : " (not met)"}</span>
+                      <span className="dom-visually-hidden">
+                        {met ? " (met)" : " (not met)"}
+                      </span>
                     </li>
                   );
                 })}
               </ul>
             )}
-            <Button type="submit" disabled={!configured || status === "busy" || signupInvalid}>
+            <Button
+              type="submit"
+              disabled={!configured || status === "busy" || signupInvalid}
+            >
               {status === "busy" ? "One moment…" : copy.cta}
             </Button>
           </form>
@@ -163,8 +196,20 @@ export function AuthForm({ mode }: { mode: Mode }) {
             Continue with Kakao
           </Button>
 
+          {mode === "signup" && (
+            <p className="dom-auth-terms">
+              계정을 만들면 Day of Music <Link href="/terms">이용약관</Link>에
+              동의하는 것으로 보며,{" "}
+              <Link href="/privacy">개인정보 처리방침</Link>을 확인할 수
+              있습니다.
+            </p>
+          )}
+
           {message && (
-            <p className="dom-signin-msg" data-error={status === "error" ? "1" : "0"}>
+            <p
+              className="dom-signin-msg"
+              data-error={status === "error" ? "1" : "0"}
+            >
               {message}
             </p>
           )}

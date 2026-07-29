@@ -18,10 +18,34 @@ import { Cover } from "@/components/day-of-music/cover";
 // only from iTunes search.)
 const HERO_COVERS: Album[] = (
   [
-    { style: "stack", bg: "#b9a3d9", fg: "#1a1430", accent: "#f6e6ff", title: "side a" },
-    { style: "ring", bg: "#10243a", fg: "#dce9f5", accent: "#5fa8d3", title: "nocturne" },
-    { style: "split", bg: "#1d1a18", fg: "#f4d35e", accent: "#c75146", title: "reprise" },
-    { style: "block", bg: "#222a22", fg: "#d9e8d4", accent: "#8aa86e", title: "encore" },
+    {
+      style: "stack",
+      bg: "#b9a3d9",
+      fg: "#1a1430",
+      accent: "#f6e6ff",
+      title: "side a",
+    },
+    {
+      style: "ring",
+      bg: "#10243a",
+      fg: "#dce9f5",
+      accent: "#5fa8d3",
+      title: "nocturne",
+    },
+    {
+      style: "split",
+      bg: "#1d1a18",
+      fg: "#f4d35e",
+      accent: "#c75146",
+      title: "reprise",
+    },
+    {
+      style: "block",
+      bg: "#222a22",
+      fg: "#d9e8d4",
+      accent: "#8aa86e",
+      title: "encore",
+    },
   ] as const
 ).map((t, i) => ({
   id: `hero-${i}`,
@@ -79,18 +103,23 @@ export function HomeLanding() {
           </div>
         </header>
 
-        <main className="dom-main" style={{ display: "grid", placeItems: "center" }}>
+        <main
+          className="dom-main"
+          style={{ display: "grid", placeItems: "center" }}
+        >
           <div className="dom-home-hero">
-            <div className="dom-signin-eyebrow">하루의 음악 · one album a day</div>
+            <div className="dom-signin-eyebrow">
+              하루의 음악 · one album a day
+            </div>
             <h1 className="dom-home-title">
               Your week,
               <br />
               set to music.
             </h1>
             <p className="dom-home-sub">
-              Log one album a day, rate it, write a line you&apos;ll want to remember —
-              then share your week as a single image. Search the whole catalog, or
-              just browse what you&apos;ve logged.
+              Log one album a day, rate it, write a line you&apos;ll want to
+              remember — then share your week as a single image. Search the
+              whole catalog, or just browse what you&apos;ve logged.
             </p>
 
             <div className="dom-home-covers">
@@ -111,12 +140,20 @@ export function HomeLanding() {
             </div>
             {!user && (
               <p className="dom-home-note">
-                No account needed to try it — but guest edits vanish when you leave.
-                Sign up to keep your journal.
+                No account needed to try it — but guest edits vanish when you
+                leave. Sign up to keep your journal.
               </p>
             )}
           </div>
         </main>
+
+        <footer className="dom-home-footer">
+          <span>© {new Date().getFullYear()} Day of Music</span>
+          <nav className="dom-home-legal" aria-label="법적 고지">
+            <Link href="/terms">이용약관</Link>
+            <Link href="/privacy">개인정보 처리방침</Link>
+          </nav>
+        </footer>
       </div>
     </div>
   );
