@@ -13,6 +13,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import type { Session, User } from "@supabase/supabase-js";
 
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -39,8 +41,21 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// --- Idle auto-logout -------------------------------------------------------
+// Sign the user out after IDLE_TIMEOUT_MS with no API activity. "Activity" is
+// any fetch to our own API or Supabase's data layer; Supabase's /auth/v1/
+// traffic (background token refresh + session reads) is deliberately EXCLUDED
+// so an idle-but-open tab actually times out instead of being kept alive
+// forever by the autoRefreshToken heartbeat. The last-activity timestamp is
+// mirrored to localStorage so activity in one tab keeps the others alive.
+const IDLE_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour of no API calls → sign out
+const IDLE_CHECK_MS = 60 * 1000; // how often we re-evaluate the idle window
+const IDLE_PERSIST_THROTTLE_MS = 15 * 1000; // cap the localStorage write rate
+const IDLE_STORAGE_KEY = "dom:last-activity";
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const configured = isSupabaseConfigured();
+  const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(configured);
 
@@ -113,7 +128,90 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
     await supabase.auth.signOut();
     setSession(null);
-  }, []);
+    // Send the user back to the sign-in page (mirrors /auth/callback's use of
+    // router.replace so the signed-out state isn't left in history).
+    router.replace("/signin");
+  }, [router]);
+
+  // Auto sign-out after an hour of no API activity. Gated on a stable boolean
+  // (not `session`) so a background token refresh — which swaps in a new session
+  // object hourly — does NOT tear down and restart the timer.
+  const signedIn = configured && Boolean(session);
+  useEffect(() => {
+    if (!signedIn) return;
+
+    const readStored = (): number => {
+      try {
+        return Number(window.localStorage.getItem(IDLE_STORAGE_KEY)) || 0;
+      } catch {
+        return 0; // storage blocked (private mode) → fall back to in-memory
+      }
+    };
+    const writeStored = (ts: number) => {
+      try {
+        window.localStorage.setItem(IDLE_STORAGE_KEY, String(ts));
+      } catch {
+        /* storage unavailable — in-memory tracking still works for this tab */
+      }
+    };
+
+    // Opening/reloading the app is itself activity, so start a fresh window.
+    let lastActivity = Date.now();
+    let lastPersist = 0;
+    let triggered = false;
+    writeStored(lastActivity);
+
+    const markActive = () => {
+      lastActivity = Date.now();
+      if (lastActivity - lastPersist >= IDLE_PERSIST_THROTTLE_MS) {
+        lastPersist = lastActivity;
+        writeStored(lastActivity);
+      }
+    };
+
+    // supabase-js resolves globalThis.fetch at call time, so patching
+    // window.fetch catches its DB queries too — not just our /api/* fetches.
+    const originalFetch = window.fetch;
+    window.fetch = (...args: Parameters<typeof fetch>) => {
+      const input = args[0];
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input instanceof Request
+              ? input.url
+              : "";
+      // Exclude auth traffic (token refresh/session reads) — that's the app
+      // keeping itself alive, not the user doing something.
+      if (!url.includes("/auth/v1/")) markActive();
+      return originalFetch.apply(window, args);
+    };
+
+    const evaluate = () => {
+      if (triggered) return;
+      // Newest activity across any open tab keeps this session alive.
+      const last = Math.max(lastActivity, readStored());
+      if (Date.now() - last >= IDLE_TIMEOUT_MS) {
+        triggered = true;
+        toast("장시간 활동이 없어 자동 로그아웃되었어요.");
+        void signOut();
+      }
+    };
+
+    const interval = window.setInterval(evaluate, IDLE_CHECK_MS);
+    // A backgrounded/suspended tab misses interval ticks — re-check on return.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") evaluate();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      window.fetch = originalFetch;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [signedIn, signOut]);
 
   const updatePassword = useCallback(async (password: string) => {
     const supabase = getSupabaseBrowserClient();
