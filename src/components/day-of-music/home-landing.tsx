@@ -62,6 +62,12 @@ const HERO_COVERS: Album[] = (
   tracks: [],
 }));
 
+const REPORT_EMAIL_HREF = `mailto:dayofmusic365@gmail.com?subject=${encodeURIComponent(
+  "[Day of Music] 문제 신고 및 개선 의견",
+)}&body=${encodeURIComponent(
+  "이용 중 불편했던 점이나 개선 의견을 자유롭게 적어주세요.\n\n내용:\n\n사용 환경(선택):\n",
+)}`;
+
 export function HomeLanding() {
   const rootRef = useRef<HTMLDivElement>(null);
   const { configured, user, signOut } = useAuth();
@@ -152,6 +158,13 @@ export function HomeLanding() {
           <nav className="dom-home-legal" aria-label="법적 고지">
             <Link href="/terms">이용약관</Link>
             <Link href="/privacy">개인정보 처리방침</Link>
+            <a
+              href={REPORT_EMAIL_HREF}
+              aria-label="이메일로 문제 신고 또는 개선 의견 보내기"
+              title="불편 사항이나 개선 의견 보내기"
+            >
+              문제 신고 및 개선 의견
+            </a>
           </nav>
         </footer>
       </div>
