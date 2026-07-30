@@ -25,13 +25,14 @@ export function ShareActions({
   payload: SharePayload;
   onSaveImage: () => void;
 }) {
-  const { configured, user } = useAuth();
+  const { configured, loading, user } = useAuth();
   const [busy, setBusy] = useState(false);
 
   const signedIn = configured && Boolean(user);
+  const guestWeekLink = !loading && !signedIn && payload.kind === "week";
   // Guests (and unconfigured local mode) can still share the week card — the
   // payload travels in the URL itself, so no account or server row is needed.
-  const canCopyLink = signedIn || payload.kind === "week";
+  const canCopyLink = !loading && (signedIn || payload.kind === "week");
 
   async function handleCopyLink() {
     setBusy(true);
@@ -39,7 +40,9 @@ export function ShareActions({
       const url =
         signedIn && user
           ? await createSharedCardLink(user.id, payload)
-          : await createGuestWeekLink(payload as Extract<SharePayload, { kind: "week" }>);
+          : await createGuestWeekLink(
+              payload as Extract<SharePayload, { kind: "week" }>,
+            );
       await navigator.clipboard.writeText(url);
       toast.success("Link copied");
     } catch {
@@ -50,17 +53,29 @@ export function ShareActions({
   }
 
   return (
-    <div className="dom-share-actions">
-      {canCopyLink ? (
-        <Button variant="ghost" onClick={() => void handleCopyLink()} disabled={busy}>
-          {busy ? "One moment…" : "Copy link"}
-        </Button>
-      ) : configured ? (
-        <Link href="/signin" className={buttonClass("ghost")}>
-          Sign in to share
-        </Link>
-      ) : null}
-      <Button onClick={onSaveImage}>Save image</Button>
+    <div className="dom-share-actions-wrap">
+      <div className="dom-share-actions">
+        {canCopyLink ? (
+          <Button
+            variant="ghost"
+            onClick={() => void handleCopyLink()}
+            disabled={busy}
+          >
+            {busy ? "One moment…" : "Copy link"}
+          </Button>
+        ) : configured && !loading ? (
+          <Link href="/signin" className={buttonClass("ghost")}>
+            Sign in to share
+          </Link>
+        ) : null}
+        <Button onClick={onSaveImage}>Save image</Button>
+      </div>
+      {guestWeekLink && (
+        <p className="dom-share-guest-warning" role="note">
+          게스트 공유 링크는 삭제하거나 회수할 수 없습니다. 링크를 받은 누구나
+          열람할 수 있습니다.
+        </p>
+      )}
     </div>
   );
 }
