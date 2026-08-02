@@ -15,6 +15,7 @@ import {
   type Album,
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
+import { useT } from "@/lib/day-of-music/i18n";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button, IconButton, MetaLine } from "@/components/day-of-music/atoms";
 import { WeekPicker } from "@/components/day-of-music/week-picker";
@@ -36,6 +37,8 @@ type WeeklyGridProps = {
   /** Jump the view to the week containing this date (mini-calendar pick). */
   onJump: (date: Date) => void;
   onShare: () => void;
+  /** Open the Best of Week tournament modal. */
+  onBestOf: () => void;
   /** Reschedule via drag-and-drop. Dropping on an empty day moves the album;
    *  dropping on a filled day swaps the two albums' dates. */
   onMove: (fromDate: string, toDate: string) => void;
@@ -52,6 +55,7 @@ export function WeeklyGrid({
   onNext,
   onJump,
   onShare,
+  onBestOf,
   onMove,
 }: WeeklyGridProps) {
   const { albumsByDate } = useJournal();
@@ -89,6 +93,7 @@ export function WeeklyGrid({
         onNext={onNext}
         onJump={onJump}
         onShare={onShare}
+        onBestOf={onBestOf}
       />
       <div
         className="dom-grid"
@@ -134,6 +139,7 @@ function WeekHeader({
   onNext,
   onJump,
   onShare,
+  onBestOf,
 }: {
   segments: { key: number; monthLabel: string; weekNum: number }[];
   labelDate: Date;
@@ -142,8 +148,10 @@ function WeekHeader({
   onNext: () => void;
   onJump: (date: Date) => void;
   onShare: () => void;
+  onBestOf: () => void;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const t = useT();
 
   return (
     <div className="dom-week-hd">
@@ -184,6 +192,9 @@ function WeekHeader({
       <div className="dom-week-actions">
         <IconButton icon={ArrowLeft} onClick={onPrev} aria-label="Previous week" />
         <IconButton icon={ArrowRight} onClick={onNext} aria-label="Next week" />
+        <Button variant="ghost" onClick={onBestOf}>
+          {t("bow.button")}
+        </Button>
         <Button onClick={onShare}>SHARE WEEK</Button>
       </div>
     </div>
