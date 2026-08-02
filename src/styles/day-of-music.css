@@ -165,7 +165,32 @@
 .dom-topbar-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 8px;
+}
+
+/* Header language switcher — a compact, auto-width DomSelect (see
+   language-switch.tsx). Its own control, separate from the Tweaks button. */
+.dom-lang-switch {
+  display: inline-flex;
+}
+.dom-lang-switch .dom-select {
+  width: auto;
+}
+.dom-lang-switch .dom-select-trigger {
+  padding: 8px 12px;
+  gap: 6px;
+  background-color: transparent;
+  border-color: var(--lineSoft);
+  font-size: 13px;
+  white-space: nowrap;
+}
+/* Right-align the dropdown to the trigger's edge so it doesn't overflow the
+   header's right side. */
+.dom-lang-switch .dom-select-panel {
+  left: auto;
+  right: 0;
+  min-width: 160px;
 }
 
 /* ── Main ───────────────────────────────────────────────────────────────── */

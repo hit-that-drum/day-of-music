@@ -12,12 +12,16 @@ import koLocale from "i18n-iso-countries/langs/ko.json";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { makeStringStore } from "@/lib/day-of-music/local-store";
+import type { LanguagePref } from "@/lib/day-of-music/i18n";
 
 isoCountries.registerLocale(enLocale);
 isoCountries.registerLocale(koLocale);
 
 export const DEFAULT_USERNAME = "listener";
 export const DEFAULT_COUNTRY = "US";
+// "auto" follows the storefront country (see localeForCountry in i18n.ts); an
+// explicit language chosen in the header replaces it.
+export const DEFAULT_LANGUAGE: LanguagePref = "auto";
 
 // Apple Media Services (Apple Music) storefronts — ISO 3166-1 alpha-2. Country
 // libraries list every ISO country, but only these have an Apple Music store,
@@ -90,12 +94,17 @@ export const COUNTRIES: Country[] = Array.from(APPLE_STOREFRONTS)
   .sort((a, b) => a.en.localeCompare(b.en))
   .map(({ code, label }) => ({ code, label }));
 
-export type ProfilePatch = { username?: string; country?: string };
+export type ProfilePatch = {
+  username?: string;
+  country?: string;
+  language?: LanguagePref;
+};
 
 // localStorage-backed stores (one per key) live in local-store.ts — read via
 // useSyncExternalStore so they survive reloads without a hydration mismatch.
 const usernameStore = makeStringStore("dom.username.v1", DEFAULT_USERNAME);
 const countryStore = makeStringStore("dom.country.v1", DEFAULT_COUNTRY, detectStorefront);
+const languageStore = makeStringStore("dom.language.v1", DEFAULT_LANGUAGE);
 
 /**
  * Resolved profile (display name + storefront country) and a single `save`.
@@ -105,6 +114,7 @@ const countryStore = makeStringStore("dom.country.v1", DEFAULT_COUNTRY, detectSt
 export function useProfile(): {
   username: string;
   country: string;
+  language: LanguagePref;
   save: (patch: ProfilePatch) => void;
   synced: boolean;
 } {
@@ -119,6 +129,11 @@ export function useProfile(): {
     countryStore.getSnapshot,
     countryStore.getServerSnapshot,
   );
+  const localLanguage = useSyncExternalStore(
+    languageStore.subscribe,
+    languageStore.getSnapshot,
+    languageStore.getServerSnapshot,
+  );
 
   if (configured && user) {
     const meta = user.user_metadata ?? {};
@@ -126,6 +141,7 @@ export function useProfile(): {
       username: (meta.username as string | undefined) ?? "",
       // No saved country yet → fall back to the locale's storefront, not US.
       country: (meta.country as string | undefined) ?? detectStorefront(),
+      language: (meta.language as LanguagePref | undefined) ?? DEFAULT_LANGUAGE,
       save: (patch) => void updateUserMetadata(patch),
       synced: true,
     };
@@ -133,9 +149,11 @@ export function useProfile(): {
   return {
     username: localUsername,
     country: localCountry,
+    language: localLanguage as LanguagePref,
     save: (patch) => {
       if (patch.username !== undefined) usernameStore.set(patch.username);
       if (patch.country !== undefined) countryStore.set(patch.country);
+      if (patch.language !== undefined) languageStore.set(patch.language);
     },
     synced: false,
   };

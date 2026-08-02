@@ -26,6 +26,7 @@ import {
   type ProfilePatch,
 } from "@/lib/day-of-music/profile";
 import { useThemes, type Theme } from "@/lib/day-of-music/themes";
+import { useT } from "@/lib/day-of-music/i18n";
 
 // COUNTRIES is { code, label }; DomSelectField wants { value, label }. Mapped once
 // at module scope so the option list is stable across renders.
@@ -44,6 +45,7 @@ export function ProfilePage() {
   const { configured, user } = useAuth();
   const { username, country, save, synced } = useProfile();
   const { themes, saveThemes } = useThemes();
+  const t = useT();
   const guest = configured && !user;
 
   // Which provider(s) this account signed in with — drives the "signed in with"
@@ -59,23 +61,23 @@ export function ProfilePage() {
     <div className="dom-profile">
       <div className="dom-week-hd">
         <div className="dom-week-title">
-          <span className="dom-eyebrow">프로필 · profile</span>
-          <h1>Profile</h1>
+          <span className="dom-eyebrow">{t("profile.kicker")}</span>
+          <h1>{t("profile.title")}</h1>
         </div>
       </div>
 
       <div className="dom-profile-settings">
         <section className="dom-settings-card">
-          <div className="dom-settings-label">account · 계정</div>
+          <div className="dom-settings-label">{t("profile.section.account")}</div>
           {user ? (
             <>
               <div className="dom-settings-row">
-                <span className="dom-settings-key">Email</span>
+                <span className="dom-settings-key">{t("profile.email")}</span>
                 <span className="dom-settings-val">{user.email}</span>
               </div>
               {socialProviders.length > 0 && (
                 <div className="dom-settings-row">
-                  <span className="dom-settings-key">Sign-in</span>
+                  <span className="dom-settings-key">{t("profile.signInRow")}</span>
                   <span className="dom-settings-val dom-provider-val">
                     {socialProviders.map((p) => (
                       <span key={p} className="dom-provider-badge">
@@ -91,8 +93,8 @@ export function ProfilePage() {
                 </div>
               )}
               <div className="dom-settings-row">
-                <span className="dom-settings-key">Status</span>
-                <span className="dom-settings-val">Signed in · synced</span>
+                <span className="dom-settings-key">{t("profile.status")}</span>
+                <span className="dom-settings-val">{t("profile.statusSignedIn")}</span>
               </div>
               <AccountActions
                 email={user.email ?? ""}
@@ -100,19 +102,14 @@ export function ProfilePage() {
               />
             </>
           ) : guest ? (
-            <p className="dom-settings-note">
-              You&apos;re browsing as a guest. Sign in to sync your logs and
-              profile across devices.
-            </p>
+            <p className="dom-settings-note">{t("profile.guestNote")}</p>
           ) : (
-            <p className="dom-settings-note">
-              Local mode — your settings are saved on this device only.
-            </p>
+            <p className="dom-settings-note">{t("profile.localNote")}</p>
           )}
         </section>
 
         <section className="dom-settings-card">
-          <div className="dom-settings-label">preferences · 환경설정</div>
+          <div className="dom-settings-label">{t("profile.section.preferences")}</div>
           {/* Re-seed the form whenever the canonical values change (auth load,
               after save, or device switch). */}
           <SettingsForm
@@ -125,7 +122,7 @@ export function ProfilePage() {
         </section>
 
         <section className="dom-settings-card">
-          <div className="dom-settings-label">themes · 테마 레인</div>
+          <div className="dom-settings-label">{t("profile.section.themes")}</div>
           <ThemeManager
             key={themes.map((t) => t.id).join("|")}
             initial={themes}
@@ -152,6 +149,7 @@ function AccountActions({
 }) {
   const { updatePassword, deleteAccount } = useAuth();
   const router = useRouter();
+  const t = useT();
 
   const [pwOpen, setPwOpen] = useState(false);
   const [password, setPassword] = useState("");
@@ -200,11 +198,11 @@ function AccountActions({
             onClick={() => setPwOpen((v) => !v)}
             aria-expanded={pwOpen}
           >
-            {pwOpen ? "Cancel" : "Change password · 비밀번호 변경"}
+            {pwOpen ? t("profile.cancel") : t("profile.changePassword")}
           </Button>
         )}
         <Button variant="danger-ghost" onClick={() => setConfirmOpen(true)}>
-          Delete account · 회원 탈퇴
+          {t("profile.deleteAccount")}
         </Button>
       </div>
 
@@ -323,6 +321,7 @@ const SHARED_CARD_KIND_LABEL: Record<SharedCardRow["kind"], string> = {
 function SharedLinksSummaryCard({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
   const [total, setTotal] = useState<number | null>(null);
+  const t = useT();
 
   const loadTotal = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
@@ -346,7 +345,7 @@ function SharedLinksSummaryCard({ userId }: { userId: string }) {
 
   return (
     <section className="dom-settings-card dom-share-summary-card">
-      <div className="dom-settings-label">shared links · 공유 링크</div>
+      <div className="dom-settings-label">{t("profile.section.sharedLinks")}</div>
 
       <div className="dom-share-summary-main">
         <div
@@ -374,13 +373,11 @@ function SharedLinksSummaryCard({ userId }: { userId: string }) {
         </div>
       </div>
 
-      <p className="dom-settings-note">
-        Copy link로 생성한 공유 링크를 한곳에서 확인하고 관리할 수 있습니다.
-      </p>
+      <p className="dom-settings-note">{t("profile.sharedLinks.note")}</p>
 
       <div className="dom-share-summary-action">
         <Button variant="ghost" onClick={() => setOpen(true)}>
-          Manage links · 공유 링크 관리
+          {t("profile.sharedLinks.manage")}
         </Button>
       </div>
 
@@ -639,6 +636,7 @@ function SettingsForm({
 }) {
   const [name, setName] = useState(initialName);
   const [country, setCountry] = useState(initialCountry);
+  const t = useT();
   const handle = name.trim() || DEFAULT_USERNAME;
   const dirty =
     name.trim() !== initialName.trim() || country !== initialCountry;
@@ -646,7 +644,7 @@ function SettingsForm({
   return (
     <>
       <label className="dom-edit-field">
-        <span className="dom-edit-label">Username</span>
+        <span className="dom-edit-label">{t("profile.username")}</span>
         <input
           className="dom-input"
           value={name}
@@ -657,15 +655,15 @@ function SettingsForm({
       </label>
       <div className="dom-store-country-save-row">
         <DomSelectField
-          label="Store country · 스토어 국가"
-          ariaLabel="Store country"
+          label={t("profile.storeCountry")}
+          ariaLabel={t("profile.storeCountry")}
           className="dom-store-country-field"
           labelClassName="dom-edit-label"
           value={country}
           options={COUNTRY_OPTIONS}
           onChange={setCountry}
           searchable
-          searchPlaceholder="Search country · 국가 검색"
+          searchPlaceholder={t("profile.searchCountry")}
           variant="underline"
           size="medium"
         />
@@ -673,13 +671,12 @@ function SettingsForm({
           disabled={!dirty}
           onClick={() => onSave({ username: name.trim(), country })}
         >
-          Save changes
+          {t("profile.save")}
         </Button>
       </div>
       <p className="dom-settings-note">
-        Shown as <strong>@{handle}</strong> on shared images. Music search
-        checks the <strong>{country}</strong> store first, then the others.{" "}
-        {synced ? "Synced to your account." : "Saved on this device."}
+        {t("profile.settingsNote", { handle, country })}
+        {synced ? t("profile.syncedNote") : t("profile.localSaveNote")}
       </p>
     </>
   );
@@ -695,6 +692,7 @@ function ThemeManager({
   onSave: (themes: Theme[]) => void;
 }) {
   const [list, setList] = useState<Theme[]>(initial);
+  const t = useT();
   // `initial` is fixed for a given mount (the parent re-keys on theme-id change),
   // so memoize against `list` to avoid stringifying both lists every render.
   const dirty = useMemo(
@@ -722,55 +720,55 @@ function ThemeManager({
 
   return (
     <>
-      {list.map((t, i) => (
-        <div key={t.id} className="dom-theme-editor-row">
+      {list.map((theme, i) => (
+        <div key={theme.id} className="dom-theme-editor-row">
           <input
             className="dom-input dom-theme-emoji"
-            value={t.emoji}
+            value={theme.emoji}
             maxLength={2}
             onChange={(e) => update(i, { emoji: e.target.value })}
-            aria-label="Theme emoji"
+            aria-label={t("aria.themeEmoji")}
           />
           <input
             className="dom-input"
-            value={t.name}
+            value={theme.name}
             maxLength={24}
             onChange={(e) => update(i, { name: e.target.value })}
-            aria-label="Theme name"
+            aria-label={t("aria.themeName")}
           />
           <IconButton
             icon={ArrowUp}
             onClick={() => move(i, -1)}
             disabled={i === 0}
-            aria-label="Move up"
+            aria-label={t("aria.moveUp")}
           />
           <IconButton
             icon={ArrowDown}
             onClick={() => move(i, 1)}
             disabled={i === list.length - 1}
-            aria-label="Move down"
+            aria-label={t("aria.moveDown")}
           />
           <IconButton
             icon={Trash2}
             onClick={() => remove(i)}
             disabled={list.length <= 1}
-            aria-label="Delete theme"
+            aria-label={t("aria.deleteTheme")}
           />
         </div>
       ))}
       <div className="dom-settings-actions">
         <Button className="dom-btn-with-icon" variant="ghost" onClick={add}>
           <Plus size={16} strokeWidth={2} aria-hidden="true" />
-          Add theme
+          {t("profile.themes.add")}
         </Button>
         <Button disabled={!dirty} onClick={() => onSave(list)}>
-          Save themes
+          {t("profile.themes.save")}
         </Button>
       </div>
       <p className="dom-settings-note">
-        Each theme is its own daily lane.{" "}
-        {synced ? "Synced to your account." : "Saved on this device."} 삭제해도
-        그 테마의 기록은 서버에서 지워지지 않고 숨겨집니다.
+        {t("profile.themes.note", {
+          syncNote: synced ? t("profile.syncedNote") : t("profile.localSaveNote"),
+        })}
       </p>
     </>
   );
