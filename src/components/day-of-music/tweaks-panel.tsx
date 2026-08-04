@@ -6,6 +6,7 @@
 import { useEffect, useRef } from "react";
 
 import { DomSelectField } from "@/components/day-of-music/dom-select";
+import { useT } from "@/lib/day-of-music/i18n";
 import {
   AESTHETICS,
   TYPE_PAIRS,
@@ -34,6 +35,7 @@ export function TweaksPanel({
   onChange: <K extends keyof Tweaks>(key: K, value: Tweaks[K]) => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const t = useT();
 
   // Dismiss when a pointer-down lands outside the panel. The header's Tweaks
   // button is excluded (it carries data-dom-tweaks-trigger) so its toggle isn't
@@ -54,17 +56,17 @@ export function TweaksPanel({
   if (!open) return null;
 
   return (
-    <div className="dom-tweaks-panel" role="dialog" aria-label="Tweaks" ref={panelRef}>
+    <div className="dom-tweaks-panel" role="dialog" aria-label={t("tweaks.title")} ref={panelRef}>
       <div className="dom-tweaks-panel-hd">
-        <span className="dom-tweak-section dom-tweaks-panel-title">Tweaks</span>
-        <button className="dom-tweaks-close" onClick={onClose} aria-label="Close tweaks">
+        <span className="dom-tweak-section dom-tweaks-panel-title">{t("tweaks.title")}</span>
+        <button className="dom-tweaks-close" onClick={onClose} aria-label={t("tweaks.close")}>
           ✕
         </button>
       </div>
 
-      <div className="dom-tweak-section">Aesthetic</div>
+      <div className="dom-tweak-section">{t("tweaks.aesthetic")}</div>
       <DomSelectField
-        label="Theme"
+        label={t("tweaks.theme")}
         value={tweaks.aesthetic}
         options={Object.entries(AESTHETICS).map(([k, v]) => ({ value: k, label: v.label }))}
         onChange={(v) => onChange("aesthetic", v as AestheticKey)}
@@ -72,7 +74,7 @@ export function TweaksPanel({
         labelClassName="dom-tweak-label"
       />
       <DomSelectField
-        label="Typography"
+        label={t("tweaks.typography")}
         value={tweaks.typography}
         options={Object.entries(TYPE_PAIRS).map(([k, v]) => ({ value: k, label: v.label }))}
         onChange={(v) => onChange("typography", v as TypeKey)}
@@ -80,15 +82,15 @@ export function TweaksPanel({
         labelClassName="dom-tweak-label"
       />
 
-      <div className="dom-tweak-section">Layout</div>
+      <div className="dom-tweak-section">{t("tweaks.layout")}</div>
       <div className="dom-tweak-toggle-row">
-        <span className="dom-tweak-label">Split weeks by month</span>
+        <span className="dom-tweak-label">{t("tweaks.splitWeeks")}</span>
         <button
           className="dom-tweak-switch"
           data-on={tweaks.weekSplit ? "1" : "0"}
           onClick={() => onChange("weekSplit", !tweaks.weekSplit)}
         >
-          {tweaks.weekSplit ? "On" : "Off"}
+          {tweaks.weekSplit ? t("tweaks.on") : t("tweaks.off")}
         </button>
       </div>
     </div>

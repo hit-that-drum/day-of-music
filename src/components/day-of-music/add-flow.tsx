@@ -9,7 +9,6 @@ import { useQuery } from "@tanstack/react-query";
 
 import {
   ALBUMS,
-  DOW,
   addDays,
   fmtDate,
   formatDisplayDate,
@@ -28,6 +27,7 @@ import {
   type AlbumDetail,
 } from "@/lib/day-of-music/music-search";
 import { useCountry } from "@/lib/day-of-music/profile";
+import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
@@ -45,6 +45,44 @@ export type NewEntry = {
 };
 
 const CATALOG_IDS = new Set(ALBUMS.map((a) => a.id));
+
+// journal_entries.album is capped at 64 KiB by the database. Manual artwork is
+// embedded in that JSON as a data URL, so leave enough room for the rest of the
+// album metadata (including non-ASCII titles/artists) before persisting it.
+const MANUAL_ART_MAX_BYTES = 48 * 1024;
+
+function compressManualArtwork(img: HTMLImageElement): string | null {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  const sourceWidth = img.naturalWidth || img.width;
+  const sourceHeight = img.naturalHeight || img.height;
+  if (!sourceWidth || !sourceHeight) return null;
+
+  const maxDimensions = [600, 480, 384, 320, 256, 192, 128, 96];
+  const qualities = [0.82, 0.7, 0.58, 0.46];
+  let smallest = "";
+
+  for (const maxDimension of maxDimensions) {
+    const scale = Math.min(1, maxDimension / Math.max(sourceWidth, sourceHeight));
+    canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+    canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    for (const quality of qualities) {
+      const candidate = canvas.toDataURL("image/jpeg", quality);
+      if (!candidate.startsWith("data:image/jpeg")) continue;
+      smallest = candidate;
+      if (new Blob([candidate]).size <= MANUAL_ART_MAX_BYTES) return candidate;
+    }
+  }
+
+  // The 96 px fallback is normally only a few KiB. If a browser still emits
+  // an unexpectedly large payload, omit the optional artwork instead of
+  // sending a row the database is guaranteed to reject.
+  return smallest && new Blob([smallest]).size <= MANUAL_ART_MAX_BYTES ? smallest : null;
+}
 
 function useDebounced(value: string, delayMs: number): string {
   const [debounced, setDebounced] = useState(value);
@@ -65,6 +103,8 @@ type AddFlowProps = {
 };
 
 export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddFlowProps) {
+  const t = useT();
+  const names = useDateNames();
   const [step, setStep] = useState(1);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<Album | null>(null);
@@ -102,8 +142,8 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
     () => `manual-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
   );
 
-  // Read a picked image file, downscale it to keep localStorage small, and
-  // store it as a JPEG data URL (data URLs don't taint the export canvas).
+  // Read a picked image file and compress it below the database album-JSON
+  // budget. Data URLs don't taint the export canvas used by share cards.
   function handlePickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-picking the same file later
@@ -114,22 +154,9 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
       if (!src) return;
       const img = new Image();
       img.onload = () => {
-        const MAX = 600;
-        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-        const w = Math.max(1, Math.round(img.width * scale));
-        const h = Math.max(1, Math.round(img.height * scale));
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          setManualArt(src);
-          return;
-        }
-        ctx.drawImage(img, 0, 0, w, h);
-        setManualArt(canvas.toDataURL("image/jpeg", 0.85));
+        setManualArt(compressManualArtwork(img));
       };
-      img.onerror = () => setManualArt(src);
+      img.onerror = () => setManualArt(null);
       img.src = src;
     };
     reader.readAsDataURL(file);
@@ -257,10 +284,10 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
   );
 
   return (
-    <Modal label="Log an album" onClose={onClose}>
+    <Modal label={t("addflow.modalLabel")} onClose={onClose}>
       <div className="dom-addflow">
-        <div className="dom-addflow-eyebrow">log an album · 새 앨범 기록</div>
-        <h1 className="dom-addflow-title">Step {step} of 3</h1>
+        <div className="dom-addflow-eyebrow">{t("addflow.eyebrow")}</div>
+        <h1 className="dom-addflow-title">{t("addflow.step", { step })}</h1>
 
         <div className="dom-addflow-progress">
           <div
@@ -271,11 +298,11 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
 
         {step === 1 && !manualMode && (
           <div className="dom-addflow-body">
-            <label className="dom-addflow-label">Find an album</label>
+            <label className="dom-addflow-label">{t("addflow.findLabel")}</label>
             <input
               className="dom-input"
               autoFocus
-              placeholder="Title, artist, or paste an Apple Music link…"
+              placeholder={t("addflow.searchPlaceholder")}
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -327,29 +354,25 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                     setVisibleCount(PAGE);
                   }}
                 >
-                  See all results · 전체 보기
+                  {t("addflow.seeAll")}
                 </button>
               )}
               {showAll && search.isFetching && (
-                <div className="dom-addflow-empty">Loading more…</div>
+                <div className="dom-addflow-empty">{t("addflow.loadingMore")}</div>
               )}
               {searching && !results.length && (
                 <div className="dom-addflow-empty">
-                  {pastedLink ? "Reading link…" : "Searching…"}
+                  {pastedLink ? t("addflow.readingLink") : t("addflow.searching")}
                 </div>
               )}
               {urlNotFound && (
-                <div className="dom-addflow-empty">
-                  Couldn&apos;t read that link. Make sure it&apos;s an Apple Music album URL.
-                </div>
+                <div className="dom-addflow-empty">{t("addflow.linkError")}</div>
               )}
               {!pastedLink && query && !searching && !results.length && (
-                <div className="dom-addflow-empty">No matches. Try a different query.</div>
+                <div className="dom-addflow-empty">{t("addflow.noMatches")}</div>
               )}
               {search.isError && (
-                <div className="dom-addflow-empty">
-                  Catalog search is unavailable right now.
-                </div>
+                <div className="dom-addflow-empty">{t("addflow.searchUnavailable")}</div>
               )}
             </div>
             <button
@@ -357,7 +380,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
               className="dom-addflow-manual-link"
               onClick={() => setManualMode(true)}
             >
-              Not on Apple Music? Add it yourself · 직접 입력
+              {t("addflow.manualLink")}
             </button>
           </div>
         )}
@@ -369,21 +392,17 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
               className="dom-addflow-manual-back"
               onClick={() => setManualMode(false)}
             >
-              ← Back to search · 검색으로
+              ← {t("addflow.manualBack")}
             </button>
 
-            <label className="dom-addflow-label">Cover image · 커버 이미지 (선택)</label>
+            <label className="dom-addflow-label">{t("addflow.coverImage")}</label>
             <div className="dom-addflow-manual-cover">
               <label className="dom-addflow-imagedrop">
                 {manualArt ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={manualArt} alt="Cover preview" />
+                  <img src={manualArt} alt={t("addflow.coverPreview")} />
                 ) : (
-                  <span>
-                    ＋ Add a picture
-                    <br />
-                    사진 추가
-                  </span>
+                  <span>＋ {t("addflow.addPicture")}</span>
                 )}
                 <input type="file" accept="image/*" hidden onChange={handlePickImage} />
               </label>
@@ -393,36 +412,36 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                   className="dom-addflow-manual-removeimg"
                   onClick={() => setManualArt(null)}
                 >
-                  Remove picture · 사진 제거
+                  {t("addflow.removePicture")}
                 </button>
               )}
             </div>
 
-            <label className="dom-addflow-label">Title · 제목</label>
+            <label className="dom-addflow-label">{t("field.title")}</label>
             <input
               className="dom-input"
               autoFocus
-              placeholder="Song or album title"
+              placeholder={t("addflow.titlePlaceholder")}
               value={manualTitle}
               onChange={(e) => setManualTitle(e.target.value)}
             />
 
             <label className="dom-addflow-label" style={{ marginTop: 4 }}>
-              Artist · 아티스트
+              {t("field.artist")}
             </label>
             <input
               className="dom-input"
-              placeholder="Artist name"
+              placeholder={t("addflow.artistPlaceholder")}
               value={manualArtist}
               onChange={(e) => setManualArtist(e.target.value)}
             />
 
             <label className="dom-addflow-label" style={{ marginTop: 4 }}>
-              Genre · 장르
+              {t("field.genre")}
             </label>
             <input
               className="dom-input"
-              placeholder="Genre, e.g. Pop, R&B, Indie Rock"
+              placeholder={t("addflow.genrePlaceholder")}
               value={manualGenre}
               onChange={(e) => setManualGenre(e.target.value)}
             />
@@ -431,14 +450,12 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
 
         {step === 2 && (
           <div className="dom-addflow-body">
-            <label className="dom-addflow-label">
-              Pick one or more days · 여러 날 선택 가능
-            </label>
+            <label className="dom-addflow-label">{t("addflow.pickDays")}</label>
             <div className="dom-addflow-weeknav">
               <button
                 type="button"
                 className="dom-addflow-weeknav-btn"
-                aria-label="Previous week"
+                aria-label={t("aria.prevWeek")}
                 onClick={() => setWeekAnchor(fmtDate(addDays(weekStart, -7)))}
               >
                 ←
@@ -449,7 +466,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
               <button
                 type="button"
                 className="dom-addflow-weeknav-btn"
-                aria-label="Next week"
+                aria-label={t("aria.nextWeek")}
                 onClick={() => setWeekAnchor(fmtDate(addDays(weekStart, 7)))}
               >
                 →
@@ -466,7 +483,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                     onClick={() => toggleDate(k)}
                   >
                     <span className="dom-addflow-date-num">{d.getDate()}</span>
-                    <span className="dom-addflow-date-dow">{DOW[d.getDay()]}</span>
+                    <span className="dom-addflow-date-dow">{names.weekdayShort(d)}</span>
                   </button>
                 );
               })}
@@ -474,8 +491,10 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
             {selectedDates.size > 0 && (
               <div className="dom-addflow-selected">
                 {selectedDates.size === 1
-                  ? `1 day selected · ${formatDisplayDate([...selectedDates][0], country)}`
-                  : `${selectedDates.size} days selected · ${selectedDates.size}일 선택됨`}
+                  ? t("addflow.daySelected", {
+                      date: formatDisplayDate([...selectedDates][0], country),
+                    })
+                  : t("addflow.daysSelected", { count: selectedDates.size })}
               </div>
             )}
             {picked && (
@@ -492,23 +511,23 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
 
         {step === 3 && (
           <div className="dom-addflow-body">
-            <label className="dom-addflow-label">Your rating</label>
+            <label className="dom-addflow-label">{t("addflow.yourRating")}</label>
             <div className="dom-rating-input">
               {[1, 2, 3, 4, 5].map((i) => (
-                <button key={i} onClick={() => setRating(i)} aria-label={`${i} stars`}>
+                <button key={i} onClick={() => setRating(i)} aria-label={t("aria.starsN", { n: i })}>
                   <span style={{ color: i <= rating ? "var(--ink)" : "var(--lineSoft)" }}>★</span>
                 </button>
               ))}
             </div>
             <label className="dom-addflow-label" style={{ marginTop: 14 }}>
-              Note · 메모
+              {t("field.note")}
             </label>
             <textarea
               className="dom-input dom-textarea"
               rows={4}
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="A line you'll want to remember…"
+              placeholder={t("addflow.notePlaceholder")}
             />
           </div>
         )}
@@ -516,7 +535,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
         <div className="dom-addflow-actions">
           {step > 1 ? (
             <Button variant="ghost" onClick={() => setStep(step - 1)}>
-              ← Back
+              ← {t("action.back")}
             </Button>
           ) : (
             <div />
@@ -534,7 +553,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                 setStep(step + 1);
               }}
             >
-              Continue →
+              {t("action.continue")} →
             </Button>
           ) : (
             <Button
@@ -546,7 +565,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                 onClose();
               }}
             >
-              Save entry
+              {t("addflow.saveEntry")}
             </Button>
           )}
         </div>
@@ -568,16 +587,15 @@ function TrackPanel({
   picked: Album | null;
   onPick: (album: Album) => void;
 }) {
+  const t = useT();
   // Bail before `detail` resolves — this also narrows it for albumFromTrack
   // below, so no non-null assertion is needed.
   if (!detail) {
     return (
       <div className="dom-addflow-tracks">
-        <div className="dom-addflow-tracks-label">
-          Log the album, or pick a track · 트랙 선택
-        </div>
+        <div className="dom-addflow-tracks-label">{t("addflow.pickTrack")}</div>
         <div className="dom-addflow-empty">
-          {loading ? "Loading tracks…" : "Couldn't load this album's tracks."}
+          {loading ? t("addflow.loadingTracks") : t("addflow.tracksError")}
         </div>
       </div>
     );
@@ -585,9 +603,7 @@ function TrackPanel({
 
   return (
     <div className="dom-addflow-tracks">
-      <div className="dom-addflow-tracks-label">
-        Log the album, or pick a track · 트랙 선택
-      </div>
+      <div className="dom-addflow-tracks-label">{t("addflow.pickTrack")}</div>
       {detail.trackItems.length > 0 ? (
         detail.trackItems.map((t) => {
           // Build the track album once so the compared id and the picked id
@@ -610,9 +626,7 @@ function TrackPanel({
           );
         })
       ) : (
-        <div className="dom-addflow-empty">
-          Couldn&apos;t load this album&apos;s tracks.
-        </div>
+        <div className="dom-addflow-empty">{t("addflow.tracksError")}</div>
       )}
     </div>
   );

@@ -6,9 +6,8 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import {
   // DOW, — used only by the temporarily-disabled feature section below
-  DOW_KO,
+  // DOW_KO / MONTHS_LONG — now localized via useDateNames (Intl)
   // MONTHS,
-  MONTHS_LONG,
   addDays,
   fmtDate,
   normalizeGenre,
@@ -17,6 +16,7 @@ import {
   type Album,
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
+import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { Button, IconButton } from "@/components/day-of-music/atoms";
 import { Cover } from "@/components/day-of-music/cover";
 
@@ -47,6 +47,8 @@ export function MonthlyView({
   onMove: (fromDate: string, toDate: string) => void;
 }) {
   const { albums, albumsByDate } = useJournal();
+  const t = useT();
+  const names = useDateNames();
   // Date currently hovered as a drag-and-drop target (for highlight).
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   // The month being viewed follows `anchor`; `today` is only for highlighting.
@@ -86,42 +88,42 @@ export function MonthlyView({
       <div className="dom-month-hd">
         <div className="dom-month-hd-left">
           <span className="dom-eyebrow">
-            한 달의 청음 · {MONTHS_LONG[month].toLowerCase()} in listening
+            {t("month.eyebrow", { month: names.monthLong(month) })}
           </span>
           <h1 className="dom-month-h1">
-            <span className="dom-month-h1-name">{MONTHS_LONG[month]}</span>
+            <span className="dom-month-h1-name">{names.monthLong(month)}</span>
             <span className="dom-month-h1-year">{year}</span>
           </h1>
         </div>
         <div className="dom-month-nav">
-          <IconButton icon={ArrowLeft} onClick={onPrev} aria-label="Previous month" />
-          <IconButton icon={ArrowRight} onClick={onNext} aria-label="Next month" />
+          <IconButton icon={ArrowLeft} onClick={onPrev} aria-label={t("aria.prevMonth")} />
+          <IconButton icon={ArrowRight} onClick={onNext} aria-label={t("aria.nextMonth")} />
           {!isCurrentMonth && (
-            <Button onClick={() => onJump(today)}>THIS MONTH</Button>
+            <Button onClick={() => onJump(today)}>{t("month.thisMonth").toUpperCase()}</Button>
           )}
-          <Button onClick={onShare}>SHARE MONTH</Button>
+          <Button onClick={onShare}>{t("month.shareMonth").toUpperCase()}</Button>
         </div>
         <div className="dom-month-hd-right">
           <div className="dom-month-stat">
             <span className="dom-month-stat-num">
               <i className="dom-month-stat-star">★</i> {avgRating}
             </span>
-            <span className="dom-month-stat-lbl">avg rating · 평균 별점</span>
+            <span className="dom-month-stat-lbl">{t("month.avgRating")}</span>
           </div>
           <div className="dom-month-stat">
             <span className="dom-month-stat-num">{String(totalLogged).padStart(2, "0")}</span>
-            <span className="dom-month-stat-lbl">albums logged · 기록한 앨범</span>
+            <span className="dom-month-stat-lbl">{t("month.albumsLogged")}</span>
           </div>
           <div className="dom-month-stat">
             <span className="dom-month-stat-num">
               {completion}
               <i>%</i>
             </span>
-            <span className="dom-month-stat-lbl">of the month · 한 달의 비율</span>
+            <span className="dom-month-stat-lbl">{t("month.ofMonth")}</span>
           </div>
           <div className="dom-month-stat">
             <span className="dom-month-stat-num">{genreCount}</span>
-            <span className="dom-month-stat-lbl">genres · 장르</span>
+            <span className="dom-month-stat-lbl">{t("month.genres")}</span>
           </div>
         </div>
       </div>
@@ -184,10 +186,9 @@ export function MonthlyView({
 
       <div className="dom-month-cal">
         <div className="dom-month-cal-hd">
-          {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((d, i) => (
-            <div key={d} className="dom-month-cal-dow">
+          {names.weekdayRowMonFirst().map((d, i) => (
+            <div key={i} className="dom-month-cal-dow">
               <span>{d}</span>
-              <span className="dom-month-cal-dowKo">{DOW_KO[(i + 1) % 7]}</span>
             </div>
           ))}
         </div>
@@ -273,7 +274,7 @@ export function MonthlyView({
                     <div className="dom-month-cal-date">
                       <span className="dom-month-cal-num">{d.getDate()}</span>
                       <span className="dom-month-cal-date-right">
-                        {isToday && <span className="dom-month-cal-today">TODAY</span>}
+                        {isToday && <span className="dom-month-cal-today">{t("common.today")}</span>}
                         {album && album.rating > 0 && (
                           <span className="dom-month-cal-rating">
                             <span className="dom-month-cal-rating-star">★</span>
@@ -297,14 +298,14 @@ export function MonthlyView({
                           )}
                         </div>
                         {album.kind === "track" && album.albumTitle && (
-                          <div className="dom-from">from 〈{album.albumTitle}〉</div>
+                          <div className="dom-from">{t("common.fromAlbum", { title: album.albumTitle })}</div>
                         )}
                       </div>
                     )}
                     {canAdd && (
                       <div className="dom-month-cal-add">
                         <span className="dom-month-cal-add-mark">＋</span>
-                        <span className="dom-month-cal-add-lbl">log · 기록</span>
+                        <span className="dom-month-cal-add-lbl">{t("common.logShort")}</span>
                       </div>
                     )}
                   </>

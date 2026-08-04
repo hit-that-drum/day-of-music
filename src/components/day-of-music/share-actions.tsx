@@ -15,6 +15,7 @@ import {
   createSharedCardLink,
   type SharePayload,
 } from "@/lib/day-of-music/share-links";
+import { useT } from "@/lib/day-of-music/i18n";
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { Button, buttonClass } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
@@ -29,6 +30,7 @@ export function ShareActions({
   const { configured, loading, user } = useAuth();
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const t = useT();
 
   const signedIn = configured && Boolean(user);
   const guestWeekLink = !loading && !signedIn && payload.kind === "week";
@@ -46,10 +48,10 @@ export function ShareActions({
               payload as Extract<SharePayload, { kind: "week" }>,
             );
       await navigator.clipboard.writeText(url);
-      toast.success("Link copied");
+      toast.success(t("share.toastCopied"));
       setConfirmOpen(false);
     } catch {
-      toast.error("Couldn't create share link");
+      toast.error(t("share.toastError"));
     } finally {
       setBusy(false);
     }
@@ -64,53 +66,43 @@ export function ShareActions({
             onClick={() => setConfirmOpen(true)}
             disabled={busy}
           >
-            Create public link · 공개 링크 만들기
+            {t("share.createLink")}
           </Button>
         ) : configured && !loading ? (
           <Link href="/signin" className={buttonClass("ghost")}>
-            Sign in to share
+            {t("share.signInToShare")}
           </Link>
         ) : null}
-        <Button onClick={onSaveImage}>Save image</Button>
+        <Button onClick={onSaveImage}>{t("share.saveImage")}</Button>
       </div>
       {guestWeekLink && (
         <p className="dom-share-guest-warning" role="note">
-          게스트 공유 링크는 삭제하거나 회수할 수 없습니다. 링크를 받은 누구나
-          열람할 수 있습니다.
+          {t("share.guestWarning")}
         </p>
       )}
 
       {confirmOpen && (
         <Modal
-          label="공개 링크 생성 확인"
+          label={t("share.confirmModalLabel")}
           className="dom-public-link-modal-wrap"
           onClose={() => {
             if (!busy) setConfirmOpen(false);
           }}
         >
           <div className="dom-public-link-modal">
-            <span className="dom-settings-label">public link · 공개 링크</span>
-            <h2>공개 링크를 만들까요?</h2>
-            <p>
-              닉네임, 음악 기록, 평점 및 테마명이 링크를 받은 사람에게
-              공개됩니다. 이메일과 감상 메모는 포함되지 않습니다.
-            </p>
+            <span className="dom-settings-label">{t("share.publicLinkLabel")}</span>
+            <h2>{t("share.confirmTitle")}</h2>
+            <p>{t("share.confirmBody")}</p>
             <div className="dom-public-link-notice">
               {signedIn ? (
                 <>
-                  <strong>로그인 사용자 링크</strong>
-                  <span>
-                    링크는 90일 후 만료되며 프로필에서 언제든 삭제할 수
-                    있습니다.
-                  </span>
+                  <strong>{t("share.signedInLinkTitle")}</strong>
+                  <span>{t("share.signedInLinkNote")}</span>
                 </>
               ) : (
                 <>
-                  <strong>게스트 링크</strong>
-                  <span>
-                    링크를 받은 누구나 열람할 수 있으며, 생성 후에는 삭제하거나
-                    회수할 수 없습니다.
-                  </span>
+                  <strong>{t("share.guestLinkTitle")}</strong>
+                  <span>{t("share.guestLinkNote")}</span>
                 </>
               )}
             </div>
@@ -120,13 +112,13 @@ export function ShareActions({
                 onClick={() => setConfirmOpen(false)}
                 disabled={busy}
               >
-                Cancel · 취소
+                {t("action.cancel")}
               </Button>
               <Button
                 onClick={() => void handleCreatePublicLink()}
                 disabled={busy}
               >
-                {busy ? "Creating…" : "Create & copy · 생성 후 복사"}
+                {busy ? t("share.creating") : t("share.createCopy")}
               </Button>
             </div>
           </div>
