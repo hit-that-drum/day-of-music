@@ -290,9 +290,9 @@ export function DayOfMusicApp() {
     (date: string) => {
       removeSlot(date);
       setOpenAlbum(null);
-      toast.success("Removed from your journal");
+      toast.success(t("toast.removed"));
     },
-    [removeSlot],
+    [removeSlot, t],
   );
 
   // Replace: reopen the add-flow on the same day. Logging the new album at that
@@ -319,14 +319,18 @@ export function DayOfMusicApp() {
       setReplaceTarget(null);
 
       const count = entry.dates.length;
-      toast.success(`Logged ${entry.album.title}`, {
+      const rating = entry.rating || "—";
+      toast.success(t("toast.logged", { title: entry.album.title }), {
         description:
           count > 1
-            ? `${count} days · ${entry.rating || "—"}★`
-            : `${formatDisplayDate(entry.dates[0], country)} · ${entry.rating || "—"}★`,
+            ? t("toast.loggedDaysDesc", { count, rating })
+            : t("toast.loggedDateDesc", {
+                date: formatDisplayDate(entry.dates[0], country),
+                rating,
+              }),
       });
     },
-    [logAlbum, replaceTarget, removeSlot, country],
+    [logAlbum, replaceTarget, removeSlot, country, t],
   );
 
   // Everyone can use the board. Guests (configured auth, no session) work
@@ -340,6 +344,7 @@ export function DayOfMusicApp() {
       <div
         className="dom-root"
         data-grid={tweaks.aesthetic === "editorial" || tweaks.aesthetic === "dark" ? "1" : "0"}
+        data-guest={isGuest ? "1" : "0"}
       >
         <TopBar
           screen={screen}

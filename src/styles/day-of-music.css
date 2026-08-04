@@ -89,6 +89,9 @@
   background-size: 56px 56px;
   background-position: -1px -1px;
 }
+.dom-root[data-guest="1"] {
+  grid-template-rows: auto auto 1fr;
+}
 
 /* ── Top bar ────────────────────────────────────────────────────────────── */
 

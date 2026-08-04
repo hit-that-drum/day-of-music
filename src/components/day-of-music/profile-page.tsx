@@ -20,20 +20,13 @@ import { PASSWORD_RULES, passwordIssues } from "@/lib/day-of-music/password";
 import { GoogleIcon, KakaoIcon } from "@/components/day-of-music/brand-icons";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
-  COUNTRIES,
+  countriesForLocale,
   DEFAULT_USERNAME,
   useProfile,
   type ProfilePatch,
 } from "@/lib/day-of-music/profile";
 import { useThemes, type Theme } from "@/lib/day-of-music/themes";
-import { useT } from "@/lib/day-of-music/i18n";
-
-// COUNTRIES is { code, label }; DomSelectField wants { value, label }. Mapped once
-// at module scope so the option list is stable across renders.
-const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({
-  value: c.code,
-  label: c.label,
-}));
+import { useLanguage, useT } from "@/lib/day-of-music/i18n";
 
 // Display labels for the OAuth providers we support (icons live in brand-icons).
 const PROVIDER_LABELS: Record<string, string> = {
@@ -226,7 +219,7 @@ function AccountActions({
           <ul
             className="dom-pw-rules"
             id="dom-change-pw-rules"
-            aria-label="Password requirements"
+            aria-label={t("auth.pwRulesAria")}
           >
             {PASSWORD_RULES.map((rule) => {
               const met = rule.test(password);
@@ -239,9 +232,9 @@ function AccountActions({
                   <span className="dom-pw-rule-mark" aria-hidden="true">
                     {met ? "✓" : "○"}
                   </span>
-                  <span>{rule.label}</span>
+                  <span>{t(`pw.${rule.id}`)}</span>
                   <span className="dom-visually-hidden">
-                    {met ? " (met)" : " (not met)"}
+                    {met ? ` ${t("auth.met")}` : ` ${t("auth.notMet")}`}
                   </span>
                 </li>
               );
@@ -637,6 +630,13 @@ function SettingsForm({
   const [name, setName] = useState(initialName);
   const [country, setCountry] = useState(initialCountry);
   const t = useT();
+  const { locale } = useLanguage();
+  // Country names + collation follow the current UI language. { code, label } →
+  // { value, label } for DomSelectField; rebuilt only when the locale changes.
+  const countryOptions = useMemo(
+    () => countriesForLocale(locale).map((c) => ({ value: c.code, label: c.label })),
+    [locale],
+  );
   const handle = name.trim() || DEFAULT_USERNAME;
   const dirty =
     name.trim() !== initialName.trim() || country !== initialCountry;
@@ -660,7 +660,7 @@ function SettingsForm({
           className="dom-store-country-field"
           labelClassName="dom-edit-label"
           value={country}
-          options={COUNTRY_OPTIONS}
+          options={countryOptions}
           onChange={setCountry}
           searchable
           searchPlaceholder={t("profile.searchCountry")}

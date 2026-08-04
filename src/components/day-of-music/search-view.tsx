@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { formatDisplayDate, type Album } from "@/lib/day-of-music/data";
 import { useCountry } from "@/lib/day-of-music/profile";
+import { useT } from "@/lib/day-of-music/i18n";
 import { useThemes } from "@/lib/day-of-music/themes";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { Cover } from "@/components/day-of-music/cover";
@@ -17,6 +18,7 @@ export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
   const { allAlbums } = useJournal();
   const { themes } = useThemes();
   const country = useCountry();
+  const t = useT();
   const [q, setQ] = useState("");
   const query = q.trim().toLowerCase();
   const resultKey = `${query}:${country}:${allAlbums.length}`;
@@ -87,15 +89,15 @@ export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
     <div className="dom-search">
       <div className="dom-week-hd">
         <div className="dom-week-title">
-          <span className="dom-eyebrow">저널 · journal</span>
-          <h1>Journal search</h1>
+          <span className="dom-eyebrow">{t("journal.eyebrow")}</span>
+          <h1>{t("journal.title")}</h1>
         </div>
       </div>
 
       <div className="dom-search-box">
         <input
           className="dom-input dom-input-lg"
-          placeholder="Search titles, artists, notes, dates…"
+          placeholder={t("journal.searchPlaceholder")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -141,7 +143,7 @@ export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
           />
         )}
         {!results.length && (
-          <div className="dom-empty">No matches. Try clearing filters.</div>
+          <div className="dom-empty">{t("journal.noMatches")}</div>
         )}
       </div>
     </div>

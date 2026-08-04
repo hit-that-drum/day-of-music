@@ -3,11 +3,12 @@
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import Link from "next/link";
 
 import type { Album } from "@/lib/day-of-music/data";
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
+import { useT } from "@/lib/day-of-music/i18n";
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { BrandMark } from "@/components/day-of-music/atoms";
 import { Button, buttonClass } from "@/components/day-of-music/atoms";
@@ -71,6 +72,7 @@ const REPORT_EMAIL_HREF = `mailto:dayofmusic365@gmail.com?subject=${encodeURICom
 export function HomeLanding() {
   const rootRef = useRef<HTMLDivElement>(null);
   const { configured, user, signOut } = useAuth();
+  const t = useT();
 
   useEffect(() => {
     ensureFonts();
@@ -84,7 +86,7 @@ export function HomeLanding() {
           <div className="dom-brand">
             <BrandMark />
             <span className="dom-brand-name">Day of Music</span>
-            <span className="dom-brand-ko">하루의 음악</span>
+            <span className="dom-brand-ko">{t("brand.tagline")}</span>
           </div>
           <div className="dom-topbar-actions">
             {configured && user ? (
@@ -93,16 +95,16 @@ export function HomeLanding() {
                   {user.email}
                 </span>
                 <Button variant="ghost" onClick={signOut}>
-                  Sign out
+                  {t("actions.signOut")}
                 </Button>
               </span>
             ) : (
               <>
                 <Link href="/signin" className={buttonClass("ghost")}>
-                  Sign in
+                  {t("actions.signIn")}
                 </Link>
                 <Link href="/signup" className={buttonClass()}>
-                  Sign up
+                  {t("actions.signUp")}
                 </Link>
               </>
             )}
@@ -114,19 +116,18 @@ export function HomeLanding() {
           style={{ display: "grid", placeItems: "center" }}
         >
           <div className="dom-home-hero">
-            <div className="dom-signin-eyebrow">
-              하루의 음악 · one album a day
-            </div>
+            <div className="dom-signin-eyebrow">{t("home.eyebrow")}</div>
             <h1 className="dom-home-title">
-              Your week,
-              <br />
-              set to music.
+              {t("home.title")
+                .split("\n")
+                .map((line, i) => (
+                  <Fragment key={i}>
+                    {i > 0 && <br />}
+                    {line}
+                  </Fragment>
+                ))}
             </h1>
-            <p className="dom-home-sub">
-              Log one album a day, rate it, write a line you&apos;ll want to
-              remember — then share your week as a single image. Search the
-              whole catalog, or just browse what you&apos;ve logged.
-            </p>
+            <p className="dom-home-sub">{t("home.sub")}</p>
 
             <div className="dom-home-covers">
               {HERO_COVERS.map((a) => (
@@ -136,34 +137,29 @@ export function HomeLanding() {
 
             <div className="dom-home-actions">
               <Link href="/week" className={buttonClass("solid", "lg")}>
-                Open the week board →
+                {t("home.openBoard")} →
               </Link>
               {!user && (
                 <Link href="/signup" className={buttonClass("ghost")}>
-                  Create an account
+                  {t("home.createAccount")}
                 </Link>
               )}
             </div>
-            {!user && (
-              <p className="dom-home-note">
-                No account needed to try it — but guest edits vanish when you
-                leave. Sign up to keep your journal.
-              </p>
-            )}
+            {!user && <p className="dom-home-note">{t("home.note")}</p>}
           </div>
         </main>
 
         <footer className="dom-home-footer">
           <span>© {new Date().getFullYear()} Day of Music</span>
-          <nav className="dom-home-legal" aria-label="법적 고지">
-            <Link href="/terms">이용약관</Link>
-            <Link href="/privacy">개인정보 처리방침</Link>
+          <nav className="dom-home-legal" aria-label={t("home.legalAria")}>
+            <Link href="/terms">{t("legal.termsLink")}</Link>
+            <Link href="/privacy">{t("legal.privacyLink")}</Link>
             <a
               href={REPORT_EMAIL_HREF}
-              aria-label="이메일로 문제 신고 또는 개선 의견 보내기"
-              title="불편 사항이나 개선 의견 보내기"
+              aria-label={t("home.reportAria")}
+              title={t("home.reportTitle")}
             >
-              문제 신고 및 개선 의견
+              {t("home.report")}
             </a>
           </nav>
         </footer>

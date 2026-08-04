@@ -9,13 +9,21 @@ import { useSyncExternalStore } from "react";
 import isoCountries from "i18n-iso-countries";
 import enLocale from "i18n-iso-countries/langs/en.json";
 import koLocale from "i18n-iso-countries/langs/ko.json";
+import jaLocale from "i18n-iso-countries/langs/ja.json";
+import zhLocale from "i18n-iso-countries/langs/zh.json";
+import esLocale from "i18n-iso-countries/langs/es.json";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { makeStringStore } from "@/lib/day-of-music/local-store";
-import type { LanguagePref } from "@/lib/day-of-music/i18n";
+import type { LanguagePref, Locale } from "@/lib/day-of-music/i18n";
 
+// Register a country-name catalog per supported UI language so the picker can
+// show each storefront in the reader's language (see countriesForLocale).
 isoCountries.registerLocale(enLocale);
 isoCountries.registerLocale(koLocale);
+isoCountries.registerLocale(jaLocale);
+isoCountries.registerLocale(zhLocale);
+isoCountries.registerLocale(esLocale);
 
 export const DEFAULT_USERNAME = "listener";
 export const DEFAULT_COUNTRY = "US";
@@ -77,22 +85,36 @@ function flagEmoji(code: string): string {
 
 export type Country = { code: string; label: string };
 
-// Built once: Apple storefronts that resolve to a name, with flag + EN/KO
-// labels, sorted by English name.
-export const COUNTRIES: Country[] = Array.from(APPLE_STOREFRONTS)
-  .map((code) => {
-    const en = isoCountries.getName(code, "en");
-    if (!en) return null;
-    const ko = isoCountries.getName(code, "ko");
-    return {
-      code,
-      en,
-      label: `${flagEmoji(code)}  ${en}${ko && ko !== en ? ` · ${ko}` : ""}`,
-    };
+// UI Locale → i18n-iso-countries lang code. `zh` uses the Simplified catalog
+// (the library ships a single `zh`); HK/TW/MO fall back to it until a separate
+// Traditional locale is added.
+const COUNTRY_NAME_LANG: Record<Locale, string> = {
+  en: "en",
+  ko: "ko",
+  ja: "ja",
+  zh: "zh",
+  es: "es",
+};
+
+// Storefronts that resolve to an English name — the stable base list. Names and
+// sort order are re-derived per locale in countriesForLocale.
+const STOREFRONT_CODES: string[] = Array.from(APPLE_STOREFRONTS).filter((code) =>
+  Boolean(isoCountries.getName(code, "en")),
+);
+
+// Country options (flag + localized name) for the picker, sorted by the
+// localized name in that locale's collation. Pure — the caller passes the
+// current UI locale (see useCountries in profile-page).
+export function countriesForLocale(locale: Locale): Country[] {
+  const lang = COUNTRY_NAME_LANG[locale];
+  return STOREFRONT_CODES.map((code) => {
+    const name =
+      isoCountries.getName(code, lang) ?? isoCountries.getName(code, "en") ?? code;
+    return { code, name, label: `${flagEmoji(code)}  ${name}` };
   })
-  .filter((c): c is { code: string; en: string; label: string } => c !== null)
-  .sort((a, b) => a.en.localeCompare(b.en))
-  .map(({ code, label }) => ({ code, label }));
+    .sort((a, b) => a.name.localeCompare(b.name, lang))
+    .map(({ code, label }) => ({ code, label }));
+}
 
 export type ProfilePatch = {
   username?: string;

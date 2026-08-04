@@ -6,16 +6,13 @@ import { useCallback, useState, type DragEvent } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import {
-  DOW,
-  DOW_KO,
-  MONTHS_LONG,
   fmtDate,
   startOfWeek,
   weekOfMonth,
   type Album,
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
-import { useT } from "@/lib/day-of-music/i18n";
+import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button, IconButton, MetaLine } from "@/components/day-of-music/atoms";
 import { WeekPicker } from "@/components/day-of-music/week-picker";
@@ -59,7 +56,9 @@ export function WeeklyGrid({
   onMove,
 }: WeeklyGridProps) {
   const { albumsByDate } = useJournal();
-  const monthLabel = MONTHS_LONG[labelDate.getMonth()];
+  const t = useT();
+  const names = useDateNames();
+  const monthLabel = names.monthLong(labelDate.getMonth());
   const weekNum = weekOfMonth(labelDate);
   const labelMonth = labelDate.getMonth();
   const labelYear = labelDate.getFullYear();
@@ -78,7 +77,7 @@ export function WeeklyGrid({
     if (segments[segments.length - 1]?.key === key) continue;
     segments.push({
       key,
-      monthLabel: MONTHS_LONG[d.getMonth()],
+      monthLabel: names.monthLong(d.getMonth()),
       weekNum: weekOfMonth(d),
     });
   }
@@ -103,8 +102,10 @@ export function WeeklyGrid({
         <div className="dom-grid-label">
           <div className="dom-grid-label-inner">
             <div className="dom-month-name">{monthLabel.toUpperCase()}</div>
-            <div className="dom-month-sub">· Week {weekNum}</div>
-            <div className="dom-month-tag">{labelDate.getFullYear()} · 큐레이션</div>
+            <div className="dom-month-sub">· {t("week.weekN", { n: weekNum })}</div>
+            <div className="dom-month-tag">
+              {labelDate.getFullYear()} · {t("week.curation")}
+            </div>
           </div>
         </div>
         {days.map((d) => {
@@ -156,21 +157,24 @@ function WeekHeader({
   return (
     <div className="dom-week-hd">
       <div className="dom-week-title">
-        <span className="dom-eyebrow">큐레이션 · weekly view</span>
+        <span className="dom-eyebrow">{t("week.eyebrow")}</span>
         <div className="dom-week-title-anchor">
           <button
             className="dom-week-title-btn"
             onClick={() => setPickerOpen((o) => !o)}
             aria-haspopup="dialog"
             aria-expanded={pickerOpen}
-            title="Jump to a week · 주 선택"
+            title={t("week.jumpTitle")}
           >
             <h1>
               {segments.map((s, i) => (
                 <span key={s.key}>
                   {i > 0 && <span className="dom-week-title-sep"> / </span>}
                   {s.monthLabel}
-                  <span className="dom-week-title-break"> · Week {s.weekNum}</span>
+                  <span className="dom-week-title-break">
+                    {" · "}
+                    {t("week.weekN", { n: s.weekNum })}
+                  </span>
                 </span>
               ))}
             </h1>
@@ -190,12 +194,12 @@ function WeekHeader({
         </div>
       </div>
       <div className="dom-week-actions">
-        <IconButton icon={ArrowLeft} onClick={onPrev} aria-label="Previous week" />
-        <IconButton icon={ArrowRight} onClick={onNext} aria-label="Next week" />
+        <IconButton icon={ArrowLeft} onClick={onPrev} aria-label={t("aria.prevWeek")} />
+        <IconButton icon={ArrowRight} onClick={onNext} aria-label={t("aria.nextWeek")} />
         <Button variant="ghost" onClick={onBestOf}>
           {t("bow.button")}
         </Button>
-        <Button onClick={onShare}>SHARE WEEK</Button>
+        <Button onClick={onShare}>{t("week.shareWeek").toUpperCase()}</Button>
       </div>
     </div>
   );
@@ -221,9 +225,10 @@ function DayCell({
   onAdd: (date: string) => void;
   onMove: (fromDate: string, toDate: string) => void;
 }) {
+  const t = useT();
+  const names = useDateNames();
   const day = date.getDate();
-  const dow = DOW[date.getDay()];
-  const dowKo = DOW_KO[date.getDay()];
+  const dow = names.weekdayShort(date);
   const [dragOver, setDragOver] = useState(false);
 
   // Any in-month day is a drop target (empty → move, filled → swap dates).
@@ -275,7 +280,6 @@ function DayCell({
         <span className="dom-day-num">{day}</span>
         <span className="dom-day-bar">|</span>
         <span className="dom-day-dow">{dow}</span>
-        <span className="dom-day-dowKo">{dowKo}</span>
       </div>
       {outOfMonth ? (
         <div className="dom-day-body dom-day-empty dom-day-blank" aria-hidden="true" />
@@ -291,7 +295,7 @@ function DayCell({
             e.dataTransfer.effectAllowed = "move";
           }}
           onClick={() => onOpen(album)}
-          aria-label={`Open ${album.title}`}
+          aria-label={t("aria.openAlbum", { title: album.title })}
         >
           <div className="dom-cover-wrap">
             <Cover album={album} size="100%" />
@@ -303,7 +307,7 @@ function DayCell({
               {album.titleKo && <span className="dom-artist-ko"> · {album.titleKo}</span>}
             </div>
             {album.kind === "track" && album.albumTitle && (
-              <div className="dom-from">from 〈{album.albumTitle}〉</div>
+              <div className="dom-from">{t("common.fromAlbum", { title: album.albumTitle })}</div>
             )}
             <MetaLine album={album} />
           </div>
@@ -314,10 +318,10 @@ function DayCell({
         <button
           className="dom-day-body dom-day-empty dom-day-add"
           onClick={() => onAdd(fmtDate(date))}
-          aria-label={`Log an album for ${fmtDate(date)}`}
+          aria-label={t("aria.logForDate", { date: fmtDate(date) })}
         >
           <span className="dom-day-add-mark">＋</span>
-          <span className="dom-day-add-lbl">log · 기록</span>
+          <span className="dom-day-add-lbl">{t("common.logShort")}</span>
         </button>
       )}
     </div>

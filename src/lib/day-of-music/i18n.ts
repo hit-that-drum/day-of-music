@@ -97,3 +97,60 @@ export function useT(): (key: string, params?: Record<string, string | number>) 
     [locale],
   );
 }
+
+// ── Localized date names ──────────────────────────────────────────────────
+// Weekday/month names follow the UI locale (chrome language), unlike release
+// dates in day-detail which follow the listener's *storefront country*. Our
+// Locale maps to a BCP-47 tag for Intl; `zh` renders Simplified (`zh-Hans`).
+const INTL_TAG: Record<Locale, string> = {
+  en: "en",
+  ko: "ko",
+  ja: "ja",
+  zh: "zh-Hans",
+  es: "es",
+};
+
+// Formatters are pure and reusable — build each (locale × option) once.
+const dtfCache = new Map<string, Intl.DateTimeFormat>();
+function dtf(locale: Locale, opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${INTL_TAG[locale]}|${opts.weekday ?? ""}|${opts.month ?? ""}`;
+  let f = dtfCache.get(key);
+  if (!f) {
+    f = new Intl.DateTimeFormat(INTL_TAG[locale], opts);
+    dtfCache.set(key, f);
+  }
+  return f;
+}
+
+/** Short weekday name for a date, e.g. "Mon" · "월" · "月" · "周一" · "lun.". */
+export function weekdayShort(locale: Locale, date: Date): string {
+  return dtf(locale, { weekday: "short" }).format(date);
+}
+
+/** Full month name for a 0-based index, e.g. "January" · "1月" · "enero". */
+export function monthLong(locale: Locale, monthIndex: number): string {
+  const m = ((monthIndex % 12) + 12) % 12;
+  return dtf(locale, { month: "long" }).format(new Date(2020, m, 1));
+}
+
+/** The seven short weekday names, Monday-first. (2024-01-01 is a Monday.) */
+export function weekdayRowMonFirst(locale: Locale): string[] {
+  return Array.from({ length: 7 }, (_, i) => weekdayShort(locale, new Date(2024, 0, 1 + i)));
+}
+
+/** Localized date-name helpers bound to the current effective locale. */
+export function useDateNames(): {
+  weekdayShort: (date: Date) => string;
+  monthLong: (monthIndex: number) => string;
+  weekdayRowMonFirst: () => string[];
+} {
+  const { locale } = useLanguage();
+  return useMemo(
+    () => ({
+      weekdayShort: (date: Date) => weekdayShort(locale, date),
+      monthLong: (monthIndex: number) => monthLong(locale, monthIndex),
+      weekdayRowMonFirst: () => weekdayRowMonFirst(locale),
+    }),
+    [locale],
+  );
+}
