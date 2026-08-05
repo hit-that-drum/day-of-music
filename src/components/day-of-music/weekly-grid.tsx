@@ -4,14 +4,17 @@
 
 import { useCallback, useState, type DragEvent } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   fmtDate,
+  parseDate,
   startOfWeek,
   weekOfMonth,
   type Album,
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
+import { useBestOfWeekStatus, type BestOfStatus } from "@/lib/day-of-music/best-of";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button, IconButton, MetaLine } from "@/components/day-of-music/atoms";
@@ -58,6 +61,9 @@ export function WeeklyGrid({
   const { albumsByDate } = useJournal();
   const t = useT();
   const names = useDateNames();
+  // Drives the Best-of button's colour, so the week's state is visible without
+  // opening the modal.
+  const bestOf = useBestOfWeekStatus(days, labelDate, splitByMonth, today);
   const monthLabel = names.monthLong(labelDate.getMonth());
   const weekNum = weekOfMonth(labelDate);
   const labelMonth = labelDate.getMonth();
@@ -93,6 +99,9 @@ export function WeeklyGrid({
         onJump={onJump}
         onShare={onShare}
         onBestOf={onBestOf}
+        bestOfStatus={bestOf.status}
+        bestOfWinnerDate={bestOf.winnerDate}
+        bestOfLastDay={bestOf.lastDay}
       />
       <div
         className="dom-grid"
@@ -141,6 +150,9 @@ function WeekHeader({
   onJump,
   onShare,
   onBestOf,
+  bestOfStatus,
+  bestOfWinnerDate,
+  bestOfLastDay,
 }: {
   segments: { key: number; monthLabel: string; weekNum: number }[];
   labelDate: Date;
@@ -150,9 +162,35 @@ function WeekHeader({
   onJump: (date: Date) => void;
   onShare: () => void;
   onBestOf: () => void;
+  /** Whether this week's Best-of is playable, already decided, or has nothing
+   *  to judge — shown as the button's colour. */
+  bestOfStatus: BestOfStatus;
+  /** YYYY-MM-DD of the champion, when decided (named in the button's tooltip). */
+  bestOfWinnerDate?: string;
+  /** The segment's closing day — the day the tournament unlocks. */
+  bestOfLastDay: Date;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const t = useT();
+  const names = useDateNames();
+
+  // Colour is never the only cue: every non-plain state also carries a hint
+  // spelling itself out (and "done" a 🏆) — the Minimal aesthetic's accent
+  // equals its ink, and colour alone excludes colour-blind readers either way.
+  // Days are named by weekday, the natural handle for a day inside one week.
+  const bestOfHint =
+    bestOfStatus === "done" && bestOfWinnerDate
+      ? t("bow.doneHint", { day: names.weekdayShort(parseDate(bestOfWinnerDate)) })
+      : bestOfStatus === "locked"
+        ? t("bow.lockedHint", { day: names.weekdayShort(bestOfLastDay) })
+        : bestOfStatus === "empty"
+          ? t("bow.emptyHint")
+          : undefined;
+
+  // A locked week still takes the click — it answers with the reason instead of
+  // opening the tournament. `disabled` would swallow the tap and leave a
+  // touch-only user with no way to reach the explanation (no hover, no title).
+  const locked = bestOfStatus === "locked";
 
   return (
     <div className="dom-week-hd">
@@ -196,7 +234,19 @@ function WeekHeader({
       <div className="dom-week-actions">
         <IconButton icon={ArrowLeft} onClick={onPrev} aria-label={t("aria.prevWeek")} />
         <IconButton icon={ArrowRight} onClick={onNext} aria-label={t("aria.nextWeek")} />
-        <Button variant="ghost" onClick={onBestOf}>
+        <Button
+          variant="ghost"
+          onClick={locked ? () => toast(bestOfHint) : onBestOf}
+          data-bow={bestOfStatus}
+          title={bestOfHint}
+          aria-disabled={locked || undefined}
+          aria-label={bestOfHint && `${t("bow.button")} — ${bestOfHint}`}
+        >
+          {bestOfStatus === "done" && (
+            <span className="dom-bow-btn-trophy" aria-hidden="true">
+              🏆
+            </span>
+          )}
           {t("bow.button")}
         </Button>
         <Button onClick={onShare}>{t("week.shareWeek").toUpperCase()}</Button>

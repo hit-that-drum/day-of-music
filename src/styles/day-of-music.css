@@ -403,6 +403,29 @@
   padding: 7px 12px;
   font-size: 12px;
 }
+/* Best of Week entry button — its colour reports the week's state before the
+   modal is opened. `done` is an accent tint (a solid fill would read as the
+   SHARE button beside it); `locked` (week still running) and `empty` share one
+   recessive treatment — both mean "not now" — but stay clickable, so a tap can
+   still reach the reason. Every state pairs its colour with a 🏆 / tooltip,
+   since the Minimal aesthetic's accent equals its ink. */
+.dom-btn[data-bow="done"] {
+  background-color: color-mix(in oklab, var(--accent) 14%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.dom-btn[data-bow="done"]:hover {
+  background-color: color-mix(in oklab, var(--accent) 24%, transparent);
+}
+.dom-btn[data-bow="empty"],
+.dom-btn[data-bow="locked"] {
+  border-color: var(--lineSoft);
+  color: var(--ink3);
+}
+.dom-bow-btn-trophy {
+  margin-right: 5px;
+  font-size: 11px;
+}
 .dom-btn-danger {
   background-color: #a3342a;
   color: #fff;

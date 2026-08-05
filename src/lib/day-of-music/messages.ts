@@ -202,6 +202,25 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
     zh: "本周还没有记录的专辑。",
     es: "No hay álbumes registrados esta semana.",
   },
+  // Tooltip on the entry button once this week has a champion — the colour says
+  // "already played", this says who won.
+  "bow.doneHint": {
+    en: "Already played · {day} won",
+    ko: "이미 진행했어요 · {day}요일 우승",
+    ja: "すでに実施済み · {day}曜日が優勝",
+    zh: "已评选 · {day}获胜",
+    es: "Ya jugado · ganó el {day}",
+  },
+  // Shown while the week is still running — as a tooltip on hover, and as a
+  // toast on click, since a tap has no hover to fall back on. {day} is the
+  // segment's closing weekday (Sunday for a whole week).
+  "bow.lockedHint": {
+    en: "Opens on {day}, once this week is over.",
+    ko: "이 주의 마지막 날인 {day}요일부터 뽑을 수 있어요.",
+    ja: "この週の最終日（{day}曜日）から選べます。",
+    zh: "本周结束后，从最后一天（{day}）起可评选。",
+    es: "Disponible el {day}, cuando termine la semana.",
+  },
   "bow.emptyHint": {
     en: "Log at least two days to run a Best of Week.",
     ko: "베스트를 뽑으려면 최소 이틀 이상 기록해 주세요.",

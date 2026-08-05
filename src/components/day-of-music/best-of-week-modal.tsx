@@ -15,7 +15,6 @@ import {
   fmtDate,
   parseDate,
   weekOfMonth,
-  type Album,
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
@@ -27,15 +26,15 @@ import {
   pairWinners,
   shuffle,
   useBestOf,
+  weekContenders,
   type BestOfMethod,
+  type Contender,
   type Match,
 } from "@/lib/day-of-music/best-of";
 import { saveCardAsImage, shareFileName } from "@/lib/day-of-music/save-card";
 import { Button, Stars } from "@/components/day-of-music/atoms";
 import { Cover } from "@/components/day-of-music/cover";
 import { Modal } from "@/components/day-of-music/modal";
-
-type Contender = { date: string; album: Album };
 
 type Tourney = {
   round: number;
@@ -82,22 +81,12 @@ export function BestOfWeekModal({
   const theme = activeThemeObj?.id ?? "daily";
 
   const labelMonth = labelDate.getMonth();
-  const labelYear = labelDate.getFullYear();
 
-  // Contenders: the filled days of this segment, in day order. In split mode a
-  // month-straddling week only counts the days in labelDate's month — e.g. a
-  // week whose July part starts Wednesday contends Wed→Sun, dropping the June
-  // Mon/Tue — mirroring which cells the grid keeps active.
+  // The field for this segment — shared with the entry button's status so both
+  // judge the same days (see weekContenders).
   const contenders = useMemo<Contender[]>(
-    () =>
-      days
-        .filter(
-          (d) =>
-            !splitByMonth || (d.getMonth() === labelMonth && d.getFullYear() === labelYear),
-        )
-        .map((d) => ({ date: fmtDate(d), album: albumsByDate[fmtDate(d)] }))
-        .filter((c): c is Contender => Boolean(c.album)),
-    [days, albumsByDate, splitByMonth, labelMonth, labelYear],
+    () => weekContenders(days, albumsByDate, labelDate, splitByMonth),
+    [days, albumsByDate, labelDate, splitByMonth],
   );
 
   // Period key = the segment's first in-view day: the week's Monday when

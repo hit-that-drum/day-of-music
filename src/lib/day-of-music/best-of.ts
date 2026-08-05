@@ -13,7 +13,9 @@ import { useSyncExternalStore } from "react";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { makeJsonStore } from "@/lib/day-of-music/local-store";
-import { fmtDate, startOfWeek } from "@/lib/day-of-music/data";
+import { fmtDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
+import { useJournal } from "@/lib/day-of-music/use-journal";
+import { resolveActiveTheme, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
 
 export type BestOfMethod = "sequential" | "random";
 export type BestOfPeriod = "week" | "month" | "year";
@@ -72,6 +74,39 @@ export function shuffle<T>(items: T[]): T[] {
   return a;
 }
 
+// ── The contender field ─────────────────────────────────────────────────────
+
+export type Contender = { date: string; album: Album };
+
+/**
+ * The days this segment judges. Normally the whole Mon–Sun week; in
+ * split-by-month mode only the days in labelDate's month — e.g. a week whose
+ * July part starts Wednesday contends Wed→Sun, dropping the June Mon/Tue —
+ * mirroring which cells the grid keeps active.
+ */
+export function segmentDays(days: Date[], labelDate: Date, splitByMonth: boolean): Date[] {
+  if (!splitByMonth) return days;
+  const month = labelDate.getMonth();
+  const year = labelDate.getFullYear();
+  return days.filter((d) => d.getMonth() === month && d.getFullYear() === year);
+}
+
+/**
+ * The tournament field for one week segment: its filled days, in day order.
+ * Shared by the modal and the button's status so the two can never disagree
+ * about who is in the running.
+ */
+export function weekContenders(
+  days: Date[],
+  albumsByDate: Record<string, Album>,
+  labelDate: Date,
+  splitByMonth: boolean,
+): Contender[] {
+  return segmentDays(days, labelDate, splitByMonth)
+    .map((d) => ({ date: fmtDate(d), album: albumsByDate[fmtDate(d)] }))
+    .filter((c): c is Contender => Boolean(c.album));
+}
+
 // ── Period keys ─────────────────────────────────────────────────────────────
 
 /** Canonical week id = the week's Monday (YYYY-MM-DD). */
@@ -110,4 +145,58 @@ export function useBestOf(): {
     get: (key) => local[key],
     set: (key, result) => store.set({ ...local, [key]: result }),
   };
+}
+
+// ── Status (for the entry button) ───────────────────────────────────────────
+
+/**
+ * - "done"   — already decided.
+ * - "locked" — the week isn't over: a champion can only be crowned once every
+ *              day has had its chance, so the field is still incomplete.
+ * - "empty"  — the week is over but nothing was logged.
+ * - "todo"   — playable now.
+ */
+export type BestOfStatus = "done" | "locked" | "empty" | "todo";
+
+/**
+ * The state of this week segment's Best of Week, so the entry button can report
+ * it before it's clicked.
+ *
+ * "done" is judged exactly the way BestOfWeekModal judges it at mount: a stored
+ * result only counts while its winning day is still a contender (the album may
+ * since have been deleted or moved), or the button would promise a champion the
+ * modal then re-runs from scratch. It also outranks "locked" — once a champion
+ * exists the modal shows it, so hiding it behind the lock would be a lie.
+ *
+ * Same inputs as the modal so the two always agree; reads the active theme and
+ * journal itself since the key is per (theme, segment).
+ */
+export function useBestOfWeekStatus(
+  days: Date[],
+  labelDate: Date,
+  splitByMonth: boolean,
+  today: Date,
+): { status: BestOfStatus; winnerDate?: string; lastDay: Date } {
+  const { albumsByDate } = useJournal();
+  const { themes } = useThemes();
+  const { activeTheme } = useActiveTheme();
+  const bestOf = useBestOf();
+
+  const segment = segmentDays(days, labelDate, splitByMonth);
+  const lastDay = segment[segment.length - 1] ?? labelDate;
+  const contenders = weekContenders(days, albumsByDate, labelDate, splitByMonth);
+
+  const theme = resolveActiveTheme(themes, activeTheme);
+  const saved = bestOf.get(bestOfKey("week", theme, fmtDate(labelDate)));
+  if (saved && contenders.some((c) => c.date === saved.winnerDate)) {
+    return { status: "done", winnerDate: saved.winnerDate, lastDay };
+  }
+
+  // Open from the segment's last day onward — Sunday for a whole week, or the
+  // last in-month day of a split segment. Compared as YYYY-MM-DD so the day
+  // unlocks at midnight rather than at whatever time of day `today` was built.
+  if (fmtDate(lastDay) > fmtDate(today)) return { status: "locked", lastDay };
+
+  if (contenders.length === 0) return { status: "empty", lastDay };
+  return { status: "todo", lastDay };
 }
