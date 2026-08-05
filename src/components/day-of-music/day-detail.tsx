@@ -6,7 +6,6 @@
 import { useEffect, useRef, useState } from "react";
 
 import {
-  DOW,
   formatDisplayDate,
   normalizeGenre,
   parseDate,
@@ -14,6 +13,7 @@ import {
 } from "@/lib/day-of-music/data";
 import { fetchAlbumDetail } from "@/lib/day-of-music/music-search";
 import { useCountry } from "@/lib/day-of-music/profile";
+import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
@@ -63,6 +63,8 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
   const noteSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const country = useCountry();
+  const t = useT();
+  const names = useDateNames();
   const date = parseDate(album.date);
   const seed = album.tracks.length;
   const noteDirty = note !== album.note;
@@ -154,7 +156,7 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
   );
 
   return (
-    <Modal label={`${album.title} detail`} onClose={onClose}>
+    <Modal label={t("daydetail.modalLabel", { title: album.title })} onClose={onClose}>
       <div className="dom-detail">
         <div className="dom-detail-left">
           <div className="dom-detail-cover">
@@ -165,31 +167,35 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
               <div className="dom-detail-date">{String(date.getDate()).padStart(2, "0")}</div>
               <div className="dom-detail-format">{album.format}</div>
             </div>
-            <div className="dom-detail-dow">{DOW[date.getDay()]}</div>
+            <div className="dom-detail-dow">{names.weekdayShort(date)}</div>
           </div>
         </div>
 
         <div className="dom-detail-right">
           <span className="dom-eyebrow">
-            {album.kind === "track" ? "track of the day · 오늘의 곡" : "album of the day · 오늘의 앨범"}
+            {album.kind === "track" ? t("daydetail.eyebrowTrack") : t("daydetail.eyebrowAlbum")}
           </span>
           <h2 className="dom-detail-title">{album.title}</h2>
           <div className="dom-detail-artist">
             {album.artist} <span className="dom-detail-artist-ko">{album.titleKo}</span>
           </div>
           {album.kind === "track" && album.albumTitle && (
-            <div className="dom-detail-from">from 〈{album.albumTitle}〉</div>
+            <div className="dom-detail-from">{t("common.fromAlbum", { title: album.albumTitle })}</div>
           )}
 
           <div className="dom-tabs">
-            {(["tracklist", "journal", "info"] as Tab[]).map((t) => (
+            {(["tracklist", "journal", "info"] as Tab[]).map((tabId) => (
               <button
-                key={t}
+                key={tabId}
                 className="dom-tab"
-                data-active={tab === t ? "1" : "0"}
-                onClick={() => setTab(t)}
+                data-active={tab === tabId ? "1" : "0"}
+                onClick={() => setTab(tabId)}
               >
-                {t}
+                {tabId === "tracklist"
+                  ? t("daydetail.tabTracklist")
+                  : tabId === "journal"
+                    ? t("daydetail.tabJournal")
+                    : t("daydetail.tabInfo")}
               </button>
             ))}
           </div>
@@ -209,10 +215,12 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
             ) : (
               <div className="dom-addflow-empty">
                 {album.kind === "track"
-                  ? `Single track${album.albumTitle ? ` from ${album.albumTitle}` : ""}.`
+                  ? album.albumTitle
+                    ? t("daydetail.singleTrackFrom", { title: album.albumTitle })
+                    : t("daydetail.singleTrack")
                   : album.id.startsWith("itunes-")
-                    ? "Loading tracklist…"
-                    : "No tracklist for this album."}
+                    ? t("daydetail.loadingTracklist")
+                    : t("daydetail.noTracklist")}
               </div>
             )
           )}
@@ -227,14 +235,14 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
                     className="dom-star"
                     data-on={i + 1 <= album.rating ? "1" : "0"}
                     onClick={() => commitRating(i + 1)}
-                    aria-label={`Rate ${i + 1} stars`}
+                    aria-label={t("aria.rateStars", { n: i + 1 })}
                   >
                     ★
                   </button>
                 ))}
               </div>
               <label className="dom-edit-field">
-                <span className="dom-edit-label">Logged on · 기록한 날</span>
+                <span className="dom-edit-label">{t("daydetail.loggedOn")}</span>
                 <input
                   type="date"
                   className="dom-input"
@@ -243,17 +251,17 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
                 />
               </label>
               <div className="dom-edit-field">
-                <span className="dom-edit-label">Note · 메모</span>
+                <span className="dom-edit-label">{t("field.note")}</span>
                 <textarea
                   className="dom-input dom-textarea"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Write a note…"
+                  placeholder={t("daydetail.notePlaceholder")}
                 />
                 <div className="dom-note-actions">
-                  {noteSaved && <span className="dom-note-saved">Saved ✓</span>}
+                  {noteSaved && <span className="dom-note-saved">{t("daydetail.saved")}</span>}
                   <Button size="sm" onClick={saveNote} disabled={!noteDirty}>
-                    Save note
+                    {t("daydetail.saveNote")}
                   </Button>
                 </div>
               </div>
@@ -265,7 +273,7 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
               {editingInfo ? (
                 <div className="dom-info-edit">
                   <label className="dom-edit-field">
-                    <span className="dom-edit-label">Title · 제목</span>
+                    <span className="dom-edit-label">{t("field.title")}</span>
                     <input
                       className="dom-input"
                       value={infoTitle}
@@ -273,7 +281,7 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
                     />
                   </label>
                   <label className="dom-edit-field">
-                    <span className="dom-edit-label">Artist · 아티스트</span>
+                    <span className="dom-edit-label">{t("field.artist")}</span>
                     <input
                       className="dom-input"
                       value={infoArtist}
@@ -281,7 +289,7 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
                     />
                   </label>
                   <label className="dom-edit-field">
-                    <span className="dom-edit-label">Genre · 장르</span>
+                    <span className="dom-edit-label">{t("field.genre")}</span>
                     <input
                       className="dom-input"
                       value={infoGenre}
@@ -289,7 +297,7 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
                     />
                   </label>
                   <label className="dom-edit-field">
-                    <span className="dom-edit-label">Year · 연도</span>
+                    <span className="dom-edit-label">{t("field.year")}</span>
                     <input
                       className="dom-input"
                       inputMode="numeric"
@@ -299,27 +307,27 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
                   </label>
                   <div className="dom-info-edit-actions">
                     <Button variant="ghost" size="sm" onClick={resetInfoDraft}>
-                      Cancel
+                      {t("action.cancel")}
                     </Button>
                     <Button size="sm" onClick={saveInfo} disabled={!infoDirty || !infoValid}>
-                      Save Info
+                      {t("daydetail.saveInfo")}
                     </Button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <InfoRow label="Released" value={formatReleased(album, country)} />
-                  <InfoRow label="Genre" value={normalizeGenre(album.genre) || "—"} />
-                  <InfoRow label="Format" value={album.format} />
+                  <InfoRow label={t("daydetail.released")} value={formatReleased(album, country)} />
+                  <InfoRow label={t("field.genre")} value={normalizeGenre(album.genre) || "—"} />
+                  <InfoRow label={t("daydetail.format")} value={album.format} />
                   {album.kind === "track" ? (
                     <>
-                      <InfoRow label="Type" value="Track" />
-                      {album.albumTitle && <InfoRow label="From album" value={album.albumTitle} />}
+                      <InfoRow label={t("daydetail.type")} value={t("daydetail.trackValue")} />
+                      {album.albumTitle && <InfoRow label={t("daydetail.fromAlbumLabel")} value={album.albumTitle} />}
                     </>
                   ) : (
-                    <InfoRow label="Tracks" value={String(album.tracks.length)} />
+                    <InfoRow label={t("daydetail.tracks")} value={String(album.tracks.length)} />
                   )}
-                  <InfoRow label="Logged on" value={formatDisplayDate(album.date, country)} />
+                  <InfoRow label={t("daydetail.loggedOn")} value={formatDisplayDate(album.date, country)} />
                   {isManual && (
                     <div className="dom-info-edit-actions">
                       <Button
@@ -330,7 +338,7 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
                           setEditingInfo(true);
                         }}
                       >
-                        Revise Info
+                        {t("daydetail.reviseInfo")}
                       </Button>
                     </div>
                   )}
@@ -341,25 +349,25 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
 
           <div className="dom-detail-actions">
             <Button variant="ghost" onClick={() => onReplace(album)}>
-              Replace album
+              {t("daydetail.replaceAlbum")}
             </Button>
             {confirmRemove ? (
               <span className="dom-confirm">
-                <span className="dom-confirm-q">Remove from this day?</span>
+                <span className="dom-confirm-q">{t("daydetail.removeConfirm")}</span>
                 <Button
                   variant="danger"
                   // onRemove already closes the modal (handleRemove resets openAlbum).
                   onClick={() => onRemove(album.date)}
                 >
-                  Remove
+                  {t("action.remove")}
                 </Button>
                 <Button variant="ghost" onClick={() => setConfirmRemove(false)}>
-                  Cancel
+                  {t("action.cancel")}
                 </Button>
               </span>
             ) : (
               <Button variant="danger-ghost" onClick={() => setConfirmRemove(true)}>
-                Remove
+                {t("action.remove")}
               </Button>
             )}
           </div>

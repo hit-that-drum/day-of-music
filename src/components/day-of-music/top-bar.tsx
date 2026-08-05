@@ -1,16 +1,22 @@
 // top-bar.tsx — brand + screen navigation + header actions.
 
+"use client";
+
 import Link from "next/link";
 
 import type { ScreenId } from "@/components/day-of-music/day-of-music-app";
 import { BrandMark, Button, buttonClass } from "@/components/day-of-music/atoms";
+import { LanguageSwitch } from "@/components/day-of-music/language-switch";
+import { useT } from "@/lib/day-of-music/i18n";
 
-const SCREENS: { id: ScreenId; label: string; ko: string }[] = [
-  { id: "week", label: "Week", ko: "주간" },
-  { id: "month", label: "Month", ko: "월간" },
-  { id: "search", label: "Journal", ko: "저널" },
-  { id: "logs", label: "My Logs", ko: "나의 기록" },
-  { id: "profile", label: "Profile", ko: "프로필" },
+// Each screen's label comes from the message dictionary (nav.*), rendered in
+// the current language only.
+const SCREENS: { id: ScreenId; key: string }[] = [
+  { id: "week", key: "nav.week" },
+  { id: "month", key: "nav.month" },
+  { id: "search", key: "nav.journal" },
+  { id: "logs", key: "nav.logs" },
+  { id: "profile", key: "nav.profile" },
 ];
 
 type Account = { email: string; onSignOut: () => void };
@@ -30,12 +36,15 @@ export function TopBar({
   /** Show Sign in / Sign up links (guest mode). */
   showAuthLinks?: boolean;
 }) {
+  const t = useT();
+  const tagline = t("brand.tagline");
+
   return (
     <header className="dom-topbar">
       <Link href="/" className="dom-brand">
         <BrandMark />
         <span className="dom-brand-name">Day of Music</span>
-        <span className="dom-brand-ko">하루의 음악</span>
+        {tagline && <span className="dom-brand-ko">{tagline}</span>}
       </Link>
       <nav className="dom-nav">
         {SCREENS.map((s) => (
@@ -45,27 +54,27 @@ export function TopBar({
             data-active={screen === s.id ? "1" : "0"}
             onClick={() => onScreen(s.id)}
           >
-            <span className="dom-nav-label">{s.label}</span>
-            <span className="dom-nav-ko">{s.ko}</span>
+            <span className="dom-nav-label">{t(s.key)}</span>
           </button>
         ))}
       </nav>
       <div className="dom-topbar-actions">
+        <LanguageSwitch />
         <Button variant="ghost" data-dom-tweaks-trigger onClick={onTweaks}>
-          Tweaks
+          {t("tweaks.title")}
         </Button>
         {account && (
           <Button variant="ghost" onClick={account.onSignOut}>
-            Sign out
+            {t("actions.signOut")}
           </Button>
         )}
         {showAuthLinks && (
           <>
             <Link href="/signin" className={buttonClass("ghost")}>
-              Sign in
+              {t("actions.signIn")}
             </Link>
             <Link href="/signup" className={buttonClass("ghost")}>
-              Sign up
+              {t("actions.signUp")}
             </Link>
           </>
         )}

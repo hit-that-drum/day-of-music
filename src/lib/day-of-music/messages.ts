@@ -1,0 +1,699 @@
+// messages.ts — UI copy for the five supported languages (EN · KO · JP · CN · SP).
+// Key-first so each string's five translations sit together (easy to review and
+// spot gaps). Typed as Record<Locale, string> per key so a missing translation
+// is a compile error. `{name}` tokens are filled by translate() in i18n.ts.
+//
+// Scope: the always-visible app chrome — header, Tweaks panel, and the Profile
+// settings surface. Deeper flows (add-flow, day detail, share, auth, the
+// Profile modals/toasts) still carry their original copy and migrate to these
+// keys incrementally using the same t() calls.
+
+import type { Locale } from "@/lib/day-of-music/i18n";
+
+export const MESSAGES: Record<string, Record<Locale, string>> = {
+  // ── Header nav ──────────────────────────────────────────────────────────
+  "nav.week": { en: "Week", ko: "주간", ja: "週間", zh: "周", es: "Semana" },
+  "nav.month": { en: "Month", ko: "월간", ja: "月間", zh: "月", es: "Mes" },
+  "nav.journal": { en: "Journal", ko: "저널", ja: "ジャーナル", zh: "日志", es: "Diario" },
+  "nav.logs": { en: "My Logs", ko: "나의 기록", ja: "マイログ", zh: "我的记录", es: "Mis registros" },
+  "nav.profile": { en: "Profile", ko: "프로필", ja: "プロフィール", zh: "个人资料", es: "Perfil" },
+
+  // Brand subtitle under the wordmark. EN keeps just the wordmark (empty here).
+  "brand.tagline": { en: "", ko: "하루의 음악", ja: "一日の音楽", zh: "每日音乐", es: "Música del día" },
+
+  // ── Header actions ──────────────────────────────────────────────────────
+  "actions.signIn": { en: "Sign in", ko: "로그인", ja: "ログイン", zh: "登录", es: "Iniciar sesión" },
+  "actions.signUp": { en: "Sign up", ko: "회원가입", ja: "新規登録", zh: "注册", es: "Registrarse" },
+  "actions.signOut": { en: "Sign out", ko: "로그아웃", ja: "ログアウト", zh: "退出登录", es: "Cerrar sesión" },
+  "lang.label": { en: "Language", ko: "언어", ja: "言語", zh: "语言", es: "Idioma" },
+
+  // ── Guest banner ────────────────────────────────────────────────────────
+  "guest.banner": {
+    en: "Guest mode — your edits live only in this tab and reset when you leave. ",
+    ko: "게스트 모드 — 편집 내용은 이 탭에서만 유지되며 나가면 초기화됩니다. ",
+    ja: "ゲストモード — 編集内容はこのタブ内でのみ保持され、離れるとリセットされます。 ",
+    zh: "访客模式 — 你的修改仅在此标签页中有效，离开后会被重置。 ",
+    es: "Modo invitado: tus cambios solo existen en esta pestaña y se restablecen al salir. ",
+  },
+  "guest.signup": {
+    en: "Sign up to keep your journal",
+    ko: "가입하고 기록을 보관하세요",
+    ja: "登録して記録を保存",
+    zh: "注册以保存你的记录",
+    es: "Regístrate para conservar tu diario",
+  },
+
+  // ── Tweaks panel ────────────────────────────────────────────────────────
+  "tweaks.title": { en: "Tweaks", ko: "꾸미기", ja: "カスタマイズ", zh: "个性化", es: "Ajustes" },
+  "tweaks.aesthetic": { en: "Aesthetic", ko: "무드", ja: "スタイル", zh: "风格", es: "Estética" },
+  "tweaks.typography": { en: "Typography", ko: "타이포그래피", ja: "タイポグラフィ", zh: "字体", es: "Tipografía" },
+  "tweaks.theme": { en: "Theme", ko: "테마", ja: "テーマ", zh: "主题", es: "Tema" },
+  "tweaks.layout": { en: "Layout", ko: "레이아웃", ja: "レイアウト", zh: "布局", es: "Diseño" },
+  "tweaks.splitWeeks": {
+    en: "Split weeks by month",
+    ko: "주를 월 단위로 나누기",
+    ja: "週を月ごとに分割",
+    zh: "按月拆分周",
+    es: "Dividir semanas por mes",
+  },
+  "tweaks.on": { en: "On", ko: "켜짐", ja: "オン", zh: "开", es: "Sí" },
+  "tweaks.off": { en: "Off", ko: "꺼짐", ja: "オフ", zh: "关", es: "No" },
+  "tweaks.close": { en: "Close", ko: "닫기", ja: "閉じる", zh: "关闭", es: "Cerrar" },
+
+  // ── Profile: headings & sections ────────────────────────────────────────
+  "profile.kicker": { en: "profile", ko: "프로필", ja: "プロフィール", zh: "个人资料", es: "perfil" },
+  "profile.title": { en: "Profile", ko: "프로필", ja: "プロフィール", zh: "个人资料", es: "Perfil" },
+  "profile.section.account": { en: "Account", ko: "계정", ja: "アカウント", zh: "账户", es: "Cuenta" },
+  "profile.section.preferences": { en: "Preferences", ko: "환경설정", ja: "環境設定", zh: "偏好设置", es: "Preferencias" },
+  "profile.section.themes": { en: "Themes", ko: "테마", ja: "テーマ", zh: "主题", es: "Temas" },
+  "profile.section.sharedLinks": { en: "Shared links", ko: "공유 링크", ja: "共有リンク", zh: "分享链接", es: "Enlaces compartidos" },
+
+  // ── Profile: account rows ───────────────────────────────────────────────
+  "profile.email": { en: "Email", ko: "이메일", ja: "メール", zh: "邮箱", es: "Correo" },
+  "profile.signInRow": { en: "Sign-in", ko: "로그인 방식", ja: "サインイン", zh: "登录方式", es: "Inicio de sesión" },
+  "profile.status": { en: "Status", ko: "상태", ja: "ステータス", zh: "状态", es: "Estado" },
+  "profile.statusSignedIn": {
+    en: "Signed in · synced",
+    ko: "로그인됨 · 동기화됨",
+    ja: "サインイン済み · 同期済み",
+    zh: "已登录 · 已同步",
+    es: "Sesión iniciada · sincronizado",
+  },
+  "profile.guestNote": {
+    en: "You're browsing as a guest. Sign in to sync your logs and profile across devices.",
+    ko: "게스트로 둘러보는 중입니다. 로그인하면 기록과 프로필이 기기 간에 동기화됩니다.",
+    ja: "ゲストとして閲覧中です。サインインすると記録とプロフィールがデバイス間で同期されます。",
+    zh: "你正在以访客身份浏览。登录后可在各设备间同步记录和资料。",
+    es: "Estás navegando como invitado. Inicia sesión para sincronizar tus registros y perfil entre dispositivos.",
+  },
+  "profile.localNote": {
+    en: "Local mode — your settings are saved on this device only.",
+    ko: "로컬 모드 — 설정이 이 기기에만 저장됩니다.",
+    ja: "ローカルモード — 設定はこのデバイスにのみ保存されます。",
+    zh: "本地模式 — 设置仅保存在此设备上。",
+    es: "Modo local: tu configuración se guarda solo en este dispositivo.",
+  },
+
+  // ── Profile: preferences form ───────────────────────────────────────────
+  "profile.username": { en: "Username", ko: "사용자 이름", ja: "ユーザー名", zh: "用户名", es: "Nombre de usuario" },
+  "profile.storeCountry": { en: "Store country", ko: "스토어 국가", ja: "ストアの国", zh: "商店国家/地区", es: "País de la tienda" },
+  "profile.searchCountry": { en: "Search country", ko: "국가 검색", ja: "国を検索", zh: "搜索国家/地区", es: "Buscar país" },
+  "profile.save": { en: "Save changes", ko: "변경 사항 저장", ja: "変更を保存", zh: "保存更改", es: "Guardar cambios" },
+  "profile.settingsNote": {
+    en: "Shown as @{handle} on shared images. Music search checks the {country} store first, then the others. ",
+    ko: "공유 이미지에 @{handle}로 표시됩니다. 음악 검색은 {country} 스토어를 먼저 확인한 뒤 다른 스토어를 살펴봅니다. ",
+    ja: "共有画像に @{handle} として表示されます。音楽検索はまず {country} ストアを確認し、その後で他のストアを検索します。 ",
+    zh: "在分享图片中显示为 @{handle}。音乐搜索会先查询 {country} 商店，再查询其他商店。 ",
+    es: "Se muestra como @{handle} en las imágenes compartidas. La búsqueda de música consulta primero la tienda de {country} y luego las demás. ",
+  },
+  "profile.syncedNote": {
+    en: "Synced to your account.",
+    ko: "계정에 동기화됨.",
+    ja: "アカウントに同期済み。",
+    zh: "已同步到你的账户。",
+    es: "Sincronizado con tu cuenta.",
+  },
+  "profile.localSaveNote": {
+    en: "Saved on this device.",
+    ko: "이 기기에 저장됨.",
+    ja: "このデバイスに保存済み。",
+    zh: "已保存在此设备。",
+    es: "Guardado en este dispositivo.",
+  },
+
+  // ── Profile: account actions ────────────────────────────────────────────
+  "profile.changePassword": { en: "Change password", ko: "비밀번호 변경", ja: "パスワード変更", zh: "修改密码", es: "Cambiar contraseña" },
+  "profile.cancel": { en: "Cancel", ko: "취소", ja: "キャンセル", zh: "取消", es: "Cancelar" },
+  "profile.deleteAccount": { en: "Delete account", ko: "회원 탈퇴", ja: "アカウント削除", zh: "注销账户", es: "Eliminar cuenta" },
+
+  // ── Profile: theme manager ──────────────────────────────────────────────
+  "profile.themes.add": { en: "Add theme", ko: "테마 추가", ja: "テーマを追加", zh: "添加主题", es: "Añadir tema" },
+  "profile.themes.save": { en: "Save themes", ko: "테마 저장", ja: "テーマを保存", zh: "保存主题", es: "Guardar temas" },
+  "profile.themes.note": {
+    en: "Each theme is its own daily lane. {syncNote} Deleting one hides its entries without erasing them from the server.",
+    ko: "각 테마는 하나의 하루 레인입니다. {syncNote} 삭제해도 그 테마의 기록은 서버에서 지워지지 않고 숨겨집니다.",
+    ja: "各テーマは独立した日々のレーンです。{syncNote} 削除しても、そのテーマの記録はサーバーから消えず非表示になります。",
+    zh: "每个主题都是独立的每日轨道。{syncNote} 删除后其记录不会从服务器删除，只会被隐藏。",
+    es: "Cada tema es su propia franja diaria. {syncNote} Al eliminar uno, sus entradas se ocultan sin borrarlas del servidor.",
+  },
+
+  // ── Profile: shared links summary ───────────────────────────────────────
+  "profile.sharedLinks.manage": { en: "Manage links", ko: "공유 링크 관리", ja: "リンクを管理", zh: "管理链接", es: "Gestionar enlaces" },
+  "profile.sharedLinks.note": {
+    en: "View and manage all the share links you've created in one place.",
+    ko: "만든 공유 링크를 한곳에서 확인하고 관리할 수 있습니다.",
+    ja: "作成した共有リンクを一か所で確認・管理できます。",
+    zh: "在一处查看并管理你创建的所有分享链接。",
+    es: "Consulta y gestiona en un solo lugar todos los enlaces que has creado.",
+  },
+
+  // ── Shared aria labels (theme editor rows) ──────────────────────────────
+  "aria.themeEmoji": { en: "Theme emoji", ko: "테마 이모지", ja: "テーマの絵文字", zh: "主题表情", es: "Emoji del tema" },
+  "aria.themeName": { en: "Theme name", ko: "테마 이름", ja: "テーマ名", zh: "主题名称", es: "Nombre del tema" },
+  "aria.moveUp": { en: "Move up", ko: "위로 이동", ja: "上へ移動", zh: "上移", es: "Subir" },
+  "aria.moveDown": { en: "Move down", ko: "아래로 이동", ja: "下へ移動", zh: "下移", es: "Bajar" },
+  "aria.deleteTheme": { en: "Delete theme", ko: "테마 삭제", ja: "テーマを削除", zh: "删除主题", es: "Eliminar tema" },
+
+  // ── Best of Week (tournament) ───────────────────────────────────────────
+  "bow.button": { en: "Best of Week", ko: "이 주의 베스트", ja: "今週のベスト", zh: "本周最佳", es: "Mejor de la semana" },
+  "bow.title": { en: "Best of Week", ko: "이 주의 베스트", ja: "今週のベスト", zh: "本周最佳", es: "Mejor de la semana" },
+  "bow.choose": {
+    en: "How should the bracket run?",
+    ko: "토너먼트 방식을 골라주세요",
+    ja: "トーナメント方式を選んでください",
+    zh: "选择对战方式",
+    es: "¿Cómo se juega el torneo?",
+  },
+  "bow.sequential": { en: "Sequential", ko: "순차 토너먼트", ja: "順番トーナメント", zh: "顺序对战", es: "Secuencial" },
+  "bow.sequentialDesc": {
+    en: "Seed by day order — Mon vs Tue, Wed vs Thu, Fri vs Sat, Sun gets a bye.",
+    ko: "요일 순서대로 — 월vs화, 수vs목, 금vs토, 일요일은 부전승.",
+    ja: "曜日順 — 月vs火、水vs木、金vs土、日は不戦勝。",
+    zh: "按星期顺序 — 周一对周二、周三对周四、周五对周六，周日轮空。",
+    es: "Por orden de día — Lun vs Mar, Mié vs Jue, Vie vs Sáb, Dom con pase.",
+  },
+  "bow.random": { en: "Random", ko: "랜덤 토너먼트", ja: "ランダムトーナメント", zh: "随机对战", es: "Aleatorio" },
+  "bow.randomDesc": {
+    en: "Shuffle the days into random matchups.",
+    ko: "참가 날짜를 랜덤으로 섞어 대진합니다.",
+    ja: "参加日をランダムに組み合わせます。",
+    zh: "将参赛日期随机配对。",
+    es: "Baraja los días en enfrentamientos al azar.",
+  },
+  "bow.vs": { en: "VS", ko: "VS", ja: "VS", zh: "VS", es: "VS" },
+  "bow.pick": {
+    en: "Tap the day you liked more",
+    ko: "더 좋았던 하루를 선택하세요",
+    ja: "より良かった日を選んでください",
+    zh: "点选你更喜欢的一天",
+    es: "Toca el día que más te gustó",
+  },
+  "bow.final": { en: "Final", ko: "결승", ja: "決勝", zh: "决赛", es: "Final" },
+  "bow.semifinal": { en: "Semifinal", ko: "준결승", ja: "準決勝", zh: "半决赛", es: "Semifinal" },
+  "bow.round": { en: "Round {n}", ko: "{n}라운드", ja: "ラウンド{n}", zh: "第{n}轮", es: "Ronda {n}" },
+  "bow.progress": { en: "{cur} / {total}", ko: "{cur} / {total}", ja: "{cur} / {total}", zh: "{cur} / {total}", es: "{cur} / {total}" },
+  "bow.champion": { en: "Best of Week", ko: "이 주의 베스트", ja: "今週のベスト", zh: "本周最佳", es: "Mejor de la semana" },
+  "bow.redo": { en: "Start over", ko: "다시 하기", ja: "やり直す", zh: "重新开始", es: "Reiniciar" },
+  "bow.saveImage": { en: "Save image", ko: "이미지 저장", ja: "画像を保存", zh: "保存图片", es: "Guardar imagen" },
+  "bow.empty": {
+    en: "No albums logged this week.",
+    ko: "이 주에 기록된 앨범이 없어요.",
+    ja: "今週は記録された作品がありません。",
+    zh: "本周还没有记录的专辑。",
+    es: "No hay álbumes registrados esta semana.",
+  },
+  // Tooltip on the entry button once this week has a champion — the colour says
+  // "already played", this says who won.
+  "bow.doneHint": {
+    en: "Already played · {day} won",
+    ko: "이미 진행했어요 · {day}요일 우승",
+    ja: "すでに実施済み · {day}曜日が優勝",
+    zh: "已评选 · {day}获胜",
+    es: "Ya jugado · ganó el {day}",
+  },
+  // Shown while the week is still running — as a tooltip on hover, and as a
+  // toast on click, since a tap has no hover to fall back on. {day} is the
+  // segment's closing weekday (Sunday for a whole week).
+  "bow.lockedHint": {
+    en: "Opens on {day}, once this week is over.",
+    ko: "이 주의 마지막 날인 {day}요일부터 뽑을 수 있어요.",
+    ja: "この週の最終日（{day}曜日）から選べます。",
+    zh: "本周结束后，从最后一天（{day}）起可评选。",
+    es: "Disponible el {day}, cuando termine la semana.",
+  },
+  "bow.emptyHint": {
+    en: "Log at least two days to run a Best of Week.",
+    ko: "베스트를 뽑으려면 최소 이틀 이상 기록해 주세요.",
+    ja: "ベストを選ぶには2日以上の記録が必要です。",
+    zh: "至少记录两天才能评选本周最佳。",
+    es: "Registra al menos dos días para elegir la mejor.",
+  },
+
+  // ── Best of Month (tournament over the month's weekly champions) ────────
+  "bom.button": { en: "Best of Month", ko: "이 달의 베스트", ja: "今月のベスト", zh: "本月最佳", es: "Mejor del mes" },
+  "bom.title": { en: "Best of Month", ko: "이 달의 베스트", ja: "今月のベスト", zh: "本月最佳", es: "Mejor del mes" },
+  "bom.champion": { en: "Best of Month", ko: "이 달의 베스트", ja: "今月のベスト", zh: "本月最佳", es: "Mejor del mes" },
+  "bom.doneHint": {
+    en: "Already played · {date} won",
+    ko: "이미 진행했어요 · {date} 우승",
+    ja: "すでに実施済み · {date}が優勝",
+    zh: "已评选 · {date}获胜",
+    es: "Ya jugado · ganó el {date}",
+  },
+  "bom.lockedHint": {
+    en: "Opens on {date}, once this month is over.",
+    ko: "이 달의 마지막 날인 {date}부터 뽑을 수 있어요.",
+    ja: "今月の最終日（{date}）から選べます。",
+    zh: "本月结束后，从最后一天（{date}）起可评选。",
+    es: "Disponible el {date}, cuando termine el mes.",
+  },
+  "bom.pendingHint": {
+    en: "Pick the Best of Week for {n} more week(s) first.",
+    ko: "아직 뽑지 않은 주간 베스트가 {n}개 있어요. 주간을 먼저 마무리해 주세요.",
+    ja: "未確定の週間ベストが{n}件あります。先に週間を選んでください。",
+    zh: "还有 {n} 周的本周最佳未评选，请先完成周间评选。",
+    es: "Faltan {n} semana(s) por elegir su Mejor de la semana.",
+  },
+  "bom.empty": {
+    en: "No weekly champions this month.",
+    ko: "이 달에는 뽑을 주간 베스트가 없어요.",
+    ja: "今月は対象となる週間ベストがありません。",
+    zh: "本月没有可参赛的周最佳。",
+    es: "No hay ganadores semanales este mes.",
+  },
+  "bom.emptyHint": {
+    en: "Run a Best of Week first — its champions play for the month.",
+    ko: "주간 베스트를 먼저 뽑아주세요. 그 우승자들이 이 달의 베스트를 겨룹니다.",
+    ja: "先に週間ベストを選んでください。その優勝作品が今月のベストを競います。",
+    zh: "请先评选本周最佳，周冠军将角逐本月最佳。",
+    es: "Elige primero la Mejor de la semana: sus ganadores compiten por el mes.",
+  },
+
+  // ── Shared actions ──────────────────────────────────────────────────────
+  // Arrows/checkmarks stay in the JSX; only the word is translated.
+  "action.back": { en: "Back", ko: "뒤로", ja: "戻る", zh: "返回", es: "Atrás" },
+  "action.continue": { en: "Continue", ko: "계속", ja: "次へ", zh: "继续", es: "Continuar" },
+  "action.cancel": { en: "Cancel", ko: "취소", ja: "キャンセル", zh: "取消", es: "Cancelar" },
+  "action.remove": { en: "Remove", ko: "삭제", ja: "削除", zh: "移除", es: "Quitar" },
+
+  // ── Shared field labels (Add flow · Day detail) ─────────────────────────
+  "field.title": { en: "Title", ko: "제목", ja: "タイトル", zh: "标题", es: "Título" },
+  "field.artist": { en: "Artist", ko: "아티스트", ja: "アーティスト", zh: "艺人", es: "Artista" },
+  "field.genre": { en: "Genre", ko: "장르", ja: "ジャンル", zh: "流派", es: "Género" },
+  "field.year": { en: "Year", ko: "연도", ja: "年", zh: "年份", es: "Año" },
+  "field.note": { en: "Note", ko: "메모", ja: "メモ", zh: "备注", es: "Nota" },
+
+  // ── Shared aria labels (navigation · rating · day cells) ────────────────
+  "aria.prevWeek": { en: "Previous week", ko: "이전 주", ja: "前の週", zh: "上一周", es: "Semana anterior" },
+  "aria.nextWeek": { en: "Next week", ko: "다음 주", ja: "次の週", zh: "下一周", es: "Semana siguiente" },
+  "aria.prevMonth": { en: "Previous month", ko: "이전 달", ja: "前の月", zh: "上个月", es: "Mes anterior" },
+  "aria.nextMonth": { en: "Next month", ko: "다음 달", ja: "次の月", zh: "下个月", es: "Mes siguiente" },
+  "aria.rateStars": { en: "Rate {n} stars", ko: "별점 {n}점", ja: "{n}つ星で評価", zh: "评 {n} 星", es: "Calificar con {n} estrellas" },
+  "aria.starsN": { en: "{n} stars", ko: "별 {n}개", ja: "{n}つ星", zh: "{n} 星", es: "{n} estrellas" },
+  "aria.openAlbum": { en: "Open {title}", ko: "{title} 열기", ja: "{title}を開く", zh: "打开 {title}", es: "Abrir {title}" },
+  "aria.logForDate": {
+    en: "Log an album for {date}",
+    ko: "{date}에 앨범 기록",
+    ja: "{date}のアルバムを記録",
+    zh: "为 {date} 记录专辑",
+    es: "Registrar un álbum para {date}",
+  },
+
+  // ── Shared bits reused across screens ───────────────────────────────────
+  "common.today": { en: "TODAY", ko: "오늘", ja: "今日", zh: "今天", es: "HOY" },
+  "common.logShort": { en: "log", ko: "기록", ja: "記録", zh: "记录", es: "registrar" },
+  "common.fromAlbum": { en: "from 〈{title}〉", ko: "〈{title}〉 수록", ja: "〈{title}〉より", zh: "收录于〈{title}〉", es: "de 〈{title}〉" },
+  "common.noGenres": {
+    en: "No genres logged yet.",
+    ko: "아직 기록된 장르가 없어요.",
+    ja: "まだ記録されたジャンルがありません。",
+    zh: "还没有记录的流派。",
+    es: "Aún no hay géneros registrados.",
+  },
+
+  // ── Legal link labels ───────────────────────────────────────────────────
+  "legal.termsLink": { en: "Terms of Service", ko: "이용약관", ja: "利用規約", zh: "服务条款", es: "Términos del servicio" },
+  "legal.privacyLink": { en: "Privacy Policy", ko: "개인정보 처리방침", ja: "プライバシーポリシー", zh: "隐私政策", es: "Política de privacidad" },
+
+  // ── Add flow (log an album) ─────────────────────────────────────────────
+  "addflow.modalLabel": { en: "Log an album", ko: "앨범 기록", ja: "アルバムを記録", zh: "记录专辑", es: "Registrar un álbum" },
+  "addflow.eyebrow": { en: "log an album", ko: "새 앨범 기록", ja: "アルバムを記録", zh: "记录新专辑", es: "registrar un álbum" },
+  "addflow.step": { en: "Step {step} of 3", ko: "{step}/3 단계", ja: "ステップ {step}/3", zh: "第 {step}/3 步", es: "Paso {step} de 3" },
+  "addflow.findLabel": { en: "Find an album", ko: "앨범 찾기", ja: "アルバムを探す", zh: "查找专辑", es: "Buscar un álbum" },
+  "addflow.searchPlaceholder": {
+    en: "Title, artist, or paste an Apple Music link…",
+    ko: "제목, 아티스트, 또는 Apple Music 링크 붙여넣기…",
+    ja: "タイトル、アーティスト、または Apple Music リンクを貼り付け…",
+    zh: "标题、艺人，或粘贴 Apple Music 链接…",
+    es: "Título, artista o pega un enlace de Apple Music…",
+  },
+  "addflow.seeAll": { en: "See all results", ko: "전체 결과 보기", ja: "すべての結果を表示", zh: "查看全部结果", es: "Ver todos los resultados" },
+  "addflow.loadingMore": { en: "Loading more…", ko: "더 불러오는 중…", ja: "さらに読み込み中…", zh: "加载更多…", es: "Cargando más…" },
+  "addflow.readingLink": { en: "Reading link…", ko: "링크 읽는 중…", ja: "リンクを読み込み中…", zh: "正在读取链接…", es: "Leyendo el enlace…" },
+  "addflow.searching": { en: "Searching…", ko: "검색 중…", ja: "検索中…", zh: "搜索中…", es: "Buscando…" },
+  "addflow.linkError": {
+    en: "Couldn't read that link. Make sure it's an Apple Music album URL.",
+    ko: "링크를 읽지 못했어요. Apple Music 앨범 URL인지 확인해 주세요.",
+    ja: "リンクを読み込めませんでした。Apple Music のアルバム URL かご確認ください。",
+    zh: "无法读取该链接。请确认是 Apple Music 专辑网址。",
+    es: "No se pudo leer el enlace. Asegúrate de que sea una URL de álbum de Apple Music.",
+  },
+  "addflow.noMatches": {
+    en: "No matches. Try a different query.",
+    ko: "검색 결과가 없어요. 다른 검색어를 입력해 보세요.",
+    ja: "一致する結果がありません。別のキーワードをお試しください。",
+    zh: "没有匹配结果。请换个关键词试试。",
+    es: "Sin resultados. Prueba con otra búsqueda.",
+  },
+  "addflow.searchUnavailable": {
+    en: "Catalog search is unavailable right now.",
+    ko: "지금은 카탈로그 검색을 사용할 수 없어요.",
+    ja: "現在カタログ検索を利用できません。",
+    zh: "目前无法使用目录搜索。",
+    es: "La búsqueda del catálogo no está disponible ahora.",
+  },
+  "addflow.manualLink": {
+    en: "Not on Apple Music? Add it yourself",
+    ko: "Apple Music에 없나요? 직접 입력",
+    ja: "Apple Music にない場合は手動で追加",
+    zh: "不在 Apple Music 上？手动添加",
+    es: "¿No está en Apple Music? Agrégalo tú",
+  },
+  "addflow.manualBack": { en: "Back to search", ko: "검색으로 돌아가기", ja: "検索に戻る", zh: "返回搜索", es: "Volver a la búsqueda" },
+  "addflow.coverImage": {
+    en: "Cover image (optional)",
+    ko: "커버 이미지 (선택)",
+    ja: "カバー画像（任意）",
+    zh: "封面图片（可选）",
+    es: "Imagen de portada (opcional)",
+  },
+  "addflow.addPicture": { en: "Add a picture", ko: "사진 추가", ja: "画像を追加", zh: "添加图片", es: "Añadir una imagen" },
+  "addflow.coverPreview": { en: "Cover preview", ko: "커버 미리보기", ja: "カバープレビュー", zh: "封面预览", es: "Vista previa de la portada" },
+  "addflow.removePicture": { en: "Remove picture", ko: "사진 제거", ja: "画像を削除", zh: "移除图片", es: "Quitar imagen" },
+  "addflow.titlePlaceholder": {
+    en: "Song or album title",
+    ko: "곡 또는 앨범 제목",
+    ja: "曲またはアルバムのタイトル",
+    zh: "歌曲或专辑标题",
+    es: "Título de la canción o del álbum",
+  },
+  "addflow.artistPlaceholder": { en: "Artist name", ko: "아티스트 이름", ja: "アーティスト名", zh: "艺人名称", es: "Nombre del artista" },
+  "addflow.genrePlaceholder": {
+    en: "Genre, e.g. Pop, R&B, Indie Rock",
+    ko: "장르, 예: Pop, R&B, Indie Rock",
+    ja: "ジャンル（例：Pop, R&B, Indie Rock）",
+    zh: "流派，例如 Pop、R&B、Indie Rock",
+    es: "Género, p. ej. Pop, R&B, Indie Rock",
+  },
+  "addflow.pickDays": {
+    en: "Pick one or more days",
+    ko: "하루 이상 선택 (여러 날 가능)",
+    ja: "1日以上を選択（複数可）",
+    zh: "选择一天或多天",
+    es: "Elige uno o más días",
+  },
+  "addflow.daySelected": {
+    en: "1 day selected · {date}",
+    ko: "1일 선택됨 · {date}",
+    ja: "1日選択 · {date}",
+    zh: "已选 1 天 · {date}",
+    es: "1 día seleccionado · {date}",
+  },
+  "addflow.daysSelected": {
+    en: "{count} days selected",
+    ko: "{count}일 선택됨",
+    ja: "{count}日選択",
+    zh: "已选 {count} 天",
+    es: "{count} días seleccionados",
+  },
+  "addflow.yourRating": { en: "Your rating", ko: "나의 별점", ja: "あなたの評価", zh: "你的评分", es: "Tu valoración" },
+  "addflow.notePlaceholder": {
+    en: "A line you'll want to remember…",
+    ko: "기억하고 싶은 한 줄…",
+    ja: "覚えておきたい一言…",
+    zh: "想要记住的一句话…",
+    es: "Una línea que querrás recordar…",
+  },
+  "addflow.saveEntry": { en: "Save entry", ko: "기록 저장", ja: "記録を保存", zh: "保存记录", es: "Guardar registro" },
+  "addflow.pickTrack": {
+    en: "Log the album, or pick a track",
+    ko: "앨범 기록 또는 트랙 선택",
+    ja: "アルバムを記録、または曲を選択",
+    zh: "记录整张专辑，或选择单曲",
+    es: "Registra el álbum o elige una pista",
+  },
+  "addflow.loadingTracks": { en: "Loading tracks…", ko: "트랙 불러오는 중…", ja: "トラックを読み込み中…", zh: "加载曲目中…", es: "Cargando pistas…" },
+  "addflow.tracksError": {
+    en: "Couldn't load this album's tracks.",
+    ko: "이 앨범의 트랙을 불러오지 못했어요.",
+    ja: "このアルバムのトラックを読み込めませんでした。",
+    zh: "无法加载该专辑的曲目。",
+    es: "No se pudieron cargar las pistas de este álbum.",
+  },
+
+  // ── Day detail ──────────────────────────────────────────────────────────
+  "daydetail.modalLabel": { en: "{title} detail", ko: "{title} 상세", ja: "{title} の詳細", zh: "{title} 详情", es: "Detalle de {title}" },
+  "daydetail.eyebrowTrack": { en: "track of the day", ko: "오늘의 곡", ja: "今日の曲", zh: "每日单曲", es: "pista del día" },
+  "daydetail.eyebrowAlbum": { en: "album of the day", ko: "오늘의 앨범", ja: "今日のアルバム", zh: "每日专辑", es: "álbum del día" },
+  "daydetail.tabTracklist": { en: "Tracklist", ko: "트랙리스트", ja: "トラックリスト", zh: "曲目", es: "Lista de pistas" },
+  "daydetail.tabJournal": { en: "Journal", ko: "저널", ja: "ジャーナル", zh: "日志", es: "Diario" },
+  "daydetail.tabInfo": { en: "Info", ko: "정보", ja: "情報", zh: "信息", es: "Info" },
+  "daydetail.singleTrack": { en: "Single track.", ko: "단일 곡.", ja: "シングルトラック。", zh: "单曲。", es: "Pista individual." },
+  "daydetail.singleTrackFrom": {
+    en: "Single track from {title}.",
+    ko: "〈{title}〉 수록 단일 곡.",
+    ja: "〈{title}〉収録のシングルトラック。",
+    zh: "单曲，收录于 {title}。",
+    es: "Pista individual de {title}.",
+  },
+  "daydetail.loadingTracklist": { en: "Loading tracklist…", ko: "트랙리스트 불러오는 중…", ja: "トラックリストを読み込み中…", zh: "加载曲目中…", es: "Cargando la lista de pistas…" },
+  "daydetail.noTracklist": {
+    en: "No tracklist for this album.",
+    ko: "이 앨범의 트랙리스트가 없어요.",
+    ja: "このアルバムのトラックリストはありません。",
+    zh: "此专辑没有曲目列表。",
+    es: "No hay lista de pistas para este álbum.",
+  },
+  "daydetail.loggedOn": { en: "Logged on", ko: "기록한 날", ja: "記録した日", zh: "记录日期", es: "Registrado el" },
+  "daydetail.notePlaceholder": { en: "Write a note…", ko: "메모 작성…", ja: "メモを書く…", zh: "写点备注…", es: "Escribe una nota…" },
+  "daydetail.saved": { en: "Saved ✓", ko: "저장됨 ✓", ja: "保存しました ✓", zh: "已保存 ✓", es: "Guardado ✓" },
+  "daydetail.saveNote": { en: "Save note", ko: "메모 저장", ja: "メモを保存", zh: "保存备注", es: "Guardar nota" },
+  "daydetail.saveInfo": { en: "Save info", ko: "정보 저장", ja: "情報を保存", zh: "保存信息", es: "Guardar info" },
+  "daydetail.released": { en: "Released", ko: "발매일", ja: "リリース日", zh: "发行", es: "Lanzamiento" },
+  "daydetail.format": { en: "Format", ko: "포맷", ja: "フォーマット", zh: "格式", es: "Formato" },
+  "daydetail.type": { en: "Type", ko: "유형", ja: "タイプ", zh: "类型", es: "Tipo" },
+  "daydetail.trackValue": { en: "Track", ko: "곡", ja: "曲", zh: "单曲", es: "Pista" },
+  "daydetail.fromAlbumLabel": { en: "From album", ko: "수록 앨범", ja: "収録アルバム", zh: "所属专辑", es: "Del álbum" },
+  "daydetail.tracks": { en: "Tracks", ko: "트랙 수", ja: "トラック数", zh: "曲目数", es: "Pistas" },
+  "daydetail.reviseInfo": { en: "Revise info", ko: "정보 수정", ja: "情報を編集", zh: "修改信息", es: "Editar info" },
+  "daydetail.replaceAlbum": { en: "Replace album", ko: "앨범 교체", ja: "アルバムを差し替え", zh: "替换专辑", es: "Reemplazar álbum" },
+  "daydetail.removeConfirm": { en: "Remove from this day?", ko: "이 날에서 삭제할까요?", ja: "この日から削除しますか？", zh: "从这一天移除？", es: "¿Quitar de este día?" },
+
+  // ── Weekly grid ─────────────────────────────────────────────────────────
+  "week.eyebrow": { en: "weekly view", ko: "주간 큐레이션", ja: "週間ビュー", zh: "每周视图", es: "vista semanal" },
+  "week.jumpTitle": { en: "Jump to a week", ko: "주 선택", ja: "週を選択", zh: "跳转到某周", es: "Ir a una semana" },
+  "week.weekN": { en: "Week {n}", ko: "{n}주차", ja: "第{n}週", zh: "第 {n} 周", es: "Semana {n}" },
+  "week.curation": { en: "curation", ko: "큐레이션", ja: "キュレーション", zh: "精选", es: "curación" },
+  "week.shareWeek": { en: "Share week", ko: "이 주 공유", ja: "今週を共有", zh: "分享本周", es: "Compartir semana" },
+
+  // ── Monthly view ────────────────────────────────────────────────────────
+  "month.eyebrow": {
+    en: "{month} in listening",
+    ko: "{month} 한 달의 청음",
+    ja: "{month}のリスニング",
+    zh: "{month}的聆听",
+    es: "escuchando en {month}",
+  },
+  "month.thisMonth": { en: "This month", ko: "이번 달", ja: "今月", zh: "本月", es: "Este mes" },
+  "month.shareMonth": { en: "Share month", ko: "이달 공유", ja: "今月を共有", zh: "分享本月", es: "Compartir mes" },
+  "month.avgRating": { en: "avg rating", ko: "평균 별점", ja: "平均評価", zh: "平均评分", es: "valoración media" },
+  "month.albumsLogged": { en: "albums logged", ko: "기록한 앨범", ja: "記録したアルバム", zh: "已记录专辑", es: "álbumes registrados" },
+  "month.ofMonth": { en: "of the month", ko: "한 달 중", ja: "今月のうち", zh: "本月占比", es: "del mes" },
+  "month.genres": { en: "genres", ko: "장르", ja: "ジャンル", zh: "流派", es: "géneros" },
+
+  // ── Journal search ──────────────────────────────────────────────────────
+  "journal.eyebrow": { en: "journal", ko: "저널", ja: "ジャーナル", zh: "日志", es: "diario" },
+  "journal.title": { en: "Journal search", ko: "저널 검색", ja: "ジャーナル検索", zh: "日志搜索", es: "Búsqueda del diario" },
+  "journal.searchPlaceholder": {
+    en: "Search titles, artists, notes, dates…",
+    ko: "제목, 아티스트, 메모, 날짜 검색…",
+    ja: "タイトル・アーティスト・メモ・日付を検索…",
+    zh: "搜索标题、艺人、备注、日期…",
+    es: "Busca títulos, artistas, notas, fechas…",
+  },
+  "journal.noMatches": {
+    en: "No matches. Try clearing filters.",
+    ko: "결과가 없어요. 필터를 지워보세요.",
+    ja: "一致する結果がありません。フィルターを解除してみてください。",
+    zh: "没有匹配结果。请尝试清除筛选。",
+    es: "Sin resultados. Prueba a quitar los filtros.",
+  },
+
+  // ── Profile · Year in Music ─────────────────────────────────────────────
+  "stats.eyebrow": { en: "{year} in listening", ko: "{year} 한 해의 청음", ja: "{year}のリスニング", zh: "{year}聆听记录", es: "{year} en escucha" },
+  "stats.title": { en: "My Year in Music", ko: "나의 음악 한 해", ja: "私の音楽の一年", zh: "我的音乐年度", es: "Mi año en música" },
+  "stats.shareCard": { en: "Share card", ko: "카드 공유", ja: "カードを共有", zh: "分享卡片", es: "Compartir tarjeta" },
+  "stats.albumsLogged": { en: "albums logged", ko: "기록한 앨범", ja: "記録したアルバム", zh: "已记录专辑", es: "álbumes registrados" },
+  "stats.acrossLanes": {
+    en: "across {lanes} · {days} days",
+    ko: "{lanes} · {days}일",
+    ja: "{lanes} · {days}日",
+    zh: "跨 {lanes} · {days} 天",
+    es: "en {lanes} · {days} días",
+  },
+  "stats.themeLane": { en: "{n} theme lane", ko: "테마 레인 {n}개", ja: "テーマレーン {n}本", zh: "{n} 个主题轨", es: "{n} carril temático" },
+  "stats.themeLanes": { en: "{n} theme lanes", ko: "테마 레인 {n}개", ja: "テーマレーン {n}本", zh: "{n} 个主题轨", es: "{n} carriles temáticos" },
+  "stats.avgRatingFull": { en: "average rating", ko: "평균 별점", ja: "平均評価", zh: "平均评分", es: "valoración media" },
+  "stats.fivePicks": { en: "five-star picks", ko: "별 다섯 앨범", ja: "5つ星の作品", zh: "五星精选", es: "selecciones de 5 estrellas" },
+  "stats.percentCatalog": { en: "{pct}% of catalog", ko: "전체의 {pct}%", ja: "全体の{pct}%", zh: "占目录 {pct}%", es: "{pct}% del catálogo" },
+  "stats.topGenres": { en: "top 10 genres", ko: "상위 10개 장르", ja: "トップ10ジャンル", zh: "前 10 大流派", es: "10 géneros principales" },
+  "stats.byTheme": { en: "By theme", ko: "테마별", ja: "テーマ別", zh: "按主题", es: "Por tema" },
+  "stats.themeCountOne": { en: "{n} theme", ko: "테마 {n}개", ja: "テーマ {n}件", zh: "{n} 个主题", es: "{n} tema" },
+  "stats.themeCount": { en: "{n} themes", ko: "테마 {n}개", ja: "テーマ {n}件", zh: "{n} 个主题", es: "{n} temas" },
+  "stats.themeAnalysis": { en: "theme analysis", ko: "테마 분석", ja: "テーマ分析", zh: "主题分析", es: "análisis del tema" },
+  "stats.logsCount": { en: "{n} logs", ko: "기록 {n}개", ja: "{n}件の記録", zh: "{n} 条记录", es: "{n} registros" },
+  "stats.noLogs": { en: "No logs yet", ko: "아직 기록 없음", ja: "まだ記録なし", zh: "暂无记录", es: "Aún sin registros" },
+
+  // ── Auth (sign in · sign up) ────────────────────────────────────────────
+  "auth.signin.eyebrow": { en: "sign in", ko: "로그인", ja: "サインイン", zh: "登录", es: "iniciar sesión" },
+  "auth.signin.title": { en: "Welcome back", ko: "다시 오셨네요", ja: "おかえりなさい", zh: "欢迎回来", es: "Bienvenido de nuevo" },
+  "auth.signin.sub": {
+    en: "Sign in to keep your journal across devices.",
+    ko: "로그인하면 기기 간에 기록이 유지됩니다.",
+    ja: "サインインすると記録がデバイス間で保持されます。",
+    zh: "登录后可在各设备间保存你的记录。",
+    es: "Inicia sesión para conservar tu diario en todos tus dispositivos.",
+  },
+  "auth.signin.cta": { en: "Sign in", ko: "로그인", ja: "サインイン", zh: "登录", es: "Iniciar sesión" },
+  "auth.signin.altText": { en: "New here?", ko: "처음이신가요?", ja: "はじめてですか？", zh: "第一次来？", es: "¿Nuevo por aquí?" },
+  "auth.signin.altCta": { en: "Create an account", ko: "계정 만들기", ja: "アカウントを作成", zh: "创建账户", es: "Crear una cuenta" },
+  "auth.signup.eyebrow": { en: "sign up", ko: "가입", ja: "新規登録", zh: "注册", es: "registro" },
+  "auth.signup.title": { en: "Start your journal", ko: "기록을 시작하세요", ja: "記録を始めよう", zh: "开始你的日志", es: "Empieza tu diario" },
+  "auth.signup.sub": {
+    en: "One album a day. Your year in listening, saved to your account.",
+    ko: "하루 한 장. 한 해의 청음이 계정에 저장됩니다.",
+    ja: "1日1枚。1年間のリスニングをアカウントに保存。",
+    zh: "每天一张专辑。你的年度聆听记录保存到账户。",
+    es: "Un álbum al día. Tu año de escucha, guardado en tu cuenta.",
+  },
+  "auth.signup.cta": { en: "Create account", ko: "계정 만들기", ja: "アカウントを作成", zh: "创建账户", es: "Crear cuenta" },
+  "auth.signup.altText": {
+    en: "Already have an account?",
+    ko: "이미 계정이 있으신가요?",
+    ja: "すでにアカウントをお持ちですか？",
+    zh: "已有账户？",
+    es: "¿Ya tienes una cuenta?",
+  },
+  "auth.signup.altCta": { en: "Sign in", ko: "로그인", ja: "サインイン", zh: "登录", es: "Iniciar sesión" },
+  "auth.pwRequirements": {
+    en: "Please meet the password requirements below.",
+    ko: "아래 비밀번호 조건을 충족해 주세요.",
+    ja: "下記のパスワード要件を満たしてください。",
+    zh: "请满足下方的密码要求。",
+    es: "Cumple los requisitos de contraseña de abajo.",
+  },
+  "auth.accountCreated": {
+    en: "Account created. If {email} needs confirmation, check your inbox.",
+    ko: "계정이 생성되었어요. {email} 확인이 필요하면 메일함을 확인하세요.",
+    ja: "アカウントを作成しました。{email} の確認が必要な場合はメールをご確認ください。",
+    zh: "账户已创建。如果 {email} 需要确认，请查收邮件。",
+    es: "Cuenta creada. Si {email} necesita confirmación, revisa tu bandeja.",
+  },
+  "auth.passwordPlaceholder": { en: "Password", ko: "비밀번호", ja: "パスワード", zh: "密码", es: "Contraseña" },
+  "auth.pwRulesAria": { en: "Password requirements", ko: "비밀번호 조건", ja: "パスワード要件", zh: "密码要求", es: "Requisitos de contraseña" },
+  "auth.met": { en: "(met)", ko: "(충족)", ja: "（満たしています）", zh: "（已满足）", es: "(cumplido)" },
+  "auth.notMet": { en: "(not met)", ko: "(미충족)", ja: "（未達成）", zh: "（未满足）", es: "(no cumplido)" },
+  "auth.oneMoment": { en: "One moment…", ko: "잠시만요…", ja: "少々お待ちください…", zh: "请稍候…", es: "Un momento…" },
+  "auth.or": { en: "or", ko: "또는", ja: "または", zh: "或", es: "o" },
+  "auth.google": { en: "Continue with Google", ko: "Google로 계속", ja: "Google で続ける", zh: "使用 Google 继续", es: "Continuar con Google" },
+  "auth.kakao": { en: "Continue with Kakao", ko: "카카오로 계속", ja: "Kakao で続ける", zh: "使用 Kakao 继续", es: "Continuar con Kakao" },
+  "auth.guestContinue": { en: "Continue as guest", ko: "게스트로 계속", ja: "ゲストとして続ける", zh: "以访客身份继续", es: "Continuar como invitado" },
+  "auth.terms": {
+    en: "By creating an account, you agree to Day of Music's {terms} and can review the {privacy}.",
+    ko: "계정을 만들면 Day of Music {terms}에 동의하는 것으로 보며, {privacy}을 확인할 수 있습니다.",
+    ja: "アカウントを作成すると、Day of Music の{terms}に同意したものとみなされ、{privacy}をご確認いただけます。",
+    zh: "创建账户即表示你同意 Day of Music 的{terms}，并可查看{privacy}。",
+    es: "Al crear una cuenta, aceptas los {terms} de Day of Music y puedes consultar la {privacy}.",
+  },
+
+  // ── Password rules (rendered by id: pw.<rule.id>) ───────────────────────
+  "pw.length": { en: "At least 8 characters", ko: "8자 이상", ja: "8文字以上", zh: "至少 8 个字符", es: "Al menos 8 caracteres" },
+  "pw.letter": { en: "Contains a letter", ko: "문자 포함", ja: "文字を含む", zh: "包含字母", es: "Contiene una letra" },
+  "pw.number": { en: "Contains a number", ko: "숫자 포함", ja: "数字を含む", zh: "包含数字", es: "Contiene un número" },
+
+  // ── Home landing ────────────────────────────────────────────────────────
+  "home.eyebrow": { en: "one album a day", ko: "하루 한 장의 음악", ja: "1日1枚の音楽", zh: "每天一张专辑", es: "un álbum al día" },
+  "home.title": {
+    en: "Your week,\nset to music.",
+    ko: "당신의 한 주를\n음악으로.",
+    ja: "あなたの一週間を\n音楽で。",
+    zh: "用音乐\n谱写你的一周。",
+    es: "Tu semana,\nen música.",
+  },
+  "home.sub": {
+    en: "Log one album a day, rate it, write a line you'll want to remember — then share your week as a single image. Search the whole catalog, or just browse what you've logged.",
+    ko: "하루 한 장의 앨범을 기록하고 별점을 매기고, 기억하고 싶은 한 줄을 남기세요 — 그리고 한 주를 한 장의 이미지로 공유하세요. 전체 카탈로그를 검색하거나 기록한 앨범만 둘러볼 수도 있어요.",
+    ja: "1日1枚アルバムを記録して評価し、覚えておきたい一言を添えましょう。そして1週間を1枚の画像で共有。カタログ全体を検索したり、記録した分だけを見返すこともできます。",
+    zh: "每天记录一张专辑，为它评分，写下想记住的一句话 —— 然后把这一周分享为一张图片。你可以搜索整个目录，也可以只浏览已记录的内容。",
+    es: "Registra un álbum al día, puntúalo y escribe una línea que querrás recordar; luego comparte tu semana como una sola imagen. Busca en todo el catálogo o revisa solo lo que has registrado.",
+  },
+  "home.openBoard": { en: "Open the week board", ko: "주간 보드 열기", ja: "ウィークボードを開く", zh: "打开每周面板", es: "Abrir el tablero semanal" },
+  "home.createAccount": { en: "Create an account", ko: "계정 만들기", ja: "アカウントを作成", zh: "创建账户", es: "Crear una cuenta" },
+  "home.note": {
+    en: "No account needed to try it — but guest edits vanish when you leave. Sign up to keep your journal.",
+    ko: "계정 없이 바로 사용해 볼 수 있어요 — 다만 게스트 편집은 나가면 사라집니다. 가입하면 기록이 보관돼요.",
+    ja: "アカウントなしで試せます。ただしゲストの編集は離れると消えます。登録すれば記録を保存できます。",
+    zh: "无需账户即可试用 —— 但访客的修改在离开后会消失。注册即可保存你的记录。",
+    es: "No necesitas cuenta para probarlo, pero los cambios de invitado desaparecen al salir. Regístrate para conservar tu diario.",
+  },
+  "home.legalAria": { en: "Legal", ko: "법적 고지", ja: "法的情報", zh: "法律信息", es: "Aviso legal" },
+  "home.report": {
+    en: "Report an issue or suggestion",
+    ko: "문제 신고 및 개선 의견",
+    ja: "問題の報告・改善のご意見",
+    zh: "反馈问题或建议",
+    es: "Informar de un problema o sugerencia",
+  },
+  "home.reportAria": {
+    en: "Send an issue report or suggestion by email",
+    ko: "이메일로 문제 신고 또는 개선 의견 보내기",
+    ja: "メールで問題の報告や改善のご意見を送る",
+    zh: "通过邮件反馈问题或建议",
+    es: "Enviar un informe o sugerencia por correo",
+  },
+  "home.reportTitle": {
+    en: "Send feedback or a suggestion",
+    ko: "불편 사항이나 개선 의견 보내기",
+    ja: "ご不便な点や改善のご意見を送る",
+    zh: "发送反馈或建议",
+    es: "Enviar comentarios o sugerencias",
+  },
+
+  // ── Share actions (link + confirm modal + toasts) ───────────────────────
+  "share.createLink": { en: "Create public link", ko: "공개 링크 만들기", ja: "公開リンクを作成", zh: "创建公开链接", es: "Crear enlace público" },
+  "share.signInToShare": { en: "Sign in to share", ko: "공유하려면 로그인", ja: "共有するにはサインイン", zh: "登录后分享", es: "Inicia sesión para compartir" },
+  "share.saveImage": { en: "Save image", ko: "이미지 저장", ja: "画像を保存", zh: "保存图片", es: "Guardar imagen" },
+  "share.guestWarning": {
+    en: "Guest share links can't be deleted or revoked. Anyone with the link can view it.",
+    ko: "게스트 공유 링크는 삭제하거나 회수할 수 없습니다. 링크를 받은 누구나 열람할 수 있습니다.",
+    ja: "ゲストの共有リンクは削除・取り消しできません。リンクを知っている人は誰でも閲覧できます。",
+    zh: "访客分享链接无法删除或撤回。任何拥有链接的人都可查看。",
+    es: "Los enlaces de invitado no se pueden eliminar ni revocar. Cualquiera con el enlace puede verlo.",
+  },
+  "share.confirmModalLabel": { en: "Confirm public link creation", ko: "공개 링크 생성 확인", ja: "公開リンク作成の確認", zh: "确认创建公开链接", es: "Confirmar creación de enlace público" },
+  "share.publicLinkLabel": { en: "public link", ko: "공개 링크", ja: "公開リンク", zh: "公开链接", es: "enlace público" },
+  "share.confirmTitle": { en: "Create a public link?", ko: "공개 링크를 만들까요?", ja: "公開リンクを作成しますか？", zh: "要创建公开链接吗？", es: "¿Crear un enlace público?" },
+  "share.confirmBody": {
+    en: "Your nickname, music logs, ratings and theme names will be visible to anyone with the link. Your email and journal notes are not included.",
+    ko: "닉네임, 음악 기록, 평점 및 테마명이 링크를 받은 사람에게 공개됩니다. 이메일과 감상 메모는 포함되지 않습니다.",
+    ja: "ニックネーム、音楽の記録、評価、テーマ名がリンクを受け取った人に公開されます。メールアドレスと感想メモは含まれません。",
+    zh: "你的昵称、音乐记录、评分和主题名称将对拥有链接的人可见。不包含你的邮箱和感想备注。",
+    es: "Tu apodo, registros de música, valoraciones y nombres de tema serán visibles para cualquiera con el enlace. No se incluyen tu correo ni tus notas.",
+  },
+  "share.signedInLinkTitle": { en: "Signed-in link", ko: "로그인 사용자 링크", ja: "サインインユーザーのリンク", zh: "登录用户链接", es: "Enlace de usuario registrado" },
+  "share.signedInLinkNote": {
+    en: "The link expires after 90 days and can be deleted anytime from your profile.",
+    ko: "링크는 90일 후 만료되며 프로필에서 언제든 삭제할 수 있습니다.",
+    ja: "リンクは90日後に期限切れになり、プロフィールからいつでも削除できます。",
+    zh: "链接将在 90 天后过期，可随时在个人资料中删除。",
+    es: "El enlace caduca a los 90 días y puedes eliminarlo cuando quieras desde tu perfil.",
+  },
+  "share.guestLinkTitle": { en: "Guest link", ko: "게스트 링크", ja: "ゲストリンク", zh: "访客链接", es: "Enlace de invitado" },
+  "share.guestLinkNote": {
+    en: "Anyone with the link can view it, and it can't be deleted or revoked once created.",
+    ko: "링크를 받은 누구나 열람할 수 있으며, 생성 후에는 삭제하거나 회수할 수 없습니다.",
+    ja: "リンクを知っている人は誰でも閲覧でき、作成後は削除・取り消しできません。",
+    zh: "任何拥有链接的人都可查看，创建后无法删除或撤回。",
+    es: "Cualquiera con el enlace puede verlo y no se puede eliminar ni revocar una vez creado.",
+  },
+  "share.creating": { en: "Creating…", ko: "생성 중…", ja: "作成中…", zh: "创建中…", es: "Creando…" },
+  "share.createCopy": { en: "Create & copy", ko: "생성 후 복사", ja: "作成してコピー", zh: "创建并复制", es: "Crear y copiar" },
+  "share.toastCopied": { en: "Link copied", ko: "링크를 복사했어요", ja: "リンクをコピーしました", zh: "已复制链接", es: "Enlace copiado" },
+  "share.toastError": { en: "Couldn't create share link", ko: "공유 링크를 만들지 못했어요", ja: "共有リンクを作成できませんでした", zh: "无法创建分享链接", es: "No se pudo crear el enlace" },
+
+  // ── Toasts (journal log / remove) ───────────────────────────────────────
+  "toast.removed": { en: "Removed from your journal", ko: "저널에서 삭제했어요", ja: "ジャーナルから削除しました", zh: "已从日志中移除", es: "Eliminado de tu diario" },
+  "toast.logged": { en: "Logged {title}", ko: "{title} 기록됨", ja: "{title} を記録しました", zh: "已记录 {title}", es: "Registrado: {title}" },
+  "toast.loggedDaysDesc": { en: "{count} days · {rating}★", ko: "{count}일 · {rating}★", ja: "{count}日 · {rating}★", zh: "{count} 天 · {rating}★", es: "{count} días · {rating}★" },
+  "toast.loggedDateDesc": { en: "{date} · {rating}★", ko: "{date} · {rating}★", ja: "{date} · {rating}★", zh: "{date} · {rating}★", es: "{date} · {rating}★" },
+};

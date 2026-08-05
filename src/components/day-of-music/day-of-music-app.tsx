@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { addDays, fmtDate, formatDisplayDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
 import { useCountry } from "@/lib/day-of-music/profile";
+import { useLanguage, useT } from "@/lib/day-of-music/i18n";
 import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
 import { useActiveTheme } from "@/lib/day-of-music/themes";
 import { useAuth } from "@/components/day-of-music/auth-provider";
@@ -28,6 +29,8 @@ import { ProfilePage } from "@/components/day-of-music/profile-page";
 import { SearchView } from "@/components/day-of-music/search-view";
 import { ShareCard } from "@/components/day-of-music/share-card";
 import { MonthShareCard } from "@/components/day-of-music/month-share-card";
+import { BestOfWeekModal } from "@/components/day-of-music/best-of-week-modal";
+import { BestOfMonthModal } from "@/components/day-of-music/best-of-month-modal";
 import { ThemeTabs } from "@/components/day-of-music/theme-tabs";
 import { TopBar } from "@/components/day-of-music/top-bar";
 import { TweaksPanel, type Tweaks } from "@/components/day-of-music/tweaks-panel";
@@ -120,6 +123,9 @@ export function DayOfMusicApp() {
   // Storefront country drives date formatting so every displayed date matches
   // the listener's locale (see formatDisplayDate).
   const country = useCountry();
+  // Effective UI language (derived from the language preference / country).
+  const { locale } = useLanguage();
+  const t = useT();
 
   // Persisted across reloads via localStorage (see the store helpers above).
   const tweaks = useSyncExternalStore(
@@ -139,6 +145,8 @@ export function DayOfMusicApp() {
   const [replaceTarget, setReplaceTarget] = useState<string | null>(null);
   const [showShare, setShowShare] = useState(false);
   const [showMonthShare, setShowMonthShare] = useState(false);
+  const [showBestOf, setShowBestOf] = useState(false);
+  const [showBestOfMonth, setShowBestOfMonth] = useState(false);
   const [showTweaks, setShowTweaks] = useState(false);
 
   // Single place that dismisses every overlay + resets the transient add/replace
@@ -149,6 +157,8 @@ export function DayOfMusicApp() {
     setShowAdd(false);
     setShowShare(false);
     setShowMonthShare(false);
+    setShowBestOf(false);
+    setShowBestOfMonth(false);
     setShowTweaks(false);
     setReplaceTarget(null);
   }, []);
@@ -166,6 +176,13 @@ export function DayOfMusicApp() {
   useEffect(() => {
     applyTheme(rootRef.current, tweaks.aesthetic, tweaks.typography);
   }, [tweaks.aesthetic, tweaks.typography]);
+
+  // Reflect the active language on <html lang> for a11y/SEO. The layout renders
+  // lang="en" server-side (matching the DEFAULT_LOCALE snapshot); this updates
+  // it once the client resolves the stored preference.
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   // Monday of the anchor's ISO week, and the full Mon–Sun strip.
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
@@ -220,7 +237,15 @@ export function DayOfMusicApp() {
   // Keyboard nav: Esc closes modal; ←/→ change week when nothing is open.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (openAlbum || showAdd || showShare || showMonthShare || showTweaks) {
+      if (
+        openAlbum ||
+        showAdd ||
+        showShare ||
+        showMonthShare ||
+        showBestOf ||
+        showBestOfMonth ||
+        showTweaks
+      ) {
         if (e.key === "Escape") closeAll();
         return;
       }
@@ -235,7 +260,7 @@ export function DayOfMusicApp() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openAlbum, showAdd, showShare, showMonthShare, showTweaks, screen, prevWeek, nextWeek, prevMonth, nextMonth, closeAll]);
+  }, [openAlbum, showAdd, showShare, showMonthShare, showBestOf, showBestOfMonth, showTweaks, screen, prevWeek, nextWeek, prevMonth, nextMonth, closeAll]);
 
   const handleOpen = useCallback(
     (album: Album | JournalAlbum) => {
@@ -276,9 +301,9 @@ export function DayOfMusicApp() {
     (date: string) => {
       removeSlot(date);
       setOpenAlbum(null);
-      toast.success("Removed from your journal");
+      toast.success(t("toast.removed"));
     },
-    [removeSlot],
+    [removeSlot, t],
   );
 
   // Replace: reopen the add-flow on the same day. Logging the new album at that
@@ -305,14 +330,18 @@ export function DayOfMusicApp() {
       setReplaceTarget(null);
 
       const count = entry.dates.length;
-      toast.success(`Logged ${entry.album.title}`, {
+      const rating = entry.rating || "—";
+      toast.success(t("toast.logged", { title: entry.album.title }), {
         description:
           count > 1
-            ? `${count} days · ${entry.rating || "—"}★`
-            : `${formatDisplayDate(entry.dates[0], country)} · ${entry.rating || "—"}★`,
+            ? t("toast.loggedDaysDesc", { count, rating })
+            : t("toast.loggedDateDesc", {
+                date: formatDisplayDate(entry.dates[0], country),
+                rating,
+              }),
       });
     },
-    [logAlbum, replaceTarget, removeSlot, country],
+    [logAlbum, replaceTarget, removeSlot, country, t],
   );
 
   // Everyone can use the board. Guests (configured auth, no session) work
@@ -326,6 +355,7 @@ export function DayOfMusicApp() {
       <div
         className="dom-root"
         data-grid={tweaks.aesthetic === "editorial" || tweaks.aesthetic === "dark" ? "1" : "0"}
+        data-guest={isGuest ? "1" : "0"}
       >
         <TopBar
           screen={screen}
@@ -337,8 +367,8 @@ export function DayOfMusicApp() {
 
         {isGuest && (
           <div className="dom-guest-banner" role="status">
-            Guest mode — your edits live only in this tab and reset when you leave.{" "}
-            <a href="/signup">Sign up to keep your journal</a>.
+            {t("guest.banner")}
+            <a href="/signup">{t("guest.signup")}</a>
           </div>
         )}
 
@@ -360,6 +390,7 @@ export function DayOfMusicApp() {
               // Jump the week view to whatever date the user picks in the mini calendar.
               onJump={setAnchor}
               onShare={() => setShowShare(true)}
+              onBestOf={() => setShowBestOf(true)}
               onMove={moveSlot}
             />
           )}
@@ -367,6 +398,7 @@ export function DayOfMusicApp() {
             <MonthlyView
               anchor={anchor}
               today={TODAY}
+              splitByMonth={tweaks.weekSplit}
               onOpen={handleOpen}
               onAdd={(date) => {
                 setAddDate(date);
@@ -376,6 +408,7 @@ export function DayOfMusicApp() {
               onNext={nextMonth}
               onJump={setAnchor}
               onShare={() => setShowMonthShare(true)}
+              onBestOf={() => setShowBestOfMonth(true)}
               onMove={moveSlot}
             />
           )}
@@ -424,6 +457,22 @@ export function DayOfMusicApp() {
         <MonthShareCard
           anchor={anchor}
           onClose={() => setShowMonthShare(false)}
+        />
+      )}
+      {showBestOf && (
+        <BestOfWeekModal
+          days={days}
+          labelDate={labelDate}
+          splitByMonth={tweaks.weekSplit}
+          onClose={() => setShowBestOf(false)}
+        />
+      )}
+      {showBestOfMonth && (
+        <BestOfMonthModal
+          anchor={anchor}
+          splitByMonth={tweaks.weekSplit}
+          today={TODAY}
+          onClose={() => setShowBestOfMonth(false)}
         />
       )}
 

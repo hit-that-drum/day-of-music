@@ -17,6 +17,7 @@ import {
   type ReactNode,
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import type { Album } from "@/lib/day-of-music/data";
 import {
@@ -335,8 +336,9 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       if (!configured) writeLocalEntries(nextEntries);
       return { previous };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err, _vars, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
+      toast.error("저장하지 못했어요", { description: err.message });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey });

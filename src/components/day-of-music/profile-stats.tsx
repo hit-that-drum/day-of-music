@@ -8,6 +8,7 @@ import { ChevronRight } from "lucide-react";
 import { getAlbumStats, type AlbumStats } from "@/lib/day-of-music/album-stats";
 import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
 import { useThemes } from "@/lib/day-of-music/themes";
+import { useT } from "@/lib/day-of-music/i18n";
 import { StatsShareCard } from "@/components/day-of-music/stats-share-card";
 import { Button, Stars } from "@/components/day-of-music/atoms";
 
@@ -31,6 +32,7 @@ function fallbackThemeName(id: string): string {
 export function ProfileStats() {
   const { allAlbums } = useJournal();
   const { themes } = useThemes();
+  const t = useT();
   // Which theme's recap modal is open. Stored as an id (not the recap object)
   // so the modal always renders the freshest stats after a log/edit.
   const [openThemeId, setOpenThemeId] = useState<string | null>(null);
@@ -59,9 +61,19 @@ export function ProfileStats() {
       };
     });
   }, [themes, yearAlbums]);
+  // English lane label — passed verbatim to the share poster (posters render
+  // hook-free from a snapshot, so their copy stays in the base language).
   const themeLaneLabel = `${themeRecaps.length} ${
     themeRecaps.length === 1 ? "theme lane" : "theme lanes"
   }`;
+  // Localized lane label for the on-screen recap only.
+  const lanesLabel = t(
+    themeRecaps.length === 1 ? "stats.themeLane" : "stats.themeLanes",
+    { n: themeRecaps.length },
+  );
+  const fivesPct = allStats.total
+    ? Math.round((allStats.fives.length / allStats.total) * 100)
+    : 0;
   const openTheme = openThemeId
     ? (themeRecaps.find((t) => t.id === openThemeId) ?? null)
     : null;
@@ -70,45 +82,38 @@ export function ProfileStats() {
     <div className="dom-profile">
       <div className="dom-week-hd">
         <div className="dom-week-title">
-          <span className="dom-eyebrow">
-            올해의 청음 · {currentYear} in listening
-          </span>
-          <h1>My Year in Music</h1>
+          <span className="dom-eyebrow">{t("stats.eyebrow", { year: currentYear })}</span>
+          <h1>{t("stats.title")}</h1>
         </div>
         <div className="dom-week-actions">
-          <Button onClick={() => setShareYear(true)}>SHARE CARD</Button>
+          <Button onClick={() => setShareYear(true)}>{t("stats.shareCard").toUpperCase()}</Button>
         </div>
       </div>
 
       <div className="dom-stats-grid">
         <div className="dom-stat dom-stat-lg">
-          <div className="dom-stat-label">albums logged</div>
+          <div className="dom-stat-label">{t("stats.albumsLogged")}</div>
           <div className="dom-stat-num">
             {String(allStats.total).padStart(2, "0")}
           </div>
           <div className="dom-stat-sub">
-            across {themeLaneLabel} · {daysSinceYearStart} days
+            {t("stats.acrossLanes", { lanes: lanesLabel, days: daysSinceYearStart })}
           </div>
         </div>
         <div className="dom-stat">
-          <div className="dom-stat-label">average rating</div>
+          <div className="dom-stat-label">{t("stats.avgRatingFull")}</div>
           <div className="dom-stat-num">{allStats.avgRating}</div>
           <div className="dom-stat-sub">
             <Stars value={Math.round(allStats.avgRatingNum)} size={14} />
           </div>
         </div>
         <div className="dom-stat">
-          <div className="dom-stat-label">five-star picks</div>
+          <div className="dom-stat-label">{t("stats.fivePicks")}</div>
           <div className="dom-stat-num">{allStats.fives.length}</div>
-          <div className="dom-stat-sub">
-            {allStats.total
-              ? Math.round((allStats.fives.length / allStats.total) * 100)
-              : 0}
-            % of catalog
-          </div>
+          <div className="dom-stat-sub">{t("stats.percentCatalog", { pct: fivesPct })}</div>
         </div>
         <div className="dom-stat dom-stat-wide">
-          <div className="dom-stat-label">top 10 genres</div>
+          <div className="dom-stat-label">{t("stats.topGenres")}</div>
           <div className="dom-bars">
             {allStats.topTenGenres.length ? (
               allStats.topTenGenres.map(([g, n]) => (
@@ -124,7 +129,7 @@ export function ProfileStats() {
                 </div>
               ))
             ) : (
-              <div className="dom-stat-empty">No genres logged yet.</div>
+              <div className="dom-stat-empty">{t("common.noGenres")}</div>
             )}
           </div>
         </div>
@@ -132,9 +137,11 @@ export function ProfileStats() {
 
       <div className="dom-profile-section">
         <div className="dom-profile-section-hd">
-          <h2 className="dom-section-title">By theme · 테마별 기록</h2>
+          <h2 className="dom-section-title">{t("stats.byTheme")}</h2>
           <span className="dom-section-sub">
-            {themeRecaps.length} {themeRecaps.length === 1 ? "theme" : "themes"}
+            {t(themeRecaps.length === 1 ? "stats.themeCountOne" : "stats.themeCount", {
+              n: themeRecaps.length,
+            })}
           </span>
         </div>
         <div className="dom-theme-list">
@@ -150,12 +157,12 @@ export function ProfileStats() {
                   {theme.emoji}
                 </span>
                 <div>
-                  <div className="dom-stat-label">theme analysis</div>
+                  <div className="dom-stat-label">{t("stats.themeAnalysis")}</div>
                   <h3>{theme.name}</h3>
                 </div>
               </div>
               <span className="dom-theme-row-meta">
-                {theme.total ? `${theme.total} logs` : "No logs yet"}
+                {theme.total ? t("stats.logsCount", { n: theme.total }) : t("stats.noLogs")}
               </span>
               <ChevronRight
                 className="dom-theme-row-icon"

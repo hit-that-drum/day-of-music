@@ -3,48 +3,36 @@
 
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { BrandMark, Button } from "@/components/day-of-music/atoms";
 import { PASSWORD_RULES, passwordIssues } from "@/lib/day-of-music/password";
+import { useT } from "@/lib/day-of-music/i18n";
 import { GoogleIcon, KakaoIcon } from "@/components/day-of-music/brand-icons";
 
 type Mode = "signin" | "signup";
 
-const COPY: Record<
-  Mode,
-  {
-    eyebrow: string;
-    title: string;
-    sub: string;
-    cta: string;
-    altText: string;
-    altCta: string;
-    altHref: string;
-  }
-> = {
-  signin: {
-    eyebrow: "로그인 · sign in",
-    title: "Welcome back",
-    sub: "Sign in to keep your journal across devices.",
-    cta: "Sign in",
-    altText: "New here?",
-    altCta: "Create an account",
-    altHref: "/signup",
-  },
-  signup: {
-    eyebrow: "가입 · sign up",
-    title: "Start your journal",
-    sub: "One album a day. Your year in listening, saved to your account.",
-    cta: "Create account",
-    altText: "Already have an account?",
-    altCta: "Sign in",
-    altHref: "/signin",
-  },
-};
+// Render a translated string with `{token}` placeholders replaced by <Link>s,
+// so link position follows each language's word order (see the terms notice).
+function renderWithLinks(
+  template: string,
+  links: Record<string, { href: string; label: string }>,
+): React.ReactNode[] {
+  return template.split(/(\{\w+\})/).map((part, i) => {
+    const token = part.match(/^\{(\w+)\}$/)?.[1];
+    const link = token ? links[token] : undefined;
+    return link ? (
+      <Link key={i} href={link.href}>
+        {link.label}
+      </Link>
+    ) : (
+      <Fragment key={i}>{part}</Fragment>
+    );
+  });
+}
 
 export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
@@ -61,8 +49,17 @@ export function AuthForm({ mode }: { mode: Mode }) {
     "idle",
   );
   const [message, setMessage] = useState("");
+  const t = useT();
 
-  const copy = COPY[mode];
+  const altHref = mode === "signin" ? "/signup" : "/signin";
+  const copy = {
+    eyebrow: t(`auth.${mode}.eyebrow`),
+    title: t(`auth.${mode}.title`),
+    sub: t(`auth.${mode}.sub`),
+    cta: t(`auth.${mode}.cta`),
+    altText: t(`auth.${mode}.altText`),
+    altCta: t(`auth.${mode}.altCta`),
+  };
   // Block submit until signup passwords satisfy the policy. Signin stays open.
   const signupInvalid =
     mode === "signup" && passwordIssues(password).length > 0;
@@ -74,7 +71,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     // locked out at sign-in. The checklist below already shows what's missing.
     if (mode === "signup" && passwordIssues(password).length > 0) {
       setStatus("error");
-      setMessage("Please meet the password requirements below.");
+      setMessage(t("auth.pwRequirements"));
       return;
     }
     setStatus("busy");
@@ -91,9 +88,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     if (mode === "signup") {
       // Depending on project settings, Supabase may require email confirmation.
       setStatus("sent");
-      setMessage(
-        `Account created. If ${email.trim()} needs confirmation, check your inbox.`,
-      );
+      setMessage(t("auth.accountCreated", { email: email.trim() }));
       return;
     }
     router.push("/week");
@@ -132,7 +127,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             <input
               className="dom-input"
               type="password"
-              placeholder="Password"
+              placeholder={t("auth.passwordPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete={
@@ -146,7 +141,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
               <ul
                 className="dom-pw-rules"
                 id="dom-pw-rules"
-                aria-label="Password requirements"
+                aria-label={t("auth.pwRulesAria")}
               >
                 {PASSWORD_RULES.map((rule) => {
                   const met = rule.test(password);
@@ -159,9 +154,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
                       <span className="dom-pw-rule-mark" aria-hidden="true">
                         {met ? "✓" : "○"}
                       </span>
-                      <span>{rule.label}</span>
+                      <span>{t(`pw.${rule.id}`)}</span>
                       <span className="dom-visually-hidden">
-                        {met ? " (met)" : " (not met)"}
+                        {met ? ` ${t("auth.met")}` : ` ${t("auth.notMet")}`}
                       </span>
                     </li>
                   );
@@ -172,11 +167,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
               type="submit"
               disabled={!configured || status === "busy" || signupInvalid}
             >
-              {status === "busy" ? "One moment…" : copy.cta}
+              {status === "busy" ? t("auth.oneMoment") : copy.cta}
             </Button>
           </form>
 
-          <div className="dom-signin-or">or</div>
+          <div className="dom-signin-or">{t("auth.or")}</div>
           <Button
             className="dom-btn-with-icon"
             variant="ghost"
@@ -184,7 +179,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             disabled={!configured}
           >
             <GoogleIcon />
-            Continue with Google
+            {t("auth.google")}
           </Button>
           <Button
             className="dom-btn-with-icon"
@@ -193,15 +188,15 @@ export function AuthForm({ mode }: { mode: Mode }) {
             disabled={!configured}
           >
             <KakaoIcon />
-            Continue with Kakao
+            {t("auth.kakao")}
           </Button>
 
           {mode === "signup" && (
             <p className="dom-auth-terms">
-              계정을 만들면 Day of Music <Link href="/terms">이용약관</Link>에
-              동의하는 것으로 보며,{" "}
-              <Link href="/privacy">개인정보 처리방침</Link>을 확인할 수
-              있습니다.
+              {renderWithLinks(t("auth.terms"), {
+                terms: { href: "/terms", label: t("legal.termsLink") },
+                privacy: { href: "/privacy", label: t("legal.privacyLink") },
+              })}
             </p>
           )}
 
@@ -215,9 +210,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
           )}
 
           <p className="dom-signin-sub" style={{ marginTop: 16 }}>
-            {copy.altText} <Link href={copy.altHref}>{copy.altCta}</Link>
+            {copy.altText} <Link href={altHref}>{copy.altCta}</Link>
             {" · "}
-            <Link href="/week">Continue as guest</Link>
+            <Link href="/week">{t("auth.guestContinue")}</Link>
           </p>
         </div>
       </div>
