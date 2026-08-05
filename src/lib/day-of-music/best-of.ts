@@ -13,7 +13,7 @@ import { useSyncExternalStore } from "react";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { makeJsonStore } from "@/lib/day-of-music/local-store";
-import { fmtDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
+import { addDays, fmtDate, parseDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { resolveActiveTheme, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
 
@@ -114,6 +114,42 @@ export function weekKey(weekStart: Date): string {
   return fmtDate(startOfWeek(weekStart));
 }
 
+/** Canonical month id = the month's 1st (YYYY-MM-DD). */
+export function monthKey(anchor: Date): string {
+  return fmtDate(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
+}
+
+/** Last calendar day of the anchor's month. */
+export function monthLastDay(anchor: Date): Date {
+  return new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+}
+
+/**
+ * Every week segment that touches the anchor's month, each carrying the period
+ * key its Best of Week is stored under — the same key the weekly board writes,
+ * so the month can look up results the user already decided there.
+ *
+ * A month-straddling week behaves differently per mode, exactly as the board
+ * does: split mode gives each month its own segment (two keys, judged
+ * separately), while continuous mode has one shared week keyed by its Monday —
+ * which is why the same week can appear in both neighbouring months here. Its
+ * champion still counts for only one of them (see useBestOfMonthStatus).
+ */
+export function monthWeekSegments(
+  anchor: Date,
+  splitByMonth: boolean,
+): { key: string; days: Date[]; labelDate: Date }[] {
+  const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+  const last = monthLastDay(anchor);
+  const segments: { key: string; days: Date[]; labelDate: Date }[] = [];
+  for (let ws = startOfWeek(first); ws <= last; ws = addDays(ws, 7)) {
+    const days = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
+    const labelDate = segmentDays(days, first, splitByMonth)[0] ?? ws;
+    segments.push({ key: fmtDate(labelDate), days, labelDate });
+  }
+  return segments;
+}
+
 /** Storage key for one result: e.g. "week:daily:2026-07-27". */
 export function bestOfKey(period: BestOfPeriod, theme: string, periodKey: string): string {
   return `${period}:${theme}:${periodKey}`;
@@ -199,4 +235,76 @@ export function useBestOfWeekStatus(
 
   if (contenders.length === 0) return { status: "empty", lastDay };
   return { status: "todo", lastDay };
+}
+
+/**
+ * Same states as a week, plus:
+ * - "pending" — the month is over but some of its weeks haven't crowned a Best
+ *               of Week yet. Their champions are this tournament's field, so
+ *               there is nothing to run until they exist.
+ */
+export type BestOfMonthStatus = BestOfStatus | "pending";
+
+/**
+ * The state of this month's Best of Month, and the field it would play.
+ *
+ * The field is the month's weekly champions, one per week — this is the second
+ * tier the bracket math was written for. A champion counts for the month its
+ * *winning day* falls in, which is what keeps a month-straddling week (shared
+ * by two months in continuous mode) from being judged twice: it hands its
+ * champion to exactly one side. For the same reason every week touching the
+ * month must be decided before the month can run — until then the missing
+ * champion's month is unknown.
+ *
+ * Weeks with nothing logged are not "pending": they have no champion to wait
+ * for, so a month of half-empty weeks is still playable.
+ */
+export function useBestOfMonthStatus(
+  anchor: Date,
+  splitByMonth: boolean,
+  today: Date,
+): {
+  status: BestOfMonthStatus;
+  /** The month's weekly champions — the tournament field. */
+  contenders: Contender[];
+  winnerDate?: string;
+  /** Weeks that have entries but no champion yet (drives the "pending" hint). */
+  pendingWeeks: number;
+  lastDay: Date;
+} {
+  const { albumsByDate } = useJournal();
+  const { themes } = useThemes();
+  const { activeTheme } = useActiveTheme();
+  const bestOf = useBestOf();
+
+  const theme = resolveActiveTheme(themes, activeTheme);
+  const lastDay = monthLastDay(anchor);
+  const month = anchor.getMonth();
+  const year = anchor.getFullYear();
+
+  const contenders: Contender[] = [];
+  let pendingWeeks = 0;
+  for (const seg of monthWeekSegments(anchor, splitByMonth)) {
+    const field = weekContenders(seg.days, albumsByDate, seg.labelDate, splitByMonth);
+    if (field.length === 0) continue; // nothing was logged that week — no champion owed
+    const saved = bestOf.get(bestOfKey("week", theme, seg.key));
+    const champion = saved && field.find((c) => c.date === saved.winnerDate);
+    if (!champion) {
+      pendingWeeks += 1;
+      continue;
+    }
+    const d = parseDate(champion.date);
+    if (d.getMonth() === month && d.getFullYear() === year) contenders.push(champion);
+  }
+
+  const saved = bestOf.get(bestOfKey("month", theme, monthKey(anchor)));
+  if (saved && contenders.some((c) => c.date === saved.winnerDate)) {
+    return { status: "done", contenders, winnerDate: saved.winnerDate, pendingWeeks, lastDay };
+  }
+  if (fmtDate(lastDay) > fmtDate(today)) {
+    return { status: "locked", contenders, pendingWeeks, lastDay };
+  }
+  if (pendingWeeks > 0) return { status: "pending", contenders, pendingWeeks, lastDay };
+  if (contenders.length === 0) return { status: "empty", contenders, pendingWeeks, lastDay };
+  return { status: "todo", contenders, pendingWeeks, lastDay };
 }

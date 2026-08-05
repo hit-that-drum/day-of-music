@@ -3,6 +3,7 @@
 import { useState } from "react";
 import dayjs from "dayjs";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   // DOW, — used only by the temporarily-disabled feature section below
@@ -16,6 +17,7 @@ import {
   type Album,
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
+import { useBestOfMonthStatus } from "@/lib/day-of-music/best-of";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { Button, IconButton } from "@/components/day-of-music/atoms";
 import { Cover } from "@/components/day-of-music/cover";
@@ -23,17 +25,22 @@ import { Cover } from "@/components/day-of-music/cover";
 export function MonthlyView({
   anchor,
   today,
+  splitByMonth,
   onOpen,
   onAdd,
   onPrev,
   onNext,
   onJump,
   onShare,
+  onBestOf,
   onMove,
 }: {
   /** Any day inside the month being viewed. */
   anchor: Date;
   today: Date;
+  /** Split-by-month tweak — decides how this month's weeks are segmented, and
+   *  so which Best of Week results the month tournament looks up. */
+  splitByMonth: boolean;
   onOpen: (album: Album) => void;
   /** Open the add-flow with this YYYY-MM-DD preselected (empty in-month days). */
   onAdd: (date: string) => void;
@@ -42,6 +49,8 @@ export function MonthlyView({
   onJump: (date: Date) => void;
   /** Open the shareable image of this month. */
   onShare: () => void;
+  /** Open the Best of Month tournament modal. */
+  onBestOf: () => void;
   /** Reschedule via drag-and-drop. Dropping on an empty day moves the album;
    *  dropping on a filled day swaps the two albums' dates. */
   onMove: (fromDate: string, toDate: string) => void;
@@ -49,6 +58,7 @@ export function MonthlyView({
   const { albums, albumsByDate } = useJournal();
   const t = useT();
   const names = useDateNames();
+  const bestOf = useBestOfMonthStatus(anchor, splitByMonth, today);
   // Date currently hovered as a drag-and-drop target (for highlight).
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   // The month being viewed follows `anchor`; `today` is only for highlighting.
@@ -83,6 +93,22 @@ export function MonthlyView({
     ? (monthAlbums.reduce((s, a) => s + a.rating, 0) / monthAlbums.length).toFixed(1)
     : "—";
 
+  // The Best of Month button reports its state in colour, and explains any
+  // blocker on click — mirroring the weekly button (see weekly-grid.tsx).
+  const bestOfHint =
+    bestOf.status === "done" && bestOf.winnerDate
+      ? t("bom.doneHint", { date: names.monthDayShort(dayjs(bestOf.winnerDate).toDate()) })
+      : bestOf.status === "locked"
+        ? t("bom.lockedHint", { date: names.monthDayShort(bestOf.lastDay) })
+        : bestOf.status === "pending"
+          ? t("bom.pendingHint", { n: bestOf.pendingWeeks })
+          : bestOf.status === "empty"
+            ? t("bom.emptyHint")
+            : undefined;
+  // Blocked states keep taking the click and answer with the reason; `disabled`
+  // would leave a touch-only user (no hover, no title) with no way to read it.
+  const bestOfBlocked = bestOf.status === "locked" || bestOf.status === "pending";
+
   return (
     <div className="dom-month">
       <div className="dom-month-hd">
@@ -96,12 +122,27 @@ export function MonthlyView({
           </h1>
         </div>
         <div className="dom-month-nav">
-          <IconButton icon={ArrowLeft} onClick={onPrev} aria-label={t("aria.prevMonth")} />
-          <IconButton icon={ArrowRight} onClick={onNext} aria-label={t("aria.nextMonth")} />
           {!isCurrentMonth && (
             <Button onClick={() => onJump(today)}>{t("month.thisMonth").toUpperCase()}</Button>
           )}
+          <Button
+            variant="ghost"
+            onClick={bestOfBlocked ? () => toast(bestOfHint) : onBestOf}
+            data-bestof={bestOf.status}
+            title={bestOfHint}
+            aria-disabled={bestOfBlocked || undefined}
+            aria-label={bestOfHint && `${t("bom.button")} — ${bestOfHint}`}
+          >
+            {bestOf.status === "done" && (
+              <span className="dom-bestof-trophy" aria-hidden="true">
+                🏆
+              </span>
+            )}
+            {t("bom.button")}
+          </Button>
           <Button onClick={onShare}>{t("month.shareMonth").toUpperCase()}</Button>
+          <IconButton icon={ArrowLeft} onClick={onPrev} aria-label={t("aria.prevMonth")} />
+          <IconButton icon={ArrowRight} onClick={onNext} aria-label={t("aria.nextMonth")} />
         </div>
         <div className="dom-month-hd-right">
           <div className="dom-month-stat">

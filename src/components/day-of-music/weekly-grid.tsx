@@ -237,13 +237,13 @@ function WeekHeader({
         <Button
           variant="ghost"
           onClick={locked ? () => toast(bestOfHint) : onBestOf}
-          data-bow={bestOfStatus}
+          data-bestof={bestOfStatus}
           title={bestOfHint}
           aria-disabled={locked || undefined}
           aria-label={bestOfHint && `${t("bow.button")} — ${bestOfHint}`}
         >
           {bestOfStatus === "done" && (
-            <span className="dom-bow-btn-trophy" aria-hidden="true">
+            <span className="dom-bestof-trophy" aria-hidden="true">
               🏆
             </span>
           )}

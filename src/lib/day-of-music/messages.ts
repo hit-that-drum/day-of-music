@@ -229,6 +229,46 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
     es: "Registra al menos dos días para elegir la mejor.",
   },
 
+  // ── Best of Month (tournament over the month's weekly champions) ────────
+  "bom.button": { en: "Best of Month", ko: "이 달의 베스트", ja: "今月のベスト", zh: "本月最佳", es: "Mejor del mes" },
+  "bom.title": { en: "Best of Month", ko: "이 달의 베스트", ja: "今月のベスト", zh: "本月最佳", es: "Mejor del mes" },
+  "bom.champion": { en: "Best of Month", ko: "이 달의 베스트", ja: "今月のベスト", zh: "本月最佳", es: "Mejor del mes" },
+  "bom.doneHint": {
+    en: "Already played · {date} won",
+    ko: "이미 진행했어요 · {date} 우승",
+    ja: "すでに実施済み · {date}が優勝",
+    zh: "已评选 · {date}获胜",
+    es: "Ya jugado · ganó el {date}",
+  },
+  "bom.lockedHint": {
+    en: "Opens on {date}, once this month is over.",
+    ko: "이 달의 마지막 날인 {date}부터 뽑을 수 있어요.",
+    ja: "今月の最終日（{date}）から選べます。",
+    zh: "本月结束后，从最后一天（{date}）起可评选。",
+    es: "Disponible el {date}, cuando termine el mes.",
+  },
+  "bom.pendingHint": {
+    en: "Pick the Best of Week for {n} more week(s) first.",
+    ko: "아직 뽑지 않은 주간 베스트가 {n}개 있어요. 주간을 먼저 마무리해 주세요.",
+    ja: "未確定の週間ベストが{n}件あります。先に週間を選んでください。",
+    zh: "还有 {n} 周的本周最佳未评选，请先完成周间评选。",
+    es: "Faltan {n} semana(s) por elegir su Mejor de la semana.",
+  },
+  "bom.empty": {
+    en: "No weekly champions this month.",
+    ko: "이 달에는 뽑을 주간 베스트가 없어요.",
+    ja: "今月は対象となる週間ベストがありません。",
+    zh: "本月没有可参赛的周最佳。",
+    es: "No hay ganadores semanales este mes.",
+  },
+  "bom.emptyHint": {
+    en: "Run a Best of Week first — its champions play for the month.",
+    ko: "주간 베스트를 먼저 뽑아주세요. 그 우승자들이 이 달의 베스트를 겨룹니다.",
+    ja: "先に週間ベストを選んでください。その優勝作品が今月のベストを競います。",
+    zh: "请先评选本周最佳，周冠军将角逐本月最佳。",
+    es: "Elige primero la Mejor de la semana: sus ganadores compiten por el mes.",
+  },
+
   // ── Shared actions ──────────────────────────────────────────────────────
   // Arrows/checkmarks stay in the JSX; only the word is translated.
   "action.back": { en: "Back", ko: "뒤로", ja: "戻る", zh: "返回", es: "Atrás" },
