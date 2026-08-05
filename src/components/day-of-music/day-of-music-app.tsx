@@ -30,6 +30,7 @@ import { SearchView } from "@/components/day-of-music/search-view";
 import { ShareCard } from "@/components/day-of-music/share-card";
 import { MonthShareCard } from "@/components/day-of-music/month-share-card";
 import { BestOfWeekModal } from "@/components/day-of-music/best-of-week-modal";
+import { BestOfMonthModal } from "@/components/day-of-music/best-of-month-modal";
 import { ThemeTabs } from "@/components/day-of-music/theme-tabs";
 import { TopBar } from "@/components/day-of-music/top-bar";
 import { TweaksPanel, type Tweaks } from "@/components/day-of-music/tweaks-panel";
@@ -145,6 +146,7 @@ export function DayOfMusicApp() {
   const [showShare, setShowShare] = useState(false);
   const [showMonthShare, setShowMonthShare] = useState(false);
   const [showBestOf, setShowBestOf] = useState(false);
+  const [showBestOfMonth, setShowBestOfMonth] = useState(false);
   const [showTweaks, setShowTweaks] = useState(false);
 
   // Single place that dismisses every overlay + resets the transient add/replace
@@ -156,6 +158,7 @@ export function DayOfMusicApp() {
     setShowShare(false);
     setShowMonthShare(false);
     setShowBestOf(false);
+    setShowBestOfMonth(false);
     setShowTweaks(false);
     setReplaceTarget(null);
   }, []);
@@ -234,7 +237,15 @@ export function DayOfMusicApp() {
   // Keyboard nav: Esc closes modal; ←/→ change week when nothing is open.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (openAlbum || showAdd || showShare || showMonthShare || showBestOf || showTweaks) {
+      if (
+        openAlbum ||
+        showAdd ||
+        showShare ||
+        showMonthShare ||
+        showBestOf ||
+        showBestOfMonth ||
+        showTweaks
+      ) {
         if (e.key === "Escape") closeAll();
         return;
       }
@@ -249,7 +260,7 @@ export function DayOfMusicApp() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openAlbum, showAdd, showShare, showMonthShare, showBestOf, showTweaks, screen, prevWeek, nextWeek, prevMonth, nextMonth, closeAll]);
+  }, [openAlbum, showAdd, showShare, showMonthShare, showBestOf, showBestOfMonth, showTweaks, screen, prevWeek, nextWeek, prevMonth, nextMonth, closeAll]);
 
   const handleOpen = useCallback(
     (album: Album | JournalAlbum) => {
@@ -387,6 +398,7 @@ export function DayOfMusicApp() {
             <MonthlyView
               anchor={anchor}
               today={TODAY}
+              splitByMonth={tweaks.weekSplit}
               onOpen={handleOpen}
               onAdd={(date) => {
                 setAddDate(date);
@@ -396,6 +408,7 @@ export function DayOfMusicApp() {
               onNext={nextMonth}
               onJump={setAnchor}
               onShare={() => setShowMonthShare(true)}
+              onBestOf={() => setShowBestOfMonth(true)}
               onMove={moveSlot}
             />
           )}
@@ -452,6 +465,14 @@ export function DayOfMusicApp() {
           labelDate={labelDate}
           splitByMonth={tweaks.weekSplit}
           onClose={() => setShowBestOf(false)}
+        />
+      )}
+      {showBestOfMonth && (
+        <BestOfMonthModal
+          anchor={anchor}
+          splitByMonth={tweaks.weekSplit}
+          today={TODAY}
+          onClose={() => setShowBestOfMonth(false)}
         />
       )}
 
