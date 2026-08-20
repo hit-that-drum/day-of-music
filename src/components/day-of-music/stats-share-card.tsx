@@ -14,6 +14,7 @@ import { type JournalAlbum } from "@/lib/day-of-music/use-journal";
 import { saveCardAsImage, shareFileName } from "@/lib/day-of-music/save-card";
 import { buildStatsSharePayload } from "@/lib/day-of-music/share-links";
 import { StatsPoster } from "@/components/day-of-music/share-posters";
+import { PosterFit } from "@/components/day-of-music/poster-fit";
 import { ShareActions } from "@/components/day-of-music/share-actions";
 import { Modal } from "@/components/day-of-music/modal";
 
@@ -61,7 +62,9 @@ export function StatsShareCard({
 
   return (
     <Modal label="SHARE CARD" onClose={onClose} className="dom-share">
-      <StatsPoster payload={payload} ref={cardRef} />
+      <PosterFit>
+        <StatsPoster payload={payload} ref={cardRef} />
+      </PosterFit>
       <ShareActions payload={payload} onSaveImage={handleSaveImage} />
     </Modal>
   );

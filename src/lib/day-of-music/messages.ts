@@ -691,6 +691,12 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "share.toastCopied": { en: "Link copied", ko: "링크를 복사했어요", ja: "リンクをコピーしました", zh: "已复制链接", es: "Enlace copiado" },
   "share.toastError": { en: "Couldn't create share link", ko: "공유 링크를 만들지 못했어요", ja: "共有リンクを作成できませんでした", zh: "无法创建分享链接", es: "No se pudo crear el enlace" },
 
+  // ── Poster zoom (phone-only: the preview is a scaled-down miniature) ────
+  "poster.zoom": { en: "Actual size", ko: "원본 크기", ja: "原寸大", zh: "原始尺寸", es: "Tamaño real" },
+  "poster.zoomOpen": { en: "View the poster at actual size", ko: "포스터를 원본 크기로 보기", ja: "ポスターを原寸大で表示", zh: "以原始尺寸查看海报", es: "Ver el póster a tamaño real" },
+  "poster.zoomLabel": { en: "Poster at actual size", ko: "원본 크기 포스터", ja: "原寸大のポスター", zh: "原始尺寸海报", es: "Póster a tamaño real" },
+  "poster.zoomClose": { en: "Close actual-size view", ko: "원본 크기 보기 닫기", ja: "原寸大表示を閉じる", zh: "关闭原始尺寸视图", es: "Cerrar la vista a tamaño real" },
+
   // ── Toasts (journal log / remove) ───────────────────────────────────────
   "toast.removed": { en: "Removed from your journal", ko: "저널에서 삭제했어요", ja: "ジャーナルから削除しました", zh: "已从日志中移除", es: "Eliminado de tu diario" },
   "toast.logged": { en: "Logged {title}", ko: "{title} 기록됨", ja: "{title} を記録しました", zh: "已记录 {title}", es: "Registrado: {title}" },

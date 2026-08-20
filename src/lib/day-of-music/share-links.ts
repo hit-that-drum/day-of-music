@@ -5,12 +5,20 @@
 // guests get the week payload compressed into the URL itself (/s?d=...).
 // The same zod schemas validate payloads on the public page, so a tampered
 // link renders nothing instead of garbage. Albums pass through an explicit
-// allowlist — notes and tracklists never leave the device.
+// allowlist — notes and tracklists never leave the device. Covers the user
+// uploaded themselves have no address to link to, so the picture travels in
+// the payload (share-artwork.ts shrinks it to fit the transport).
 
 import { z } from "zod";
 
 import type { Album } from "@/lib/day-of-music/data";
 import type { AlbumStats } from "@/lib/day-of-music/album-stats";
+import {
+  GUEST_PARAM_BUDGET,
+  STORED_PAYLOAD_BUDGET,
+  fitArtwork,
+  payloadBytes,
+} from "@/lib/day-of-music/share-artwork";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 // ── Payload schemas ─────────────────────────────────────────────────────────
@@ -22,6 +30,31 @@ const coverSpecSchema = z.object({
   accent: z.string().max(64),
 });
 
+/** Covers the user picked from their own device are stored as JPEG data URLs
+ *  (add-flow downscales them) — there is no https address to point at, so the
+ *  picture itself has to travel with the payload. Raster types only: these
+ *  render on the public share pages, and SVG can carry markup. */
+const dataImageUrl = /^data:image\/(?:png|jpe?g|webp|gif|avif);base64,[A-Za-z0-9+/]+={0,2}$/;
+
+/** True for artwork that can survive the trip to someone else's browser: a
+ *  remote https cover, or a self-contained raster data URL. Anything else
+ *  (a blob: handle, a local path) only means something on this device, so
+ *  share-artwork.ts drops it when a link is minted. The poster on this device
+ *  renders whatever the board renders — see sanitizeAlbum. */
+export function isShareableArtwork(url: string | undefined): url is string {
+  return !!url && (url.startsWith("https://") || dataImageUrl.test(url));
+}
+
+/** Bound on an embedded cover. The real ceiling is the transport budget
+ *  (share-artwork.ts shrinks artwork to fit the column / URL limits); this
+ *  just keeps a hand-crafted payload from being unbounded. */
+const MAX_DATA_ARTWORK = 120_000;
+
+const artworkUrlSchema = z.union([
+  z.url({ protocol: /^https$/ }).max(600),
+  z.string().max(MAX_DATA_ARTWORK).regex(dataImageUrl),
+]);
+
 const sharedAlbumSchema = z.object({
   id: z.string().max(200),
   date: z.string().max(20),
@@ -32,7 +65,7 @@ const sharedAlbumSchema = z.object({
   year: z.number().int(),
   format: z.string().max(50),
   cover: coverSpecSchema,
-  artworkUrl: z.url({ protocol: /^https$/ }).max(600).optional(),
+  artworkUrl: artworkUrlSchema.optional(),
   kind: z.enum(["album", "track"]).optional(),
   albumTitle: z.string().max(300).optional(),
   rating: z.number().int().min(0).max(5),
@@ -127,7 +160,11 @@ export type SharePayload = z.infer<typeof sharePayloadSchema>;
 // ── Building payloads ───────────────────────────────────────────────────────
 
 /** Explicit allowlist of album fields that may leave the device. Notes,
- *  tracklists and everything else stay out by construction. */
+ *  tracklists and everything else stay out by construction. Artwork passes
+ *  through exactly as the board has it — whatever picture the user sees on the
+ *  week board is the picture on the poster and in the saved image. Filtering
+ *  it by scheme happens only when a link is minted (share-artwork.ts), where
+ *  it actually matters. */
 export function sanitizeAlbum(a: Album & { theme?: string }): SharedAlbum {
   return {
     id: a.id,
@@ -139,7 +176,7 @@ export function sanitizeAlbum(a: Album & { theme?: string }): SharedAlbum {
     year: a.year,
     format: a.format,
     cover: a.cover,
-    ...(a.artworkUrl?.startsWith("https://") ? { artworkUrl: a.artworkUrl } : {}),
+    ...(a.artworkUrl ? { artworkUrl: a.artworkUrl } : {}),
     ...(a.kind ? { kind: a.kind } : {}),
     ...(a.albumTitle ? { albumTitle: a.albumTitle } : {}),
     rating: a.rating,
@@ -236,9 +273,12 @@ export async function createSharedCardLink(
   const supabase = getSupabaseBrowserClient();
   if (!supabase) throw new Error("Supabase is not configured");
   const token = randomToken();
+  // Uploaded covers ride inside the row, so shrink them to fit its size check
+  // before the insert (a no-op for payloads that only point at https artwork).
+  const stored = await fitArtwork(payload, payloadBytes, STORED_PAYLOAD_BUDGET);
   const { error } = await supabase
     .from("shared_cards")
-    .insert({ user_id: userId, token, kind: payload.kind, payload });
+    .insert({ user_id: userId, token, kind: stored.kind, payload: stored });
   if (error) throw new Error(error.message);
   return `${window.location.origin}/s/${token}`;
 }
@@ -268,10 +308,22 @@ const streamGlobals = globalThis as unknown as {
 /** Guest link for the week card: the payload itself, deflated into the URL.
  *  "1"/"0" prefix marks compressed vs plain, for old browsers. */
 export async function createGuestWeekLink(payload: WeekSharePayload): Promise<string> {
+  // A guest link is the payload, so an uploaded cover only survives if it fits
+  // in the URL — much tighter than a stored row, and shrunk to match.
+  const fitted = await fitArtwork(
+    payload,
+    async (p) => (await encodeGuestParam(p)).length,
+    GUEST_PARAM_BUDGET,
+  );
+  return `${window.location.origin}/s?d=${await encodeGuestParam(fitted)}`;
+}
+
+/** The `d` param: the payload deflated into base64url, with a "1"/"0" prefix
+ *  marking compressed vs plain for browsers without CompressionStream. */
+async function encodeGuestParam(payload: WeekSharePayload): Promise<string> {
   const bytes = new TextEncoder().encode(JSON.stringify(payload));
   const deflated = await pipeBytes(bytes, streamGlobals.CompressionStream);
-  const d = deflated ? `1${base64url(deflated)}` : `0${base64url(bytes)}`;
-  return `${window.location.origin}/s?d=${d}`;
+  return deflated ? `1${base64url(deflated)}` : `0${base64url(bytes)}`;
 }
 
 /** Decode a guest link's `d` param back into an (unvalidated) payload.
