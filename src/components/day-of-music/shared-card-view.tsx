@@ -14,6 +14,7 @@ import {
   WeekPoster,
 } from "@/components/day-of-music/share-posters";
 import { BrandMark } from "@/components/day-of-music/atoms";
+import { PosterFit } from "@/components/day-of-music/poster-fit";
 import { SharedCardCta } from "@/components/day-of-music/shared-card-cta";
 
 export function SharedCardView({ payload }: { payload: SharePayload }) {
@@ -51,16 +52,19 @@ export function SharedCardView({ payload }: { payload: SharePayload }) {
           <span className="dom-brand-ko">하루의 음악</span>
         </Link>
 
-        {/* The month grid has fixed min column widths — scroll it inside the
-            card frame on narrow screens instead of overflowing the page. */}
-        <div style={{ width: "100%", maxWidth: 1100, overflowX: "auto" }}>
-          {payload.kind === "week" ? (
-            <WeekPoster payload={payload} />
-          ) : payload.kind === "month" ? (
-            <MonthPoster payload={payload} />
-          ) : (
-            <StatsPoster payload={payload} />
-          )}
+        {/* Posters keep their full-width layout at every viewport, so on a
+            phone PosterFit scales the whole card down instead of letting the
+            7-day grid reflow into unreadable 44px columns. */}
+        <div style={{ width: "100%", maxWidth: 1100 }}>
+          <PosterFit>
+            {payload.kind === "week" ? (
+              <WeekPoster payload={payload} />
+            ) : payload.kind === "month" ? (
+              <MonthPoster payload={payload} />
+            ) : (
+              <StatsPoster payload={payload} />
+            )}
+          </PosterFit>
         </div>
 
         <SharedCardCta />

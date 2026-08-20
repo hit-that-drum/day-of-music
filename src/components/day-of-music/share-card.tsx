@@ -25,6 +25,7 @@ import {
   type WeekSharePayload,
 } from "@/lib/day-of-music/share-links";
 import { WeekPoster } from "@/components/day-of-music/share-posters";
+import { PosterFit } from "@/components/day-of-music/poster-fit";
 import { ShareActions } from "@/components/day-of-music/share-actions";
 import { Modal } from "@/components/day-of-music/modal";
 
@@ -111,7 +112,9 @@ export function ShareCard({
 
   return (
     <Modal label="SHARE WEEK" onClose={onClose} className="dom-share">
-      <WeekPoster payload={payload} ref={cardRef} />
+      <PosterFit>
+        <WeekPoster payload={payload} ref={cardRef} />
+      </PosterFit>
       <ShareActions payload={payload} onSaveImage={handleSaveImage} />
     </Modal>
   );

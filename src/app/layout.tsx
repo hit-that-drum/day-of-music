@@ -35,6 +35,12 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#18181b",
+  width: "device-width",
+  initialScale: 1,
+  // Paint edge to edge on notched phones. The frame's gutters read the
+  // safe-area insets back (see .dom-root / .dom-scrim in day-of-music.css), so
+  // nothing lands under the notch or the home indicator.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

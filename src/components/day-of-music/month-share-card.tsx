@@ -26,6 +26,7 @@ import {
   type MonthSharePayload,
 } from "@/lib/day-of-music/share-links";
 import { MonthPoster } from "@/components/day-of-music/share-posters";
+import { PosterFit } from "@/components/day-of-music/poster-fit";
 import { ShareActions } from "@/components/day-of-music/share-actions";
 import { Modal } from "@/components/day-of-music/modal";
 
@@ -97,7 +98,9 @@ export function MonthShareCard({
 
   return (
     <Modal label="SHARE MONTH" onClose={onClose} className="dom-share dom-share-month">
-      <MonthPoster payload={payload} ref={cardRef} />
+      <PosterFit>
+        <MonthPoster payload={payload} ref={cardRef} />
+      </PosterFit>
       <ShareActions payload={payload} onSaveImage={handleSaveImage} />
     </Modal>
   );
