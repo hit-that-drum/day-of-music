@@ -19,6 +19,7 @@
   --coverRadius: 0px;
   background: #d8c9a8;
   min-height: 100vh;
+  min-height: 100dvh;
   font-family: var(--font-body);
   color: var(--ink, #1a1612);
   -webkit-font-smoothing: antialiased;
@@ -71,6 +72,7 @@
 
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
@@ -81,6 +83,15 @@
   gap: var(--gap);
   max-width: 100vw;
   overflow-x: hidden;
+}
+/* viewportFit: "cover" (see app/layout.tsx) lets the page paint under a
+   notch/home indicator, so the frame's gutters have to clear the insets
+   themselves. env() resolves to 0 where there are none, which is every
+   desktop and every non-notched phone — including the 375×667 SE. */
+.dom-root {
+  padding-left: max(var(--pad), env(safe-area-inset-left));
+  padding-right: max(var(--pad), env(safe-area-inset-right));
+  padding-bottom: max(var(--pad), env(safe-area-inset-bottom));
 }
 .dom-root[data-grid="1"] {
   background-image:
@@ -2030,6 +2041,12 @@
   /* Shared modal width — every overlay modal (Day Detail, Add/Log Album,
      Share Week/Month) reads this token so they're all the same size. */
   --dom-modal-w: 1100px;
+  /* Everything a modal panel has to share the viewport with: this scrim's own
+     top+bottom padding plus .dom-modal's reserved close-button gap. Panels size
+     themselves with calc(100dvh - var(--dom-modal-chrome)), so shrinking either
+     on mobile automatically gives the panel the room back — before this the
+     numbers were hardcoded and the Day Detail overflowed a 667px screen. */
+  --dom-modal-chrome: 100px; /* 24 + 24 padding + 52 close gap */
   position: fixed;
   inset: 0;
   z-index: 50;
@@ -2043,6 +2060,7 @@
   align-items: safe center;
   justify-content: safe center;
   padding: 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
   overflow-y: auto;
   animation: dom-fade 0.2s ease;
 }
@@ -2096,8 +2114,11 @@
   max-width: var(--dom-modal-w);
   /* Fixed height so every tab (tracklist / journal / info) is the same size —
      matched to the journal tab; taller content (long tracklist) scrolls inside.
-     100px = scrim padding (48) + the modal chrome's close-button gap (52). */
-  height: min(660px, calc(100vh - 100px));
+     --dom-modal-chrome is the scrim padding + close-button gap (see .dom-scrim);
+     dvh so a mobile browser's collapsing address bar doesn't push the panel
+     past the visible viewport. */
+  height: min(660px, calc(100vh - var(--dom-modal-chrome)));
+  height: min(660px, calc(100dvh - var(--dom-modal-chrome)));
   display: grid;
   grid-template-columns: 460px minmax(0, 1fr);
   /* Bound the single row to the modal's height so the right column's
@@ -2335,8 +2356,11 @@
      (the body scrolls internally instead of resizing the modal). Tall enough
      for the manual-entry form (cover + title + artist + genre) to show without
      scrolling on desktop, while still fitting inside the overlay padding plus
-     the modal chrome's close-button gap (48 + 52 = 100px). */
-  height: min(820px, calc(100vh - 100px));
+     the modal chrome's close-button gap (--dom-modal-chrome). dvh keeps the
+     panel inside the *visible* viewport on mobile, where the on-screen keyboard
+     and the address bar make 100vh a lie. */
+  height: min(820px, calc(100vh - var(--dom-modal-chrome)));
+  height: min(820px, calc(100dvh - var(--dom-modal-chrome)));
   background-color: var(--panel);
   border: 1px solid var(--line);
   padding: 32px 36px;
@@ -2639,6 +2663,88 @@
   gap: 16px;
   align-items: center;
 }
+/* Scale-to-fit frame for the posters on narrow viewports (poster-fit.tsx sets
+   the inline width/scale/height; these are just the invariants). Above the
+   phone breakpoint the frame is a plain full-width wrapper and the poster lays
+   out fluidly exactly as before. */
+.dom-poster-fit {
+  position: relative;
+  width: 100%;
+  /* The scaled child sticks out of the frame's box on the right/bottom until
+     the measured height lands — clip it so it can never widen the page. */
+  overflow: hidden;
+}
+.dom-poster-fit-inner {
+  transform-origin: top left;
+}
+
+/* Tap target over the miniature. A transparent overlay rather than wrapping the
+   poster in a <button> — the poster is block markup (grids, images), which a
+   button may not contain. */
+.dom-poster-zoom {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 6px;
+  background: transparent;
+  border: 0;
+  cursor: zoom-in;
+}
+/* Small on purpose — the miniature is the thing being looked at; this is a
+   hint, not a control competing with it. */
+.dom-poster-zoom-hint {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--panel);
+  background-color: color-mix(in oklab, var(--ink) 76%, transparent);
+  padding: 4px 7px;
+  pointer-events: none;
+}
+.dom-poster-zoom:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Actual-size view. Portalled to .dom-stage (see poster-fit.tsx), so it's a
+   sibling of the scrim and covers the whole viewport; z-index clears the scrim
+   (50) and the week picker (70/71). The poster inside is back at its reference
+   width, so the overlay scrolls in both axes. */
+.dom-poster-zoom-view {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: auto;
+  /* Don't hand the scroll off to the scrim (or the page) at the edges. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  background-color: var(--bg);
+  padding: 52px 0 24px;
+}
+.dom-poster-zoom-close {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: 81;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  background-color: var(--panel);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  cursor: pointer;
+}
+.dom-poster-zoom-close:hover {
+  background-color: var(--chip);
+}
+
 .dom-share-card {
   /* Fill the modal wrapper (or the fixed-width export stage) — both are
      bounded by --dom-modal-w, so the poster lays out identically in each. */
@@ -3069,7 +3175,8 @@
 }
 .dom-share-manager {
   width: 100%;
-  max-height: min(720px, calc(100vh - 100px));
+  max-height: min(720px, calc(100vh - var(--dom-modal-chrome)));
+  max-height: min(720px, calc(100dvh - var(--dom-modal-chrome)));
   overflow: hidden;
   background-color: var(--panel);
   border: 1px solid var(--line);
@@ -3394,7 +3501,8 @@
        (the fixed two-column height doesn't apply when stacked). */
     grid-template-rows: auto;
     height: auto;
-    max-height: 95vh;
+    max-height: calc(100vh - var(--dom-modal-chrome));
+    max-height: calc(100dvh - var(--dom-modal-chrome));
     overflow-y: auto;
   }
   .dom-detail-left {
@@ -3567,18 +3675,38 @@
   .dom-topbar {
     grid-template-columns: 1fr;
     justify-items: center;
-    row-gap: 10px;
-    padding: 14px 16px;
+    row-gap: 8px;
+    padding: 12px;
   }
+  /* The header actions used to be display:none here, which quietly took the
+     language switch, the Tweaks panel (aesthetic / typography / split weeks)
+     and Sign out away from every phone — none of them has another entry point.
+     They get their own centred row instead, sized so the widest case (guest:
+     language + 꾸미기 + 로그인 + 회원가입) still lands on a single line at 375. */
   .dom-topbar-actions {
-    display: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+  .dom-topbar-actions .dom-btn {
+    min-height: 38px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .dom-lang-switch .dom-select-trigger {
+    min-height: 38px;
+    padding: 8px 10px;
+    gap: 4px;
+    font-size: 12px;
   }
   .dom-nav {
     flex-wrap: wrap;
     justify-content: center;
   }
   .dom-nav-btn {
-    padding: 8px 8px;
+    padding: 8px 10px;
+    min-height: 40px;
+    justify-content: center;
   }
   .dom-nav-ko,
   .dom-brand-ko {
@@ -3630,11 +3758,174 @@
     border-top: 1px solid var(--lineSoft);
     margin-top: 2px;
   }
-  .dom-week-title {
+  /* Only the *week board's* title is redundant on a phone — the grid's label
+     cell already prints "8월 · 4주차". Journal / My Logs / Profile have no such
+     cell, so blanket-hiding .dom-week-title left them with a bare rule and no
+     heading at all; keep theirs, just smaller. (The week picker is the only
+     .dom-week-title that wraps a .dom-week-title-anchor.) */
+  .dom-week-title:has(.dom-week-title-anchor) {
     display: none;
   }
-  .dom-week-hd {
+  .dom-week-hd:has(.dom-week-title-anchor) {
     justify-content: flex-end;
+  }
+  .dom-week-hd {
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+  .dom-week-title h1 {
+    font-size: 26px;
+  }
+}
+
+/* ── Phone pass (≤760px) ───────────────────────────────────────────────────
+   Everything below is about fitting a 375×667 screen: give the content back the
+   width the desktop gutters were eating, keep tap targets thumb-sized, and stop
+   iOS Safari from zooming the page whenever a field takes focus. Kept in one
+   block rather than sprinkled through the file so the phone layout can be read
+   (and changed) in one place. */
+@media (max-width: 760px) {
+  /* sonner pins its toast list with left:16/right:16 but also sets width:100%,
+     and width wins — so the list ran 16px off the right edge of the screen.
+     Let the two insets size it. (`body` only for specificity: sonner injects
+     its stylesheet at runtime, after ours.) */
+  body [data-sonner-toaster] {
+    width: auto;
+  }
+
+  /* Korean wraps character-by-character by default, which at 375 broke words
+     across lines all over the app ("필터를 지워보 / 세요."). keep-all wraps at
+     spaces the way the legal pages already do; overflow-wrap is the escape
+     hatch for a single token wider than its box (a long English album title in
+     a 48px month cell). */
+  .dom-root,
+  .dom-scrim {
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  /* Screen gutters. These were desktop-sized (28–32px) at every width, so the
+     week grid rendered 293px wide inside a 351px panel — and .dom-theme-select
+     used 16px, which left the theme field and the grid visibly misaligned. One
+     value for all of them now. */
+  .dom-week {
+    padding: 16px 14px 32px;
+  }
+  .dom-search,
+  .dom-profile {
+    padding: 16px 14px 20px;
+  }
+  .dom-month {
+    padding: 16px 14px 20px;
+  }
+  /* Four month stats on a wrapping row left the last one ("장르") stranded on a
+     line of its own. Two even columns instead. */
+  .dom-month-hd-right {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 12px;
+    justify-self: stretch;
+  }
+  .dom-month-stat {
+    min-width: 0;
+  }
+  .dom-month-stat-num {
+    font-size: 32px;
+  }
+  .dom-theme-select {
+    padding: 14px 14px 0;
+  }
+
+  /* My Logs headline numbers were sized for a desktop column; at 100px the
+     hero stat alone took over half a 667px screen. */
+  .dom-stat-num {
+    font-size: 52px;
+  }
+  .dom-stat-lg .dom-stat-num {
+    font-size: 76px;
+  }
+  .dom-stat-compact .dom-stat-num {
+    font-size: 38px;
+  }
+
+  /* Touch targets. 44px is the platform minimum; the small variant stays
+     smaller but still well clear of the 16px-tall text links we had. */
+  .dom-btn {
+    min-height: 44px;
+  }
+  .dom-btn-sm {
+    min-height: 36px;
+  }
+  .dom-home-footer a,
+  .dom-home-legal a,
+  .dom-signin-sub a,
+  .dom-auth-terms a,
+  .dom-guest-banner a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+  }
+  .dom-modal-close {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* iOS Safari zooms the whole page when a focused field's text is under 16px,
+     and the user has to pinch back out. Every input the app shows on a phone
+     sits at 16px or above. */
+  .dom-input,
+  .dom-textarea,
+  .dom-select-trigger {
+    font-size: 16px;
+  }
+  .dom-input-lg {
+    /* 18px overflowed the Journal placeholder at 375; 16px still clears the
+       zoom threshold. */
+    padding: 14px 16px;
+    font-size: 16px;
+  }
+
+  /* Modal chrome shrinks with the viewport — see --dom-modal-chrome. */
+  .dom-scrim {
+    --dom-modal-chrome: 68px; /* 12 + 12 padding + 44 close gap */
+    padding: 12px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .dom-modal {
+    padding-top: 44px;
+  }
+
+  /* Search results inside the add-flow are laid out as a grid of columns, so
+     the UA's centred button text reads as accidental (the modals render outside
+     .dom-root, where the bare-button reset that sets text-align lives). */
+  .dom-addflow-result {
+    text-align: left;
+  }
+  .dom-addflow {
+    padding: 24px 20px;
+  }
+  .dom-addflow-title {
+    font-size: 24px;
+  }
+}
+
+/* Monthly calendar cells are ~44px wide on a phone, where the day number and
+   the TODAY / rating slot can't share a baseline row — they overlapped. Let the
+   right-hand slot drop under the number. */
+@media (max-width: 640px) {
+  .dom-month-cal-date {
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .dom-month-cal-num {
+    font-size: 16px;
+  }
+  .dom-month-cal-today {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+  }
+  .dom-month-cal-cell {
+    padding: 6px 6px 8px;
   }
 }
 
@@ -3681,11 +3972,15 @@ a.dom-btn {
   margin: 0;
   max-width: 46ch;
 }
+/* Four fluid tiles. max-width keeps them at their designed 120px on a wide
+   hero; the phone override drops the row to two columns (see the phone pass). */
 .dom-home-covers {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  flex-wrap: wrap;
   margin: 8px 0;
+  width: 100%;
+  max-width: 510px;
 }
 .dom-home-actions {
   display: flex;
@@ -3746,6 +4041,28 @@ a.dom-btn {
 
 .dom-signin-sub a {
   color: var(--ink);
+}
+
+/* Phone pass for the landing (kept here, after the base rules above, so the
+   overrides win the cascade). */
+@media (max-width: 760px) {
+  .dom-home-hero {
+    padding: 32px 4px 24px;
+  }
+  /* Four 120px tiles left ~90px of dead gutter beside them at 375. Two even
+     columns fill the row instead. */
+  .dom-home-covers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: none;
+  }
+  .dom-home-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .dom-home-legal {
+    flex-wrap: wrap;
+  }
 }
 
 /* ── Legal document ─────────────────────────────────────────────────────── */
@@ -4248,17 +4565,36 @@ button.dom-day-add:hover {
 }
 
 @media (max-width: 640px) {
+  .dom-bow-inner {
+    padding: 20px 16px 18px;
+  }
   .dom-bow-option-grid {
     grid-template-columns: 1fr;
   }
   .dom-bow-champion {
     grid-template-columns: 1fr;
   }
+  /* The matchup stays two-up. Stacking it (what this used to do) meant the two
+     albums you're being asked to compare never shared the screen — you scrolled
+     from one to the other and back to decide. Half a 375px phone is still a
+     ~130px cover, which is plenty for an A-or-B call. */
   .dom-bow-match {
-    grid-template-columns: 1fr;
-    justify-items: stretch;
+    gap: 8px;
+  }
+  .dom-bow-card {
+    padding: 8px;
+    gap: 8px;
   }
   .dom-bow-vs {
-    justify-self: center;
+    font-size: 11px;
+  }
+  .dom-bow-card .dom-title {
+    font-size: 14px;
+  }
+  .dom-bow-card .dom-artist {
+    font-size: 12px;
+  }
+  .dom-bow-card-day {
+    font-size: 9px;
   }
 }

@@ -129,9 +129,13 @@ export function HomeLanding() {
             </h1>
             <p className="dom-home-sub">{t("home.sub")}</p>
 
+            {/* Fluid tiles, so the phone's two-column grid fills the row
+                instead of leaving a gutter beside two fixed 120px covers.
+                .dom-home-covers caps the row so they still land on 120px at
+                the hero's full width. */}
             <div className="dom-home-covers">
               {HERO_COVERS.map((a) => (
-                <Cover key={a.id} album={a} size={120} />
+                <Cover key={a.id} album={a} size="100%" />
               ))}
             </div>
 
