@@ -236,12 +236,17 @@ export function DomSelect({
                   className="dom-select-option"
                   // Mouse hover drives the highlight so pointer + keyboard agree.
                   onMouseEnter={() => setActive(i)}
-                  // pointerdown (not click) so the outside-close listener — which
-                  // also fires on pointerdown — never beats the selection.
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    commit(i);
-                  }}
+                  // Suppress the focus shift only — the trigger keeps focus so
+                  // keyboard users land back on it once the panel closes.
+                  onMouseDown={(e) => e.preventDefault()}
+                  // Commit on click, never on pointerdown: pointerdown unmounts
+                  // the panel before the tap's click is dispatched, so on touch
+                  // the click re-targets whatever the panel was covering and the
+                  // button underneath fires too. Click also lets the browser
+                  // swallow taps that turned into a scroll of a long list.
+                  // (The outside-close listener ignores this — the option lives
+                  // inside rootRef — so nothing races the selection.)
+                  onClick={() => commit(i)}
                 >
                   <span className="dom-select-check" aria-hidden>
                     {o.value === value ? "✓" : ""}
