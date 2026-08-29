@@ -3,6 +3,29 @@
 // holds a raw string; `makeJsonStore` (de)serializes any JSON-able value. Both
 // fall back to a default on the server and when storage is unavailable.
 
+// Every read below degrades to its default when storage is blocked, which is
+// the right behaviour per-store but adds up to a badly broken app: the session
+// supabase-js keeps here vanishes on reload, and the active theme resets to
+// "daily" so a journal kept in another lane reads as empty. Safari blocks
+// localStorage outright under "Block all cookies" and in private windows, so
+// this is a real state to detect rather than a theoretical one. Callers use it
+// to say so instead of leaving the user with a silently wrong app.
+let storageWritable: boolean | null = null;
+
+export function isLocalStorageAvailable(): boolean {
+  if (storageWritable !== null) return storageWritable;
+  if (typeof window === "undefined") return true; // SSR: don't warn
+  try {
+    const probe = "dom.storage-probe";
+    window.localStorage.setItem(probe, probe);
+    window.localStorage.removeItem(probe);
+    storageWritable = true;
+  } catch {
+    storageWritable = false;
+  }
+  return storageWritable;
+}
+
 type Store<T> = {
   getSnapshot: () => T;
   getServerSnapshot: () => T;

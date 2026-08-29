@@ -229,6 +229,21 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     enabled: !configured || Boolean(user),
   });
 
+  // A failed load renders exactly like an empty journal — same blank board, no
+  // hint that anything went wrong. That made a Safari-only outage (supabase-js
+  // rejecting on a Web Lock timeout) indistinguishable from "you logged
+  // nothing". Say so instead, and keep the reason in the console for a report.
+  const queryError = query.error;
+  useEffect(() => {
+    if (!queryError) return;
+    console.error("journal load failed", queryError);
+    toast.error(
+      `기록을 불러오지 못했어요: ${
+        queryError instanceof Error ? queryError.message : String(queryError)
+      }`,
+    );
+  }, [queryError]);
+
   // User-added albums (from music search). Guests get the in-memory bucket;
   // signed-in users get a localStorage cache for instant optimistic renders.
   const storeAlbums = useSyncExternalStore(
