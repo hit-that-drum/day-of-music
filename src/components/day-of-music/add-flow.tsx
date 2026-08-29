@@ -26,6 +26,7 @@ import {
   searchMusic,
   type AlbumDetail,
 } from "@/lib/day-of-music/music-search";
+import { readManualArtwork } from "@/lib/day-of-music/manual-artwork";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { Cover } from "@/components/day-of-music/cover";
@@ -45,44 +46,6 @@ export type NewEntry = {
 };
 
 const CATALOG_IDS = new Set(ALBUMS.map((a) => a.id));
-
-// journal_entries.album is capped at 64 KiB by the database. Manual artwork is
-// embedded in that JSON as a data URL, so leave enough room for the rest of the
-// album metadata (including non-ASCII titles/artists) before persisting it.
-const MANUAL_ART_MAX_BYTES = 48 * 1024;
-
-function compressManualArtwork(img: HTMLImageElement): string | null {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-
-  const sourceWidth = img.naturalWidth || img.width;
-  const sourceHeight = img.naturalHeight || img.height;
-  if (!sourceWidth || !sourceHeight) return null;
-
-  const maxDimensions = [600, 480, 384, 320, 256, 192, 128, 96];
-  const qualities = [0.82, 0.7, 0.58, 0.46];
-  let smallest = "";
-
-  for (const maxDimension of maxDimensions) {
-    const scale = Math.min(1, maxDimension / Math.max(sourceWidth, sourceHeight));
-    canvas.width = Math.max(1, Math.round(sourceWidth * scale));
-    canvas.height = Math.max(1, Math.round(sourceHeight * scale));
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-    for (const quality of qualities) {
-      const candidate = canvas.toDataURL("image/jpeg", quality);
-      if (!candidate.startsWith("data:image/jpeg")) continue;
-      smallest = candidate;
-      if (new Blob([candidate]).size <= MANUAL_ART_MAX_BYTES) return candidate;
-    }
-  }
-
-  // The 96 px fallback is normally only a few KiB. If a browser still emits
-  // an unexpectedly large payload, omit the optional artwork instead of
-  // sending a row the database is guaranteed to reject.
-  return smallest && new Blob([smallest]).size <= MANUAL_ART_MAX_BYTES ? smallest : null;
-}
 
 function useDebounced(value: string, delayMs: number): string {
   const [debounced, setDebounced] = useState(value);
@@ -142,24 +105,11 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
     () => `manual-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
   );
 
-  // Read a picked image file and compress it below the database album-JSON
-  // budget. Data URLs don't taint the export canvas used by share cards.
   function handlePickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-picking the same file later
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const src = typeof reader.result === "string" ? reader.result : "";
-      if (!src) return;
-      const img = new Image();
-      img.onload = () => {
-        setManualArt(compressManualArtwork(img));
-      };
-      img.onerror = () => setManualArt(null);
-      img.src = src;
-    };
-    reader.readAsDataURL(file);
+    void readManualArtwork(file).then(setManualArt);
   }
 
   // Build a journal-ready Album from the manual fields.

@@ -282,6 +282,7 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "field.genre": { en: "Genre", ko: "장르", ja: "ジャンル", zh: "流派", es: "Género" },
   "field.year": { en: "Year", ko: "연도", ja: "年", zh: "年份", es: "Año" },
   "field.note": { en: "Note", ko: "메모", ja: "メモ", zh: "备注", es: "Nota" },
+  "field.cover": { en: "Cover image", ko: "커버 이미지", ja: "カバー画像", zh: "封面图片", es: "Portada" },
 
   // ── Shared aria labels (navigation · rating · day cells) ────────────────
   "aria.prevWeek": { en: "Previous week", ko: "이전 주", ja: "前の週", zh: "上一周", es: "Semana anterior" },
@@ -370,6 +371,7 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "addflow.addPicture": { en: "Add a picture", ko: "사진 추가", ja: "画像を追加", zh: "添加图片", es: "Añadir una imagen" },
   "addflow.coverPreview": { en: "Cover preview", ko: "커버 미리보기", ja: "カバープレビュー", zh: "封面预览", es: "Vista previa de la portada" },
   "addflow.removePicture": { en: "Remove picture", ko: "사진 제거", ja: "画像を削除", zh: "移除图片", es: "Quitar imagen" },
+  "addflow.changePicture": { en: "Change picture", ko: "사진 변경", ja: "画像を変更", zh: "更换图片", es: "Cambiar imagen" },
   "addflow.titlePlaceholder": {
     en: "Song or album title",
     ko: "곡 또는 앨범 제목",

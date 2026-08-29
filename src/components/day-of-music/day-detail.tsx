@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import {
   formatDisplayDate,
@@ -11,6 +11,7 @@ import {
   parseDate,
   type Album,
 } from "@/lib/day-of-music/data";
+import { isManualAlbum, readManualArtwork } from "@/lib/day-of-music/manual-artwork";
 import { fetchAlbumDetail } from "@/lib/day-of-music/music-search";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
@@ -58,6 +59,9 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
   const [infoArtist, setInfoArtist] = useState(album.artist);
   const [infoGenre, setInfoGenre] = useState(normalizeGenre(album.genre));
   const [infoYear, setInfoYear] = useState(String(album.year));
+  // Draft cover for manual entries: a data URL to keep, or null for the
+  // typographic tile. Only committed by Save, so Cancel leaves the cover alone.
+  const [infoArt, setInfoArt] = useState<string | null>(album.artworkUrl ?? null);
   // Holds the "Saved ✓" auto-clear timer so we can cancel it on unmount and
   // before re-arming — otherwise setNoteSaved could fire after unmount.
   const noteSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -68,12 +72,16 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
   const date = parseDate(album.date);
   const seed = album.tracks.length;
   const noteDirty = note !== album.note;
-  const isManual = album.id.startsWith("manual-") || album.format === "Manual";
+  const isManual = isManualAlbum(album);
+  // One id for the hidden file input so both the preview tile and the "Change
+  // picture" caption can open the picker.
+  const artInputId = useId();
   const infoDirty =
     infoTitle !== album.title ||
     infoArtist !== album.artist ||
     infoGenre !== normalizeGenre(album.genre) ||
-    infoYear !== String(album.year);
+    infoYear !== String(album.year) ||
+    infoArt !== (album.artworkUrl ?? null);
   const infoValid = Boolean(infoTitle.trim() && infoGenre.trim());
 
   // iTunes albums arrive from Search with no tracklist (Search returns album
@@ -131,6 +139,8 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
       artist: infoArtist.trim() || "Unknown artist",
       genre: infoGenre.trim(),
       year: Number.isFinite(parsedYear) ? parsedYear : album.year,
+      // undefined drops the cover back to the typographic tile.
+      artworkUrl: infoArt ?? undefined,
     };
     onUpdate(album.date, next);
     setInfoTitle(next.title);
@@ -145,7 +155,16 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
     setInfoArtist(album.artist);
     setInfoGenre(normalizeGenre(album.genre));
     setInfoYear(String(album.year));
+    setInfoArt(album.artworkUrl ?? null);
     setEditingInfo(false);
+  }
+
+  // Manual entries only: swap the cover picture for one from the device.
+  function handlePickArt(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file later
+    if (!file) return;
+    void readManualArtwork(file).then(setInfoArt);
   }
 
   useEffect(
@@ -272,6 +291,47 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
             <div className="dom-info-pane">
               {editingInfo ? (
                 <div className="dom-info-edit">
+                  {/* Only hand-typed entries own their cover picture — catalog
+                      albums keep the artwork that came with them. */}
+                  {isManual && (
+                    <div className="dom-edit-field">
+                      <span className="dom-edit-label">{t("field.cover")}</span>
+                      <div className="dom-cover-edit">
+                        <input
+                          id={artInputId}
+                          type="file"
+                          accept="image/*"
+                          hidden
+                          onChange={handlePickArt}
+                        />
+                        <label htmlFor={artInputId} className="dom-addflow-imagedrop">
+                          {infoArt ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={infoArt} alt={t("addflow.coverPreview")} />
+                          ) : (
+                            <span>＋ {t("addflow.addPicture")}</span>
+                          )}
+                        </label>
+                        {infoArt && (
+                          <div className="dom-cover-edit-actions">
+                            <label
+                              htmlFor={artInputId}
+                              className="dom-addflow-manual-removeimg"
+                            >
+                              {t("addflow.changePicture")}
+                            </label>
+                            <button
+                              type="button"
+                              className="dom-addflow-manual-removeimg"
+                              onClick={() => setInfoArt(null)}
+                            >
+                              {t("addflow.removePicture")}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <label className="dom-edit-field">
                     <span className="dom-edit-label">{t("field.title")}</span>
                     <input
