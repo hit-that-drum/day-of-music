@@ -17,7 +17,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Session, User } from "@supabase/supabase-js";
 
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import {
+  AUTH_CALL_TIMEOUT_MS,
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+  withTimeout,
+} from "@/lib/supabase/client";
 
 type AuthResult = { error: string | null };
 
@@ -65,11 +70,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
 
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      setSession(data.session);
-      setLoading(false);
-    });
+    // Bounded for the same reason as signOut below: a getSession() that never
+    // settles would leave `loading` true forever, and the whole app waits on it.
+    // Treat a stalled read as "no session" rather than as "still deciding".
+    withTimeout(supabase.auth.getSession(), AUTH_CALL_TIMEOUT_MS, "getSession")
+      .then(({ data }) => {
+        if (!active) return;
+        setSession(data.session);
+      })
+      .catch((e) => {
+        console.error("getSession: did not complete", e);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
@@ -126,17 +140,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
-    // Signing out locally must not depend on the server call landing. supabase-js
-    // wraps every auth call in a Web Lock and rejects after a 5s acquire timeout;
-    // Safari hits that far more readily than Chrome. This used to reject straight
-    // out of the handler, so the session was never cleared and the redirect never
-    // ran — the button looked completely dead. Clear and redirect in `finally`,
-    // and surface the failure instead of swallowing it.
+    // Signing out locally must not depend on the server call landing at all —
+    // not on it succeeding, and not even on it *settling*. supabase-js wraps
+    // every auth call in a Web Lock, and a lock that is never released leaves
+    // the promise pending forever rather than rejecting; on Safari the sign-out
+    // button was dead precisely because an `await` here never came back, so a
+    // try/catch alone (which only sees rejections) changed nothing. Race the
+    // call against a deadline so this handler always reaches its own cleanup.
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await withTimeout(
+        supabase.auth.signOut(),
+        AUTH_CALL_TIMEOUT_MS,
+        "signOut",
+      );
       if (error) console.warn("signOut: server call failed", error);
     } catch (e) {
-      console.warn("signOut: threw before completing", e);
+      console.warn("signOut: did not complete", e);
       toast.error("서버 로그아웃에 실패했지만 이 기기에서는 로그아웃했어요.");
     } finally {
       setSession(null);
