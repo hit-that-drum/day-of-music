@@ -126,11 +126,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
-    await supabase.auth.signOut();
-    setSession(null);
-    // Send the user back to the sign-in page (mirrors /auth/callback's use of
-    // router.replace so the signed-out state isn't left in history).
-    router.replace("/signin");
+    // Signing out locally must not depend on the server call landing. supabase-js
+    // wraps every auth call in a Web Lock and rejects after a 5s acquire timeout;
+    // Safari hits that far more readily than Chrome. This used to reject straight
+    // out of the handler, so the session was never cleared and the redirect never
+    // ran — the button looked completely dead. Clear and redirect in `finally`,
+    // and surface the failure instead of swallowing it.
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) console.warn("signOut: server call failed", error);
+    } catch (e) {
+      console.warn("signOut: threw before completing", e);
+      toast.error("서버 로그아웃에 실패했지만 이 기기에서는 로그아웃했어요.");
+    } finally {
+      setSession(null);
+      // Send the user back to the sign-in page (mirrors /auth/callback's use of
+      // router.replace so the signed-out state isn't left in history).
+      router.replace("/signin");
+    }
   }, [router]);
 
   // Auto sign-out after an hour of no API activity. Gated on a stable boolean

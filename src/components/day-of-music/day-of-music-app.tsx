@@ -20,6 +20,7 @@ import { useCountry } from "@/lib/day-of-music/profile";
 import { useLanguage, useT } from "@/lib/day-of-music/i18n";
 import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
 import { useActiveTheme } from "@/lib/day-of-music/themes";
+import { isLocalStorageAvailable } from "@/lib/day-of-music/local-store";
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { AddFlow, type NewEntry } from "@/components/day-of-music/add-flow";
 import { DayDetail } from "@/components/day-of-music/day-detail";
@@ -51,6 +52,14 @@ const DEFAULT_TWEAKS: Tweaks = {
   typography: "editorial",
   weekSplit: false,
 };
+
+// Snapshot fns for the blocked-storage probe — module-level so their identity
+// is stable across renders (useSyncExternalStore resubscribes when it changes).
+// Whether storage works can't change within a page's life, so nothing to
+// subscribe to; the server snapshot says "fine" to keep hydration stable.
+const subscribeNever = () => () => {};
+const getStorageBlocked = () => !isLocalStorageAvailable();
+const getStorageBlockedServer = () => false;
 
 function loadTweaks(): Tweaks {
   if (typeof window === "undefined") return DEFAULT_TWEAKS;
@@ -348,6 +357,16 @@ export function DayOfMusicApp() {
   // in-memory only: their edits vanish when they leave the page.
   const isGuest = configured && !authLoading && !user;
 
+  // Read the same way the stores themselves are read: the server snapshot says
+  // "fine" so SSR matches, and the client re-renders to the probed answer after
+  // mount. Whether storage works never changes within a page's life, so the
+  // subscription is a no-op.
+  const storageBlocked = useSyncExternalStore(
+    subscribeNever,
+    getStorageBlocked,
+    getStorageBlockedServer,
+  );
+
   return (
     // Theme vars are applied to the stage so the modals (scrim/add-flow/share),
     // which render outside .dom-root, inherit them too.
@@ -369,6 +388,15 @@ export function DayOfMusicApp() {
           <div className="dom-guest-banner" role="status">
             {t("guest.banner")}
             <a href="/signup">{t("guest.signup")}</a>
+          </div>
+        )}
+
+        {/* Blocked storage breaks the app in ways that look like unrelated bugs
+            — signed out on every reload, and the board reset to the default
+            lane so an existing journal reads as empty. Name the cause. */}
+        {storageBlocked && (
+          <div className="dom-guest-banner" role="alert">
+            {t("storage.blocked")}
           </div>
         )}
 

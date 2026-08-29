@@ -2279,6 +2279,19 @@
   gap: 8px;
   padding-top: 10px;
 }
+/* Cover picker in Day Detail's Info editor (manual entries only). Left-aligned
+   with the text fields below it, unlike the Add flow's centred column. */
+.dom-cover-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.dom-cover-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 .dom-rate-row {
   display: flex;
   gap: 4px;

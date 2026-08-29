@@ -42,6 +42,13 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
     zh: "注册以保存你的记录",
     es: "Regístrate para conservar tu diario",
   },
+  "storage.blocked": {
+    en: "This browser is blocking site storage, so you'll be signed out on every reload and the board falls back to the default lane. Allow cookies for this site, or leave private browsing, then reload.",
+    ko: "이 브라우저가 사이트 저장소를 차단하고 있어 새로고침할 때마다 로그아웃되고, 보드도 기본 레인으로 돌아갑니다. 이 사이트의 쿠키를 허용하거나 시크릿 브라우징을 해제한 뒤 새로고침해 주세요.",
+    ja: "このブラウザがサイトストレージをブロックしているため、再読み込みのたびにログアウトされ、ボードも既定のレーンに戻ります。このサイトの Cookie を許可するか、プライベートブラウズを解除して再読み込みしてください。",
+    zh: "此浏览器阻止了网站存储，因此每次刷新都会退出登录，看板也会回到默认泳道。请允许本站 Cookie 或退出无痕浏览后刷新。",
+    es: "Este navegador bloquea el almacenamiento del sitio, así que se cerrará tu sesión en cada recarga y el tablero volverá al carril predeterminado. Permite las cookies de este sitio o sal de la navegación privada y recarga.",
+  },
 
   // ── Tweaks panel ────────────────────────────────────────────────────────
   "tweaks.title": { en: "Tweaks", ko: "꾸미기", ja: "カスタマイズ", zh: "个性化", es: "Ajustes" },
@@ -282,6 +289,7 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "field.genre": { en: "Genre", ko: "장르", ja: "ジャンル", zh: "流派", es: "Género" },
   "field.year": { en: "Year", ko: "연도", ja: "年", zh: "年份", es: "Año" },
   "field.note": { en: "Note", ko: "메모", ja: "メモ", zh: "备注", es: "Nota" },
+  "field.cover": { en: "Cover image", ko: "커버 이미지", ja: "カバー画像", zh: "封面图片", es: "Portada" },
 
   // ── Shared aria labels (navigation · rating · day cells) ────────────────
   "aria.prevWeek": { en: "Previous week", ko: "이전 주", ja: "前の週", zh: "上一周", es: "Semana anterior" },
@@ -370,6 +378,7 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "addflow.addPicture": { en: "Add a picture", ko: "사진 추가", ja: "画像を追加", zh: "添加图片", es: "Añadir una imagen" },
   "addflow.coverPreview": { en: "Cover preview", ko: "커버 미리보기", ja: "カバープレビュー", zh: "封面预览", es: "Vista previa de la portada" },
   "addflow.removePicture": { en: "Remove picture", ko: "사진 제거", ja: "画像を削除", zh: "移除图片", es: "Quitar imagen" },
+  "addflow.changePicture": { en: "Change picture", ko: "사진 변경", ja: "画像を変更", zh: "更换图片", es: "Cambiar imagen" },
   "addflow.titlePlaceholder": {
     en: "Song or album title",
     ko: "곡 또는 앨범 제목",
