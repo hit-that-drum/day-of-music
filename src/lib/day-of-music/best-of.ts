@@ -3,16 +3,29 @@
 // (over weekly winners) and Year (over monthly winners) can reuse it later.
 //
 // Results are persisted (latest overwrites) per (period, theme, periodKey) so a
-// Best of Month can be built on top of the weekly winners. Persistence follows
-// the themes.ts dual pattern: localStorage for guests, account user_metadata
-// when signed in.
+// Best of Month can be built on top of the weekly winners. Signed-in users keep
+// them in public.best_of; guests use per-device localStorage.
+//
+// These used to live in user_metadata, next to `themes`. That was wrong for
+// data that grows: Supabase embeds user_metadata in the access token, and the
+// token is sent as the Authorization header on every PostgREST request, so each
+// finished tournament made every subsequent request bigger. At 11.7 KiB of
+// results the header outgrew what WebKit will send and Safari killed each
+// connection ("The network connection was lost") while Chrome kept working.
+// `themes` is a fixed handful of lanes and stays where it is; this doesn't.
 
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { makeJsonStore } from "@/lib/day-of-music/local-store";
+import {
+  AUTH_CALL_TIMEOUT_MS,
+  getSupabaseBrowserClient,
+  withTimeout,
+} from "@/lib/supabase/client";
 import { addDays, fmtDate, parseDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { resolveActiveTheme, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
@@ -155,26 +168,136 @@ export function bestOfKey(period: BestOfPeriod, theme: string, periodKey: string
   return `${period}:${theme}:${periodKey}`;
 }
 
-// ── Persistence (guest localStorage / signed-in user_metadata) ───────────────
+// ── Persistence (guest localStorage / signed-in public.best_of) ──────────────
 
 const store = makeJsonStore<BestOfMap>("dom.bestof.v1", {});
 
-/** Read/write persisted Best-of results. Signed-in users sync via
- *  user_metadata.bestOf; guests use per-device localStorage. */
+// Row shape of public.best_of (snake_case), see 0009_best_of.sql.
+type BestOfRow = {
+  key: string;
+  winner_date: string;
+  method: BestOfMethod;
+  decided_at: string;
+};
+
+function rowsToMap(rows: BestOfRow[]): BestOfMap {
+  const map: BestOfMap = {};
+  for (const r of rows) {
+    map[r.key] = { winnerDate: r.winner_date, method: r.method, decidedAt: r.decided_at };
+  }
+  return map;
+}
+
+async function fetchBestOf(userId: string | null): Promise<BestOfMap> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase || !userId) return {};
+  const { data, error } = await withTimeout(
+    supabase.from("best_of").select("key, winner_date, method, decided_at"),
+    AUTH_CALL_TIMEOUT_MS,
+    "best_of select",
+  );
+  if (error) throw new Error(error.message);
+  return rowsToMap(data as BestOfRow[]);
+}
+
+/** Read/write persisted Best-of results. The map is loaded once and read
+ *  synchronously, so callers keep the same shape they had when this was backed
+ *  by user_metadata — only the storage underneath changed. */
 export function useBestOf(): {
   get: (key: string) => BestOfResult | undefined;
   set: (key: string, result: BestOfResult) => void;
 } {
   const { configured, user, updateUserMetadata } = useAuth();
+  const userId = user?.id ?? null;
+  const signedIn = configured && Boolean(user);
   const local = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
+  const queryClient = useQueryClient();
+  const queryKey = useMemo(() => ["bestOf", userId ?? "anon"] as const, [userId]);
 
-  if (configured && user) {
-    const meta = (user.user_metadata?.bestOf as BestOfMap | undefined) ?? {};
+  const query = useQuery({
+    queryKey,
+    queryFn: () => fetchBestOf(userId),
+    enabled: signedIn,
+  });
+
+  const upsert = useMutation({
+    mutationFn: async ({ key, result }: { key: string; result: BestOfResult }) => {
+      const supabase = getSupabaseBrowserClient();
+      if (!supabase || !userId) return;
+      const { error } = await supabase.from("best_of").upsert(
+        {
+          user_id: userId,
+          key,
+          winner_date: result.winnerDate,
+          method: result.method,
+          decided_at: result.decidedAt,
+        },
+        { onConflict: "user_id,key" },
+      );
+      if (error) throw new Error(error.message);
+    },
+    onMutate: ({ key, result }) => {
+      const previous = queryClient.getQueryData<BestOfMap>(queryKey);
+      queryClient.setQueryData<BestOfMap>(queryKey, { ...(previous ?? {}), [key]: result });
+      return { previous };
+    },
+    onError: (_e, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
+    },
+    onSettled: () => void queryClient.invalidateQueries({ queryKey }),
+  });
+
+  // One-time move of anything still in user_metadata.bestOf. Copy the results
+  // into the table, then clear the key so the account's access token shrinks
+  // back to a normal size — which is the whole point of the migration, and the
+  // only way an already-bloated account recovers without being touched by hand.
+  const migrated = useRef(false);
+  const remote = query.data;
+  useEffect(() => {
+    if (!signedIn || !userId || migrated.current || !remote) return;
+    const legacy = (user?.user_metadata?.bestOf as BestOfMap | undefined) ?? null;
+    if (!legacy || !Object.keys(legacy).length) return;
+    migrated.current = true;
+
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+    // Table rows win over the legacy copy, so a result decided since the move
+    // isn't rolled back by a stale token still carrying the old map.
+    const rows = Object.entries(legacy)
+      .filter(([key]) => !remote[key])
+      .map(([key, r]) => ({
+        user_id: userId,
+        key,
+        winner_date: r.winnerDate,
+        method: r.method,
+        decided_at: r.decidedAt,
+      }));
+
+    void (async () => {
+      try {
+        if (rows.length) {
+          const { error } = await supabase
+            .from("best_of")
+            .upsert(rows, { onConflict: "user_id,key" });
+          if (error) throw new Error(error.message);
+        }
+        // Only drop the metadata once the rows are safely persisted.
+        await updateUserMetadata({ bestOf: null });
+        void queryClient.invalidateQueries({ queryKey });
+      } catch (e) {
+        // Leave the metadata in place and retry on the next load: a failed
+        // move must not lose results.
+        migrated.current = false;
+        console.error("best_of: migration from user_metadata failed", e);
+      }
+    })();
+  }, [signedIn, userId, remote, user, updateUserMetadata, queryClient, queryKey]);
+
+  if (signedIn) {
+    const map = remote ?? {};
     return {
-      get: (key) => meta[key],
-      // Merge into the whole map, mirroring saveThemes (updateUserMetadata
-      // merges top-level keys, so we write the full bestOf object).
-      set: (key, result) => void updateUserMetadata({ bestOf: { ...meta, [key]: result } }),
+      get: (key) => map[key],
+      set: (key, result) => upsert.mutate({ key, result }),
     };
   }
   return {
