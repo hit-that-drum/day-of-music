@@ -34,7 +34,11 @@ import {
   useThemes,
 } from "@/lib/day-of-music/themes";
 import { useAuth } from "@/components/day-of-music/auth-provider";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  AUTH_CALL_TIMEOUT_MS,
+  getSupabaseBrowserClient,
+  withTimeout,
+} from "@/lib/supabase/client";
 
 type PatchMap = Record<string, JournalPatch>;
 // Mutation variables. `optimistic: false` lets a multi-write caller (moveSlot)
@@ -127,10 +131,19 @@ async function fetchJournal(userId: string | null): Promise<JournalResponse> {
     return { entries: readLocalEntries(), albums: readCustomAlbums(), persisted: false };
   }
 
-  const { data, error } = await supabase
-    .from("journal_entries")
-    .select("album_id, date, rating, note, theme, album")
-    .order("date");
+  // Bounded: a select() waits on supabase-js resolving an access token, which
+  // is serialised behind the same Web Lock as the auth calls. If that lock is
+  // never released the promise stays pending, and a pending query renders as a
+  // blank board forever — never as an error, so nothing reports it. A deadline
+  // turns that into a failure the caller can actually show.
+  const { data, error } = await withTimeout(
+    supabase
+      .from("journal_entries")
+      .select("album_id, date, rating, note, theme, album")
+      .order("date"),
+    AUTH_CALL_TIMEOUT_MS,
+    "journal select",
+  );
   if (error) throw new Error(error.message);
 
   const rows = data as JournalRow[];
