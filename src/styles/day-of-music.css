@@ -1429,7 +1429,12 @@
 /* Cover bleeds to the cell edges — negative margins cancel the cell's
    10px/12px padding so only the date + text stay inset. */
 .dom-month-cal-cover {
-  width: auto;
+  /* Definite width, not `auto`. The cover inside asks for `width: 100%`, and a
+     percentage against a flex item that is only sized by `stretch` is what
+     WebKit declines to resolve — it reads as indefinite and the cover collapses.
+     calc(100% + 24px) is the same used width `auto` produced here (the cell's
+     content box plus the two -12px bleeds), just stated definitely. */
+  width: calc(100% + 24px);
   max-width: none;
   margin: 0 -12px;
   transition: transform 0.2s ease;

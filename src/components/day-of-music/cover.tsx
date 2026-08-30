@@ -54,8 +54,16 @@ export function Cover({ album, size = 240 }: CoverProps) {
       className="dom-cover"
       style={{
         width: useFluid ? "100%" : size,
-        height: useFluid ? undefined : size,
-        aspectRatio: useFluid ? "1 / 1" : undefined,
+        // A padding-box square rather than `aspect-ratio`. This element also
+        // carries `container-type: inline-size`, which applies block-size
+        // containment — the height is computed as if the box had no contents,
+        // so it comes from the aspect ratio alone. WebKit collapses that pairing
+        // to zero height, which is why every cover in the monthly calendar
+        // vanished in Safari while Chrome rendered them fine. A percentage
+        // padding resolves against the width in every engine and is unaffected
+        // by containment, so the square survives the same containment.
+        height: useFluid ? 0 : size,
+        paddingTop: useFluid ? "100%" : undefined,
         position: "relative",
         overflow: "hidden",
         containerType: "inline-size",
