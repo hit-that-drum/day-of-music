@@ -1923,7 +1923,7 @@
 }
 .dom-search-result {
   display: grid;
-  grid-template-columns: 135px minmax(0, 1fr) 80px;
+  grid-template-columns: 135px minmax(0, 1fr) fit-content(180px);
   gap: 18px;
   align-items: center;
   padding: 0 14px;
