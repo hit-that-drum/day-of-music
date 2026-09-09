@@ -20,13 +20,13 @@ export type MusicSearchResult = {
 
 export async function searchMusic(
   query: string,
-  opts: { limit?: number; country?: string } = {},
+  opts: { limit?: number; country?: string; signal?: AbortSignal } = {},
 ): Promise<MusicSearchResult[]> {
   const params = new URLSearchParams({ q: query });
   if (opts.limit) params.set("limit", String(opts.limit));
   if (opts.country) params.set("country", opts.country);
 
-  const res = await fetch(`/api/music/search?${params}`);
+  const res = await fetch(`/api/music/search?${params}`, { signal: opts.signal });
   if (!res.ok) throw new Error("Music search failed");
   const data = (await res.json()) as { results: MusicSearchResult[] };
   return data.results;

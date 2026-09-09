@@ -1,0 +1,496 @@
+{
+  "startedAt": "2026-09-07T00:42:55.552Z",
+  "baselineCommit": "08f03693284bec5591297fbf8eaea7913b587b01",
+  "method": "Actual route handlers transpiled and invoked in Node with real upstream fetch. No Next.js server/Data Cache or browser cache. Repeats also use the network; provider/CDN and connection reuse may affect timings. 20s safety timeout on legacy fetch, any censored runs flagged. Alternating version order; 10s pause between runs.",
+  "samples": [
+    {
+      "round": 1,
+      "query": "NewJeans",
+      "country": "KR",
+      "limit": 8,
+      "version": "before",
+      "ms": 3006,
+      "status": 200,
+      "count": 8,
+      "titles": [
+        "NewJeans — NewJeans 1st EP 'New Jeans'",
+        "NewJeans — NewJeans 2nd EP 'Get Up'",
+        "NewJeans — NewJeans 'OMG' - Single",
+        "NewJeans — Ditto - Single",
+        "NewJeans — NewJeans 'Super Shy' - Single",
+        "League of Legends Music & NewJeans — GODS - Single",
+        "Turtlecommercial — NEWJEANS - Single",
+        "Turtlecommercial — NEWJEANS (Sped Up) - Single"
+      ],
+      "calls": [
+        {
+          "url": "https://itunes.apple.com/search?term=NewJeans&media=music&entity=album&limit=8&country=KR&lang=en_us",
+          "status": 200,
+          "bytes": 42,
+          "ms": 797
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=NewJeans&media=music&entity=album&limit=8&country=US&lang=en_us",
+          "status": 200,
+          "bytes": 7449,
+          "ms": 317
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=NewJeans&media=music&entity=song&limit=200&country=US",
+          "status": 200,
+          "bytes": 307944,
+          "ms": 1877
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "query": "NewJeans",
+      "country": "KR",
+      "limit": 8,
+      "version": "after",
+      "ms": 993,
+      "status": 200,
+      "count": 8,
+      "titles": [
+        "NewJeans — NewJeans 'Super Shy' - Single",
+        "NewJeans — Ditto - Single",
+        "NewJeans — Supernatural - Single",
+        "NewJeans — NewJeans 2nd EP 'Get Up'",
+        "NewJeans — NewJeans 'OMG' - Single",
+        "NewJeans — NewJeans 1st EP 'New Jeans'",
+        "NewJeans — How Sweet - EP",
+        "NovaX — NewJeans - Jersey Club (Versions) - Single"
+      ],
+      "calls": [
+        {
+          "url": "https://itunes.apple.com/search?term=NewJeans&media=music&entity=song%2Calbum&limit=50&country=KR",
+          "status": 200,
+          "bytes": 42,
+          "ms": 336
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=NewJeans&media=music&entity=song%2Calbum&limit=50&country=US",
+          "status": 200,
+          "bytes": 86732,
+          "ms": 577
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=NewJeans&media=music&entity=song%2Calbum&limit=50&country=JP",
+          "status": 200,
+          "bytes": 87404,
+          "ms": 620
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=NewJeans&media=music&entity=song%2Calbum&limit=50&country=GB",
+          "status": 200,
+          "bytes": 86835,
+          "ms": 648
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "query": "자몽살구클럽",
+      "country": "KR",
+      "limit": 8,
+      "version": "after",
+      "ms": 4362,
+      "status": 200,
+      "count": 1,
+      "titles": [
+        "HANRORO — JAMONG SALGU CLUB"
+      ],
+      "calls": [
+        {
+          "url": "https://itunes.apple.com/search?term=%EC%9E%90%EB%AA%BD%EC%82%B4%EA%B5%AC%ED%81%B4%EB%9F%BD&media=music&entity=song%2Calbum&limit=50&country=KR",
+          "status": 200,
+          "bytes": 42,
+          "ms": 356
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=%EC%9E%90%EB%AA%BD%EC%82%B4%EA%B5%AC%ED%81%B4%EB%9F%BD&media=music&entity=song%2Calbum&limit=50&country=US",
+          "status": 200,
+          "bytes": 11354,
+          "ms": 370
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=%EC%9E%90%EB%AA%BD%EC%82%B4%EA%B5%AC%ED%81%B4%EB%9F%BD&media=music&entity=song%2Calbum&limit=50&country=JP",
+          "error": "TimeoutError: The operation was aborted due to timeout",
+          "safetyTimeout": false,
+          "ms": 4000
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=%EC%9E%90%EB%AA%BD%EC%82%B4%EA%B5%AC%ED%81%B4%EB%9F%BD&media=music&entity=song%2Calbum&limit=50&country=GB",
+          "error": "TimeoutError: The operation was aborted due to timeout",
+          "safetyTimeout": false,
+          "ms": 4000
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "query": "자몽살구클럽",
+      "country": "KR",
+      "limit": 8,
+      "version": "before",
+      "ms": 983,
+      "status": 200,
+      "count": 1,
+      "titles": [
+        "HANRORO — JAMONG SALGU CLUB"
+      ],
+      "calls": [
+        {
+          "url": "https://itunes.apple.com/search?term=%EC%9E%90%EB%AA%BD%EC%82%B4%EA%B5%AC%ED%81%B4%EB%9F%BD&media=music&entity=album&limit=8&country=KR&lang=en_us",
+          "status": 200,
+          "bytes": 42,
+          "ms": 355
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=%EC%9E%90%EB%AA%BD%EC%82%B4%EA%B5%AC%ED%81%B4%EB%9F%BD&media=music&entity=album&limit=8&country=US&lang=en_us",
+          "status": 200,
+          "bytes": 959,
+          "ms": 307
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=%EC%9E%90%EB%AA%BD%EC%82%B4%EA%B5%AC%ED%81%B4%EB%9F%BD&media=music&entity=song&limit=200&country=US",
+          "status": 200,
+          "bytes": 10435,
+          "ms": 319
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "query": "Radiohead Creep",
+      "country": "KR",
+      "limit": 8,
+      "version": "before",
+      "ms": 2585,
+      "status": 200,
+      "count": 8,
+      "titles": [
+        "Radiohead — OK Computer",
+        "Radiohead — In Rainbows",
+        "Kina Grannis — Creep - Single",
+        "The Macarons Project — Creep (Acoustic) - Single",
+        "VINCINT — Creep (The Four Performance) - Single",
+        "Daniel Chuer — Creep (Radiohead Cover) - Single",
+        "Thom Yorke — Creep (Very 2021 Rmx) [feat. Radiohead] - Single",
+        "Radiohead — The Bends"
+      ],
+      "calls": [
+        {
+          "url": "https://itunes.apple.com/search?term=Radiohead+Creep&media=music&entity=album&limit=8&country=KR&lang=en_us",
+          "status": 200,
+          "bytes": 42,
+          "ms": 340
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=Radiohead+Creep&media=music&entity=album&limit=8&country=US&lang=en_us",
+          "status": 200,
+          "bytes": 7740,
+          "ms": 339
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=Radiohead+Creep&media=music&entity=song&limit=200&country=US",
+          "status": 200,
+          "bytes": 307610,
+          "ms": 1898
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "query": "Radiohead Creep",
+      "country": "KR",
+      "limit": 8,
+      "version": "after",
+      "ms": 1036,
+      "status": 200,
+      "count": 8,
+      "titles": [
+        "Radiohead — Creep - EP",
+        "Daniel Chuer — Creep (Radiohead Cover) - Single",
+        "Thom Yorke — Creep (Very 2021 Rmx) [feat. Radiohead] - Single",
+        "Sunfly House Band — Ultimate Sunfly Classics Vol 5",
+        "Sean Mikes — Relaxing Classical Playlist: Sophisticated Lounge",
+        "Vitamin String Quartet — Vitamin String Quartet Performs Alternative Hits of the 80s and 90s, Vol. 1",
+        "Emanuel Pavon — Peaceful Cello",
+        "Scott Bradlee's Postmodern Jukebox & Postmodern Jukebox — Emoji Antique"
+      ],
+      "calls": [
+        {
+          "url": "https://itunes.apple.com/search?term=Radiohead+Creep&media=music&entity=song%2Calbum&limit=50&country=KR",
+          "status": 200,
+          "bytes": 42,
+          "ms": 253
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=Radiohead+Creep&media=music&entity=song%2Calbum&limit=50&country=US",
+          "status": 200,
+          "bytes": 86693,
+          "ms": 702
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=Radiohead+Creep&media=music&entity=song%2Calbum&limit=50&country=JP",
+          "status": 200,
+          "bytes": 88593,
+          "ms": 780
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=Radiohead+Creep&media=music&entity=song%2Calbum&limit=50&country=GB",
+          "status": 200,
+          "bytes": 86877,
+          "ms": 762
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "query": "NewJeans",
+      "country": "KR",
+      "limit": 8,
+      "version": "after",
+      "ms": 275,
+      "status": 200,
+      "count": 8,
+      "titles": [
+        "NewJeans — NewJeans 'Super Shy' - Single",
+        "NewJeans — Ditto - Single",
+        "NewJeans — Supernatural - Single",
+        "NewJeans — NewJeans 2nd EP 'Get Up'",
+        "NewJeans — NewJeans 'OMG' - Single",
+        "NewJeans — NewJeans 1st EP 'New Jeans'",
+        "NewJeans — How Sweet - EP",
+        "NovaX — NewJeans - Jersey Club (Versions) - Single"
+      ],
+      "calls": [
+        {
+          "url": "https://itunes.apple.com/search?term=NewJeans&media=music&entity=song%2Calbum&limit=50&country=KR",
+          "status": 200,
+          "bytes": 42,
+          "ms": 207
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=NewJeans&media=music&entity=song%2Calbum&limit=50&country=US",
+          "status": 200,
+          "bytes": 86732,
+          "ms": 34
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=NewJeans&media=music&entity=song%2Calbum&limit=50&country=JP",
+          "status": 200,
+          "bytes": 87404,
+          "ms": 64
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=NewJeans&media=music&entity=song%2Calbum&limit=50&country=GB",
+          "status": 200,
+          "bytes": 86835,
+          "ms": 59
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "query": "NewJeans",
+      "country": "KR",
+      "limit": 8,
+      "version": "before",
+      "ms": 74,
+      "status": 200,
+      "count": 8,
+      "titles": [
+        "NewJeans — NewJeans 1st EP 'New Jeans'",
+        "NewJeans — NewJeans 2nd EP 'Get Up'",
+        "NewJeans — NewJeans 'OMG' - Single",
+        "NewJeans — Ditto - Single",
+        "NewJeans — NewJeans 'Super Shy' - Single",
+        "League of Legends Music & NewJeans — GODS - Single",
+        "Turtlecommercial — NEWJEANS - Single",
+        "Turtlecommercial — NEWJEANS (Sped Up) - Single"
+      ],
+      "calls": [
+        {
+          "url": "https://itunes.apple.com/search?term=NewJeans&media=music&entity=album&limit=8&country=KR&lang=en_us",
+          "status": 200,
+          "bytes": 42,
+          "ms": 34
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=NewJeans&media=music&entity=album&limit=8&country=US&lang=en_us",
+          "status": 200,
+          "bytes": 7449,
+          "ms": 13
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=NewJeans&media=music&entity=song&limit=200&country=US",
+          "status": 200,
+          "bytes": 307944,
+          "ms": 22
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "query": "자몽살구클럽",
+      "country": "KR",
+      "limit": 8,
+      "version": "before",
+      "ms": 1598,
+      "status": 200,
+      "count": 1,
+      "titles": [
+        "HANRORO — JAMONG SALGU CLUB"
+      ],
+      "calls": [
+        {
+          "url": "https://itunes.apple.com/search?term=%EC%9E%90%EB%AA%BD%EC%82%B4%EA%B5%AC%ED%81%B4%EB%9F%BD&media=music&entity=album&limit=8&country=KR&lang=en_us",
+          "status": 200,
+          "bytes": 42,
+          "ms": 1576
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=%EC%9E%90%EB%AA%BD%EC%82%B4%EA%B5%AC%ED%81%B4%EB%9F%BD&media=music&entity=album&limit=8&country=US&lang=en_us",
+          "status": 200,
+          "bytes": 959,
+          "ms": 10
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=%EC%9E%90%EB%AA%BD%EC%82%B4%EA%B5%AC%ED%81%B4%EB%9F%BD&media=music&entity=song&limit=200&country=US",
+          "status": 200,
+          "bytes": 10435,
+          "ms": 11
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "query": "자몽살구클럽",
+      "country": "KR",
+      "limit": 8,
+      "version": "after",
+      "ms": 494,
+      "status": 200,
+      "count": 1,
+      "titles": [
+        "HANRORO — JAMONG SALGU CLUB"
+      ],
+      "calls": [
+        {
+          "url": "https://itunes.apple.com/search?term=%EC%9E%90%EB%AA%BD%EC%82%B4%EA%B5%AC%ED%81%B4%EB%9F%BD&media=music&entity=song%2Calbum&limit=50&country=KR",
+          "status": 200,
+          "bytes": 42,
+          "ms": 39
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=%EC%9E%90%EB%AA%BD%EC%82%B4%EA%B5%AC%ED%81%B4%EB%9F%BD&media=music&entity=song%2Calbum&limit=50&country=US",
+          "status": 200,
+          "bytes": 11354,
+          "ms": 11
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=%EC%9E%90%EB%AA%BD%EC%82%B4%EA%B5%AC%ED%81%B4%EB%9F%BD&media=music&entity=song%2Calbum&limit=50&country=JP",
+          "status": 200,
+          "bytes": 11424,
+          "ms": 453
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=%EC%9E%90%EB%AA%BD%EC%82%B4%EA%B5%AC%ED%81%B4%EB%9F%BD&media=music&entity=song%2Calbum&limit=50&country=GB",
+          "status": 200,
+          "bytes": 11354,
+          "ms": 393
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "query": "Radiohead Creep",
+      "country": "KR",
+      "limit": 8,
+      "version": "after",
+      "ms": 213,
+      "status": 200,
+      "count": 8,
+      "titles": [
+        "Radiohead — Creep - EP",
+        "Daniel Chuer — Creep (Radiohead Cover) - Single",
+        "Thom Yorke — Creep (Very 2021 Rmx) [feat. Radiohead] - Single",
+        "Sunfly House Band — Ultimate Sunfly Classics Vol 5",
+        "Sean Mikes — Relaxing Classical Playlist: Sophisticated Lounge",
+        "Vitamin String Quartet — Vitamin String Quartet Performs Alternative Hits of the 80s and 90s, Vol. 1",
+        "Emanuel Pavon — Peaceful Cello",
+        "Scott Bradlee's Postmodern Jukebox & Postmodern Jukebox — Emoji Antique"
+      ],
+      "calls": [
+        {
+          "url": "https://itunes.apple.com/search?term=Radiohead+Creep&media=music&entity=song%2Calbum&limit=50&country=KR",
+          "status": 200,
+          "bytes": 42,
+          "ms": 172
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=Radiohead+Creep&media=music&entity=song%2Calbum&limit=50&country=US",
+          "status": 200,
+          "bytes": 86693,
+          "ms": 15
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=Radiohead+Creep&media=music&entity=song%2Calbum&limit=50&country=JP",
+          "status": 200,
+          "bytes": 88593,
+          "ms": 37
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=Radiohead+Creep&media=music&entity=song%2Calbum&limit=50&country=GB",
+          "status": 200,
+          "bytes": 86877,
+          "ms": 32
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "query": "Radiohead Creep",
+      "country": "KR",
+      "limit": 8,
+      "version": "before",
+      "ms": 90,
+      "status": 200,
+      "count": 8,
+      "titles": [
+        "Radiohead — OK Computer",
+        "Radiohead — In Rainbows",
+        "Kina Grannis — Creep - Single",
+        "The Macarons Project — Creep (Acoustic) - Single",
+        "VINCINT — Creep (The Four Performance) - Single",
+        "Daniel Chuer — Creep (Radiohead Cover) - Single",
+        "Thom Yorke — Creep (Very 2021 Rmx) [feat. Radiohead] - Single",
+        "Radiohead — The Bends"
+      ],
+      "calls": [
+        {
+          "url": "https://itunes.apple.com/search?term=Radiohead+Creep&media=music&entity=album&limit=8&country=KR&lang=en_us",
+          "status": 200,
+          "bytes": 42,
+          "ms": 39
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=Radiohead+Creep&media=music&entity=album&limit=8&country=US&lang=en_us",
+          "status": 200,
+          "bytes": 7740,
+          "ms": 10
+        },
+        {
+          "url": "https://itunes.apple.com/search?term=Radiohead+Creep&media=music&entity=song&limit=200&country=US",
+          "status": 200,
+          "bytes": 307610,
+          "ms": 30
+        }
+      ]
+    }
+  ],
+  "finishedAt": "2026-09-07T00:45:11.340Z"
+}

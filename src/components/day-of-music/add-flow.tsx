@@ -161,12 +161,14 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
   const limit = showAll ? ALL_LIMIT : COMPACT_COUNT;
   const search = useQuery({
     queryKey: ["music-search", debouncedQuery, limit, country],
-    queryFn: () => searchMusic(debouncedQuery, { limit, country }),
+    queryFn: ({ signal }) => searchMusic(debouncedQuery, { limit, country, signal }),
     enabled: debouncedQuery.length >= 2 && !pastedLink,
     staleTime: 5 * 60 * 1000,
     retry: 1,
     // Keep the current results visible while a larger batch loads.
-    placeholderData: (prev) => prev,
+    placeholderData: (prev, previousQuery) =>
+      previousQuery?.queryKey[1] === debouncedQuery && previousQuery.queryKey[3] === country
+        ? prev : undefined,
   });
 
   const urlAlbum = useQuery({

@@ -107,8 +107,6 @@ export async function GET(request: Request) {
   const preferred = country.toUpperCase();
   const storefronts = [...new Set([preferred, "US", "KR", "JP", "GB"])];
 
-  const completed = new AbortController();
-
   async function searchIn(store: string): Promise<MusicSearchResult[] | null> {
     const itunesUrl = new URL("https://itunes.apple.com/search");
     itunesUrl.searchParams.set("term", q);
@@ -119,7 +117,7 @@ export async function GET(request: Request) {
     try {
       const resp = await fetch(itunesUrl, {
         next: { revalidate: 3600 },
-        signal: AbortSignal.any([request.signal, completed.signal, AbortSignal.timeout(4000)]),
+        signal: AbortSignal.any([request.signal, AbortSignal.timeout(4000)]),
       });
       if (!resp.ok) return null;
       const body = await resp.json() as { results?: ITunesResult[] };
@@ -153,28 +151,15 @@ export async function GET(request: Request) {
   const first = await searchIn(preferred);
   if (first?.length) return Response.json({ results: first });
   if (request.signal.aborted) return Response.json({ error: "Search cancelled." }, { status: 408 });
-  // Empty results and errors must not win the race. Keep trying until a
-  // non-empty storefront responds or every alternative has finished.
-  let anyStoreReached = first !== null;
-  try {
-    const results = await Promise.any(storefronts.slice(1).map(async (store) => {
-      const rows = await searchIn(store);
-      if (rows !== null) anyStoreReached = true;
-      if (!rows?.length) throw new Error("No matches in storefront");
-      return rows;
-    }));
-    if (request.signal.aborted) {
-      return Response.json({ error: "Search cancelled." }, { status: 408 });
-    }
+  const fallback = await Promise.all(storefronts.slice(1).map(searchIn));
+  const seen = new Set<string>();
+  const results = fallback.flatMap((rows) => rows ?? []).filter((row) => {
+    if (seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
+  }).slice(0, limit);
+  if (first !== null || fallback.some((rows) => rows !== null)) {
     return Response.json({ results });
-  } catch {
-    if (request.signal.aborted) {
-      return Response.json({ error: "Search cancelled." }, { status: 408 });
-    }
-    if (anyStoreReached) return Response.json({ results: [] });
-    return Response.json({ error: "Music search failed." }, { status: 502 });
-  } finally {
-    // Once we have a result, stop downloading unused regional responses.
-    completed.abort();
   }
+  return Response.json({ error: "Music search failed." }, { status: 502 });
 }
