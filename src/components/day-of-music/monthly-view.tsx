@@ -116,33 +116,41 @@ export function MonthlyView({
           <span className="dom-eyebrow">
             {t("month.eyebrow", { month: names.monthLong(month) })}
           </span>
-          <h1 className="dom-month-h1">
+          <h1 className="dom-month-h1" aria-live="polite">
             <span className="dom-month-h1-name">{names.monthLong(month)}</span>
             <span className="dom-month-h1-year">{year}</span>
           </h1>
         </div>
+        {/* The two wrappers are display:contents on desktop (same flex row as
+            before); phones give them their own grid areas. */}
         <div className="dom-month-nav">
-          {!isCurrentMonth && (
-            <Button onClick={() => onJump(today)}>{t("month.thisMonth").toUpperCase()}</Button>
-          )}
-          <Button
-            variant="ghost"
-            onClick={bestOfBlocked ? () => toast(bestOfHint) : onBestOf}
-            data-bestof={bestOf.status}
-            title={bestOfHint}
-            aria-disabled={bestOfBlocked || undefined}
-            aria-label={bestOfHint && `${t("bom.button")} — ${bestOfHint}`}
-          >
-            {bestOf.status === "done" && (
-              <span className="dom-bestof-trophy" aria-hidden="true">
-                🏆
-              </span>
+          <div className="dom-month-ctas">
+            {!isCurrentMonth && (
+              <Button className="dom-month-cta-today" onClick={() => onJump(today)}>
+                {t("month.thisMonth").toUpperCase()}
+              </Button>
             )}
-            {t("bom.button")}
-          </Button>
-          <Button onClick={onShare}>{t("month.shareMonth").toUpperCase()}</Button>
-          <IconButton icon={ArrowLeft} onClick={onPrev} aria-label={t("aria.prevMonth")} />
-          <IconButton icon={ArrowRight} onClick={onNext} aria-label={t("aria.nextMonth")} />
+            <Button
+              variant="ghost"
+              onClick={bestOfBlocked ? () => toast(bestOfHint) : onBestOf}
+              data-bestof={bestOf.status}
+              title={bestOfHint}
+              aria-disabled={bestOfBlocked || undefined}
+              aria-label={bestOfHint && `${t("bom.button")} — ${bestOfHint}`}
+            >
+              {bestOf.status === "done" && (
+                <span className="dom-bestof-trophy" aria-hidden="true">
+                  🏆
+                </span>
+              )}
+              {t("bom.button")}
+            </Button>
+            <Button onClick={onShare}>{t("month.shareMonth").toUpperCase()}</Button>
+          </div>
+          <div className="dom-month-arrows">
+            <IconButton icon={ArrowLeft} onClick={onPrev} aria-label={t("aria.prevMonth")} />
+            <IconButton icon={ArrowRight} onClick={onNext} aria-label={t("aria.nextMonth")} />
+          </div>
         </div>
         <div className="dom-month-hd-right">
           <div className="dom-month-stat">

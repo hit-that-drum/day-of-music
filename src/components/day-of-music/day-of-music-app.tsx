@@ -12,6 +12,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { X } from "lucide-react";
 import { toast } from "sonner";
 
 import { addDays, fmtDate, formatDisplayDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
@@ -20,9 +21,11 @@ import { useCountry } from "@/lib/day-of-music/profile";
 import { useLanguage, useT } from "@/lib/day-of-music/i18n";
 import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
 import { useActiveTheme } from "@/lib/day-of-music/themes";
-import { isLocalStorageAvailable } from "@/lib/day-of-music/local-store";
+import { isLocalStorageAvailable, makeSessionFlagStore } from "@/lib/day-of-music/local-store";
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { AddFlow, type NewEntry } from "@/components/day-of-music/add-flow";
+import { IconButton } from "@/components/day-of-music/atoms";
+import { BottomTabs } from "@/components/day-of-music/bottom-tabs";
 import { DayDetail } from "@/components/day-of-music/day-detail";
 import { MonthlyView } from "@/components/day-of-music/monthly-view";
 import { ProfileStats } from "@/components/day-of-music/profile-stats";
@@ -30,6 +33,7 @@ import { ProfilePage } from "@/components/day-of-music/profile-page";
 import { SearchView } from "@/components/day-of-music/search-view";
 import { ShareCard } from "@/components/day-of-music/share-card";
 import { MonthShareCard } from "@/components/day-of-music/month-share-card";
+import { MoreSheet } from "@/components/day-of-music/more-sheet";
 import { BestOfWeekModal } from "@/components/day-of-music/best-of-week-modal";
 import { BestOfMonthModal } from "@/components/day-of-music/best-of-month-modal";
 import { ThemeTabs } from "@/components/day-of-music/theme-tabs";
@@ -60,6 +64,11 @@ const DEFAULT_TWEAKS: Tweaks = {
 const subscribeNever = () => () => {};
 const getStorageBlocked = () => !isLocalStorageAvailable();
 const getStorageBlockedServer = () => false;
+
+// Phones show a one-line guest banner with a ✕; the dismissal lives in
+// sessionStorage (per tab — guest edits already vanish on leave). Server
+// snapshot is false, so SSR renders the banner and the client flips after mount.
+const guestBannerDismissed = makeSessionFlagStore("dom.guestBanner.dismissed.v1");
 
 function loadTweaks(): Tweaks {
   if (typeof window === "undefined") return DEFAULT_TWEAKS;
@@ -157,6 +166,8 @@ export function DayOfMusicApp() {
   const [showBestOf, setShowBestOf] = useState(false);
   const [showBestOfMonth, setShowBestOfMonth] = useState(false);
   const [showTweaks, setShowTweaks] = useState(false);
+  // Phone "⋯ More" overflow sheet (language / account / legal).
+  const [showMore, setShowMore] = useState(false);
 
   // Single place that dismisses every overlay + resets the transient add/replace
   // state. Centralised so new overlays only have to be added here (and so the
@@ -169,6 +180,7 @@ export function DayOfMusicApp() {
     setShowBestOf(false);
     setShowBestOfMonth(false);
     setShowTweaks(false);
+    setShowMore(false);
     setReplaceTarget(null);
   }, []);
 
@@ -253,7 +265,8 @@ export function DayOfMusicApp() {
         showMonthShare ||
         showBestOf ||
         showBestOfMonth ||
-        showTweaks
+        showTweaks ||
+        showMore
       ) {
         if (e.key === "Escape") closeAll();
         return;
@@ -269,7 +282,7 @@ export function DayOfMusicApp() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openAlbum, showAdd, showShare, showMonthShare, showBestOf, showBestOfMonth, showTweaks, screen, prevWeek, nextWeek, prevMonth, nextMonth, closeAll]);
+  }, [openAlbum, showAdd, showShare, showMonthShare, showBestOf, showBestOfMonth, showTweaks, showMore, screen, prevWeek, nextWeek, prevMonth, nextMonth, closeAll]);
 
   const handleOpen = useCallback(
     (album: Album | JournalAlbum) => {
@@ -367,6 +380,13 @@ export function DayOfMusicApp() {
     getStorageBlockedServer,
   );
 
+  const guestDismissed = useSyncExternalStore(
+    guestBannerDismissed.subscribe,
+    guestBannerDismissed.getSnapshot,
+    guestBannerDismissed.getServerSnapshot,
+  );
+  const showGuestBanner = isGuest && !guestDismissed;
+
   return (
     // Theme vars are applied to the stage so the modals (scrim/add-flow/share),
     // which render outside .dom-root, inherit them too.
@@ -374,20 +394,36 @@ export function DayOfMusicApp() {
       <div
         className="dom-root"
         data-grid={tweaks.aesthetic === "editorial" || tweaks.aesthetic === "dark" ? "1" : "0"}
-        data-guest={isGuest ? "1" : "0"}
+        // Number of in-flow banners above <main>, so the grid rows match.
+        data-banners={String((showGuestBanner ? 1 : 0) + (storageBlocked ? 1 : 0))}
       >
         <TopBar
           screen={screen}
           onScreen={setScreen}
           onTweaks={() => setShowTweaks((v) => !v)}
+          onMore={() => setShowMore(true)}
           account={configured && user ? { email: user.email ?? "", onSignOut: signOut } : null}
           showAuthLinks={isGuest}
         />
 
-        {isGuest && (
-          <div className="dom-guest-banner" role="status">
-            {t("guest.banner")}
-            <a href="/signup">{t("guest.signup")}</a>
+        {showGuestBanner && (
+          <div className="dom-guest-banner" data-kind="guest" role="status">
+            {/* Long copy on desktop, one-line short copy + ✕ on phones (CSS). */}
+            <span className="dom-guest-banner-long">{t("guest.banner")}</span>
+            <span className="dom-guest-banner-short">{t("guest.bannerShort")}</span>
+            <a href="/signup" className="dom-guest-banner-cta-long">
+              {t("guest.signup")}
+            </a>
+            <a href="/signup" className="dom-guest-banner-cta-short">
+              {t("actions.signUp")}
+            </a>
+            <IconButton
+              icon={X}
+              iconSize={16}
+              className="dom-guest-dismiss"
+              onClick={() => guestBannerDismissed.set(true)}
+              aria-label={t("modal.close")}
+            />
           </div>
         )}
 
@@ -395,7 +431,7 @@ export function DayOfMusicApp() {
             — signed out on every reload, and the board reset to the default
             lane so an existing journal reads as empty. Name the cause. */}
         {storageBlocked && (
-          <div className="dom-guest-banner" role="alert">
+          <div className="dom-guest-banner" data-kind="storage" role="alert">
             {t("storage.blocked")}
           </div>
         )}
@@ -445,6 +481,10 @@ export function DayOfMusicApp() {
           {screen === "profile" && <ProfilePage />}
         </main>
 
+        {/* Phone-only fixed tab bar (display:none on desktop). Inside .dom-root
+            so the dom-reset layer reaches its buttons; position:fixed keeps it
+            out of the grid flow. */}
+        <BottomTabs screen={screen} onScreen={setScreen} />
       </div>
 
       {openAlbum && (
@@ -501,6 +541,13 @@ export function DayOfMusicApp() {
           splitByMonth={tweaks.weekSplit}
           today={TODAY}
           onClose={() => setShowBestOfMonth(false)}
+        />
+      )}
+      {showMore && (
+        <MoreSheet
+          onClose={() => setShowMore(false)}
+          account={configured && user ? { email: user.email ?? "", onSignOut: signOut } : null}
+          showAuthLinks={isGuest}
         />
       )}
 

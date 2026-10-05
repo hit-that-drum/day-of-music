@@ -121,3 +121,26 @@ export function makeJsonStore<T>(key: string, fallback: T): Store<T> {
     fallback,
   );
 }
+
+/** Per-tab boolean flag (sessionStorage). Server snapshot is `fallback`, so SSR
+ *  never flips on a stored value; the client re-renders after mount. */
+export function makeSessionFlagStore(key: string, fallback = false): Store<boolean> {
+  return makeStore<boolean>(
+    () => {
+      if (typeof window === "undefined") return fallback;
+      try {
+        return window.sessionStorage.getItem(key) === "1";
+      } catch {
+        return fallback;
+      }
+    },
+    (next) => {
+      try {
+        window.sessionStorage.setItem(key, next ? "1" : "0");
+      } catch {
+        /* storage unavailable — ignore */
+      }
+    },
+    fallback,
+  );
+}

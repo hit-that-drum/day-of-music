@@ -711,4 +711,10 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "toast.logged": { en: "Logged {title}", ko: "{title} 기록됨", ja: "{title} を記録しました", zh: "已记录 {title}", es: "Registrado: {title}" },
   "toast.loggedDaysDesc": { en: "{count} days · {rating}★", ko: "{count}일 · {rating}★", ja: "{count}日 · {rating}★", zh: "{count} 天 · {rating}★", es: "{count} días · {rating}★" },
   "toast.loggedDateDesc": { en: "{date} · {rating}★", ko: "{date} · {rating}★", ja: "{date} · {rating}★", zh: "{date} · {rating}★", es: "{date} · {rating}★" },
+
+  // ── Mobile shell (phone-only chrome) ────────────────────────────────────
+  "menu.title": { en: "More", ko: "더보기", ja: "その他", zh: "更多", es: "Más" },
+  "aria.tabbar": { en: "Main navigation", ko: "주 메뉴", ja: "メインナビゲーション", zh: "主导航", es: "Navegación principal" },
+  "guest.bannerShort": { en: "Guest mode — edits aren't saved.", ko: "게스트 모드 — 나가면 기록이 초기화됩니다", ja: "ゲストモード — 離れるとリセット", zh: "访客模式 — 离开后将重置", es: "Modo invitado: nada se guarda" },
+  "modal.close": { en: "Close", ko: "닫기", ja: "閉じる", zh: "关闭", es: "Cerrar" },
 };
