@@ -3,9 +3,10 @@
 
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import {
+  fmtDate,
   formatDisplayDate,
   normalizeGenre,
   parseDate,
@@ -14,18 +15,23 @@ import {
 import { isManualAlbum, readManualArtwork } from "@/lib/day-of-music/manual-artwork";
 import { fetchAlbumDetail } from "@/lib/day-of-music/music-search";
 import { useCountry } from "@/lib/day-of-music/profile";
+import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
+import { DayPicker, SwapConfirm } from "@/components/day-of-music/week-picker";
 
 type Tab = "tracklist" | "journal" | "info";
 
 type DayDetailProps = {
   album: Album;
   onClose: () => void;
-  /** Update the slot at this date — rating/note, or a `date` patch to move it. */
+  /** Update the slot at this date — rating / note / info. Never carries `date`; moves go through onMove. */
   onUpdate: (date: string, patch: Partial<Album>) => void;
+  /** Reschedule: move this entry to `toDate` (swap when that day is logged). The app closes the modal. */
+  onMove: (fromDate: string, toDate: string) => void;
+  today: Date;
   /** Persist lazily-fetched catalog metadata (tracklist, release date). */
   onEnrich: (date: string, patch: Partial<Album>) => void;
   /** Delete the slot on this date. */
@@ -49,7 +55,7 @@ function formatReleased(album: Album, country: string): string {
   return formatDisplayDate(album.releaseDate, country);
 }
 
-export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onReplace }: DayDetailProps) {
+export function DayDetail({ album, today, onClose, onUpdate, onMove, onEnrich, onRemove, onReplace }: DayDetailProps) {
   const [tab, setTab] = useState<Tab>("tracklist");
   const [note, setNote] = useState(album.note);
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -65,6 +71,18 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
   // Holds the "Saved ✓" auto-clear timer so we can cancel it on unmount and
   // before re-arming — otherwise setNoteSaved could fire after unmount.
   const noteSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // "Logged on" = reschedule. Phones: a trigger that expands an inline
+  // DayPicker (`focusGrid` = the trigger was activated by keyboard, so focus
+  // should follow into the grid). Desktop: the native date input, whose pick
+  // of a logged day parks here until confirmed. CSS decides which one shows.
+  const [pickerOpen, setPickerOpen] = useState<{ focusGrid: boolean } | null>(null);
+  const [nativeSwap, setNativeSwap] = useState<{ date: string; title: string } | null>(null);
+  const moveTriggerRef = useRef<HTMLButtonElement>(null);
+  const nativeDateRef = useRef<HTMLInputElement>(null);
+  const pickerId = useId();
+  const nativeDateId = useId();
+  const nativeConfirmId = useId();
+  const { albumsByDate } = useJournal();
 
   const country = useCountry();
   const t = useT();
@@ -72,6 +90,22 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
   const date = parseDate(album.date);
   const seed = album.tracks.length;
   const noteDirty = note !== album.note;
+  const todayKey = fmtDate(today);
+
+  const closePicker = useCallback(() => {
+    setPickerOpen(null);
+    moveTriggerRef.current?.focus();
+  }, []);
+
+  // Desktop path (native date input). Same rules as the DayPicker: own date and
+  // future dates are no-ops, a logged day asks first, an empty day moves now.
+  function requestMove(to: string) {
+    if (to === album.date) return;
+    if (to > todayKey) return;
+    const other = albumsByDate[to];
+    if (other) setNativeSwap({ date: to, title: other.title });
+    else onMove(album.date, to);
+  }
   const isManual = isManualAlbum(album);
   // One id for the hidden file input so both the preview tile and the "Change
   // picture" caption can open the picker.
@@ -208,7 +242,11 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
                 key={tabId}
                 className="dom-tab"
                 data-active={tab === tabId ? "1" : "0"}
-                onClick={() => setTab(tabId)}
+                onClick={() => {
+                  setTab(tabId);
+                  setPickerOpen(null);
+                  setNativeSwap(null);
+                }}
               >
                 {tabId === "tracklist"
                   ? t("daydetail.tabTracklist")
@@ -260,21 +298,78 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
                   </button>
                 ))}
               </div>
-              <label className="dom-edit-field">
-                <span className="dom-edit-label">{t("daydetail.loggedOn")}</span>
+              {/* Desktop rendering — the native field, unchanged visually; hidden ≤760. */}
+              <div className="dom-edit-field dom-move-native">
+                <label className="dom-edit-label" htmlFor={nativeDateId}>{t("daydetail.loggedOn")}</label>
                 <input
+                  ref={nativeDateRef}
+                  id={nativeDateId}
                   type="date"
                   className="dom-input"
                   value={album.date}
-                  onChange={(e) => e.target.value && onUpdate(album.date, { date: e.target.value })}
+                  max={todayKey}
+                  disabled={noteDirty}
+                  onChange={(e) => e.target.value && requestMove(e.target.value)}
                 />
-              </label>
+                {noteDirty && <span className="dom-edit-hint">{t("daydetail.saveNoteFirst")}</span>}
+                {nativeSwap && (
+                  <SwapConfirm
+                    id={nativeConfirmId}
+                    title={nativeSwap.title}
+                    date={formatDisplayDate(nativeSwap.date, country)}
+                    onSwap={() => onMove(album.date, nativeSwap.date)}
+                    onCancel={() => {
+                      setNativeSwap(null);
+                      nativeDateRef.current?.focus();
+                    }}
+                  />
+                )}
+              </div>
+              {/* Phone rendering — trigger + inline picker; display:none above 760. */}
+              <div className="dom-edit-field dom-move-touch">
+                <span className="dom-edit-label">{t("daydetail.loggedOn")}</span>
+                <button
+                  ref={moveTriggerRef}
+                  type="button"
+                  className="dom-input dom-move-trigger"
+                  aria-label={`${t("daydetail.loggedOn")}: ${formatDisplayDate(album.date, country)} — ${t("action.move")}`}
+                  aria-expanded={Boolean(pickerOpen)}
+                  aria-controls={pickerOpen ? pickerId : undefined}
+                  disabled={noteDirty}
+                  onClick={(e) => {
+                    const focusGrid = e.currentTarget.matches(":focus-visible");
+                    setPickerOpen((o) => (o ? null : { focusGrid }));
+                  }}
+                >
+                  <span>{formatDisplayDate(album.date, country)}</span>
+                  <span className="dom-move-trigger-act" aria-hidden="true">
+                    {t("action.move")} ▾
+                  </span>
+                </button>
+                {noteDirty && <span className="dom-edit-hint">{t("daydetail.saveNoteFirst")}</span>}
+                {pickerOpen && (
+                  <DayPicker
+                    id={pickerId}
+                    selectedDate={album.date}
+                    today={today}
+                    focusOnOpen={pickerOpen.focusGrid}
+                    onPick={(to) => onMove(album.date, to)}
+                    onClose={closePicker}
+                  />
+                )}
+              </div>
               <div className="dom-edit-field">
                 <span className="dom-edit-label">{t("field.note")}</span>
                 <textarea
                   className="dom-input dom-textarea"
                   value={note}
-                  onChange={(e) => setNote(e.target.value)}
+                  // Handler, not effect: the dirty note disables both move
+                  // controls, and the picker must not remount when Save clears it.
+                  onChange={(e) => {
+                    setNote(e.target.value);
+                    setPickerOpen(null);
+                    setNativeSwap(null);
+                  }}
                   placeholder={t("daydetail.notePlaceholder")}
                 />
                 <div className="dom-note-actions">

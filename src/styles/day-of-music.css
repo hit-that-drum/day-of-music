@@ -879,6 +879,166 @@
   cursor: pointer;
 }
 
+/* ── Day Detail → "Logged on" reschedule control ─────────────────────────
+   Two renderings of one field, switched by CSS (render both, never read the
+   viewport in JS). .dom-move-native keeps the native date input for the
+   desktop Journal tab; .dom-move-touch (phones — see the day-detail-move
+   section at the end of the file) is a designed trigger that borrows
+   .dom-input's box, plus the week popover's calendar in day mode laid INLINE
+   (static, full width, no backdrop) so .dom-detail-right's overflow can't
+   clip it. */
+.dom-move-touch {
+  display: none;
+}
+.dom-move-native .dom-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dom-move-trigger {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+.dom-move-trigger:hover {
+  background-color: var(--chip);
+}
+.dom-move-trigger[aria-expanded="true"] {
+  border-color: var(--accent);
+}
+.dom-move-trigger:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+.dom-move-trigger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dom-move-trigger-act {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.dom-move-trigger[aria-expanded="true"] .dom-move-trigger-act {
+  color: var(--ink);
+}
+.dom-edit-hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+}
+.dom-swap-confirm {
+  flex-wrap: wrap;
+}
+
+.dom-wp[data-mode="day"] {
+  position: static;
+  z-index: auto;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: none;
+  border-color: var(--lineSoft);
+  margin-top: 4px;
+  /* On phones .dom-detail-right scrolls under a sticky actions footer;
+     keep a focused day clear of it. */
+  scroll-margin-bottom: 72px;
+}
+/* scroll-margin only counts on the element being scrolled into view, and
+   focus() lands on a day button (or a footer button), not on the picker —
+   so the clearance has to sit on those too. */
+.dom-wp[data-mode="day"] .dom-wp-day,
+.dom-wp[data-mode="day"] .dom-wp-foot button {
+  scroll-margin-bottom: 72px;
+}
+.dom-wp[data-mode="day"] .dom-wp-dow-cell {
+  font-size: 9px;
+}
+.dom-wp[data-mode="day"] .dom-wp-nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+  background-color: transparent;
+}
+/* Day mode selects a day, not a row. */
+.dom-wp[data-mode="day"] .dom-wp-row {
+  border-radius: 0;
+}
+.dom-wp[data-mode="day"] .dom-wp-row:hover {
+  background-color: transparent;
+}
+.dom-wp[data-mode="day"] .dom-wp-day {
+  text-align: center;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+.dom-wp[data-mode="day"] .dom-wp-day:hover {
+  background-color: var(--chip);
+}
+.dom-wp[data-mode="day"] .dom-wp-day:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+/* The entry's own day: ink fill, like .dom-addflow-date[data-active="1"]. */
+.dom-wp[data-mode="day"] .dom-wp-day[aria-pressed="true"] {
+  background-color: var(--ink);
+  color: var(--bg);
+}
+.dom-wp[data-mode="day"] .dom-wp-day[aria-pressed="true"]::after {
+  background-color: var(--bg);
+}
+.dom-wp[data-mode="day"] .dom-wp-day:disabled {
+  opacity: 0.35;
+  cursor: default;
+  background-color: transparent;
+}
+.dom-wp-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--lineSoft);
+}
+.dom-wp-foot .dom-swap-confirm {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+.dom-wp-foot .dom-confirm-q {
+  flex: 1 1 100%;
+  line-height: 1.5;
+}
+/* Bare button rendered outside .dom-root, so it resets itself (see .dom-wp-day). */
+.dom-wp-jump-today {
+  margin-right: auto;
+  border: 0;
+  background: transparent;
+  padding: 6px 0;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.dom-wp-jump-today:hover {
+  color: var(--ink);
+}
+
 .dom-grid {
   display: grid;
   /* --cols is the number of visible day cells (7 normally; fewer when a
@@ -5152,5 +5312,44 @@ button.dom-day-add:hover {
 /* ══ SECTION bottom-sheets — owner: sheets stream. Insert below this marker only. ══ */
 
 /* ══ SECTION day-detail-move — owner: touchmove stream. Insert below this marker only. ══ */
+
+/* Day Detail "Logged on" on phones: swap the native date field for the
+   trigger + inline day picker (both are always in the DOM; this is the
+   switch), and give the week popover's mouse-sized 28px rows thumb-sized
+   cells. Lives here, after the Phone pass, so it wins the cascade over the
+   Phone-pass .dom-input rule and the ≤1100 .dom-detail rules. On phones the
+   picker is reached by scrolling .dom-detail-right (the sheet's scroller). */
+@media (max-width: 760px) {
+  .dom-move-native {
+    display: none;
+  }
+  .dom-move-touch {
+    display: flex;
+  }
+  .dom-move-trigger {
+    min-height: 44px;
+  }
+  .dom-wp[data-mode="day"] {
+    max-width: none;
+    padding: 12px;
+  }
+  .dom-wp[data-mode="day"] .dom-wp-nav {
+    width: 36px;
+    height: 36px;
+  }
+  .dom-wp[data-mode="day"] .dom-wp-day {
+    min-height: 44px;
+    padding: 10px 0;
+    font-size: 14px;
+  }
+  .dom-wp[data-mode="day"] .dom-wp-day[data-logged="1"]::after {
+    bottom: 6px;
+    width: 4px;
+    height: 4px;
+  }
+  .dom-wp-jump-today {
+    min-height: 36px;
+  }
+}
 
 /* ══ SECTION swipe-nav — owner: swipe stream. Rules live in the Phone pass block; reserved. ══ */

@@ -70,8 +70,10 @@ type JournalContextValue = {
   logAlbum: (album: Album, entry: { date: string; rating: number; note: string }) => void;
   /** Update the slot at `date` while keeping the same album id/date. */
   updateSlot: (date: string, patch: Partial<Album>) => void;
-  /** Move (or swap) the album between two dates within the active theme. */
-  moveSlot: (fromDate: string, toDate: string) => void;
+  /** Move (or swap) the album between two dates within the active theme.
+   *  Resolves true once the writes settle (or there was nothing to do), false
+   *  when a write was rejected and the cache snapshot was restored. Never rejects. */
+  moveSlot: (fromDate: string, toDate: string) => Promise<boolean>;
   /** Clear the slot at `date`. */
   removeSlot: (date: string) => void;
   /** Enrich the album in the slot at `date` (tracklist/release date). */
@@ -214,6 +216,10 @@ function upsertCustomAlbum(album: Album, persist: boolean): void {
   }
   for (const listener of customAlbumsListeners) listener();
 }
+
+// Tail of the pending-move chain (see moveSlot): each move waits for the one
+// before it so a rollback can never wipe a later move's staging.
+let moveChainTail: Promise<unknown> = Promise.resolve();
 
 export function JournalProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
@@ -364,12 +370,16 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       if (!configured) writeLocalEntries(nextEntries);
       return { previous };
     },
-    onError: (err, _vars, ctx) => {
+    onError: (err, vars, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
-      toast.error("저장하지 못했어요", { description: err.message });
+      // moveSlot (optimistic:false) owns its own failure toast.
+      if (vars.optimistic !== false) toast.error("저장하지 못했어요", { description: err.message });
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
+    // moveSlot runs two legs back to back; a refetch kicked off after the FIRST
+    // leg could land mid-sequence and briefly show the half-moved server state.
+    // It invalidates once itself, after both legs (and any compensation) settle.
+    onSettled: (_data, _err, vars) => {
+      if (vars.optimistic !== false) queryClient.invalidateQueries({ queryKey });
     },
   });
 
@@ -406,8 +416,9 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     onError: (_err, _vars, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
+    // Same gate as upsert.onSettled: moveSlot invalidates once, at the end.
+    onSettled: (_data, _err, vars) => {
+      if (vars.optimistic !== false) queryClient.invalidateQueries({ queryKey });
     },
   });
 
@@ -446,53 +457,99 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   // is two writes (or one write + one delete). Applying them as two independent
   // optimistic mutations risks a half-rolled-back board if the second write
   // fails, so the whole swap is staged in the cache once, with a single
-  // snapshot, and the writes run with optimistic:false. Any rejection restores
-  // that one snapshot.
+  // snapshot, and the writes run SEQUENTIALLY with optimistic:false. Any
+  // rejection restores that one snapshot and resolves false so the caller
+  // (Day Detail's reschedule) can report it; DnD callers ignore the result.
+  //
+  // Moves are SERIALIZED: the board stays interactive while a move's writes are
+  // in flight (the detail closes at once; DnD never waited), so a second move
+  // could otherwise snapshot the first one's staged cache — and a late rollback
+  // of the first would silently wipe the second's staging. Each move therefore
+  // waits for the previous one to settle and reads its slots from the cache at
+  // that point (an idle chain runs on the next microtask, before paint). The
+  // tail lives at module level (like the custom-album stores above): there is
+  // one JournalProvider per app, and the compiler lint rejects a ref or a
+  // useState holder mutated from a callback that is handed out via context.
   const moveSlot = useCallback<JournalContextValue["moveSlot"]>(
     (fromDate, toDate) => {
-      if (fromDate === toDate) return;
-      const a = albumsByDate[fromDate];
-      if (!a) return;
-      const b = albumsByDate[toDate];
+      if (fromDate === toDate) return Promise.resolve(true);
 
-      const previous = queryClient.getQueryData<JournalResponse>(queryKey);
-      const base = previous ?? { entries: [], albums: [], persisted: false };
-      // Drop both slots in this theme, then re-add them swapped.
-      const kept = base.entries.filter(
-        (e) => e.theme !== theme || (e.date !== fromDate && e.date !== toDate),
-      );
-      const swapped: JournalEntry[] = [
-        ...kept,
-        { albumId: a.id, date: toDate, rating: a.rating, note: a.note, theme },
-      ];
-      if (b) {
-        swapped.push({
-          albumId: b.id,
-          date: fromDate,
-          rating: b.rating,
-          note: b.note,
-          theme,
-        });
-      }
-      queryClient.setQueryData<JournalResponse>(queryKey, { ...base, entries: swapped });
-      if (!configured) writeLocalEntries(swapped);
+      const doMove = (): Promise<boolean> => {
+        const previous = queryClient.getQueryData<JournalResponse>(queryKey);
+        const base = previous ?? { entries: [], albums: [], persisted: false };
+        // Resolve both slots from the cache as it stands NOW (a queued move
+        // must not act on the render-time memo of an earlier staged state).
+        const slotAt = (date: string): Album | undefined => {
+          const e = base.entries.find((x) => x.theme === theme && x.date === date);
+          if (!e) return undefined;
+          const meta = poolById.get(e.albumId) ?? base.albums.find((x) => x.id === e.albumId);
+          return meta ? { ...meta, date: e.date, rating: e.rating, note: e.note } : undefined;
+        };
+        const a = slotAt(fromDate);
+        if (!a) return Promise.resolve(false);
+        const b = slotAt(toDate);
 
-      const writes: Promise<unknown>[] = [
-        upsertAsync({ album: { ...a, date: toDate }, theme, optimistic: false }),
-        b
-          ? upsertAsync({ album: { ...b, date: fromDate }, theme, optimistic: false })
-          : removeAsync({ date: fromDate, theme, optimistic: false }),
-      ];
-      Promise.all(writes)
-        .catch(() => {
+        // Drop both slots in this theme, then re-add them swapped.
+        const kept = base.entries.filter(
+          (e) => e.theme !== theme || (e.date !== fromDate && e.date !== toDate),
+        );
+        const swapped: JournalEntry[] = [
+          ...kept,
+          { albumId: a.id, date: toDate, rating: a.rating, note: a.note, theme },
+        ];
+        if (b) {
+          swapped.push({
+            albumId: b.id,
+            date: fromDate,
+            rating: b.rating,
+            note: b.note,
+            theme,
+          });
+        }
+        queryClient.setQueryData<JournalResponse>(queryKey, { ...base, entries: swapped });
+        if (!configured) writeLocalEntries(swapped);
+
+        const rollback = () => {
           if (previous) {
             queryClient.setQueryData(queryKey, previous);
             if (!configured) writeLocalEntries(previous.entries);
           }
-        })
-        .finally(() => queryClient.invalidateQueries({ queryKey }));
+        };
+        // Sequenced, not parallel: a rejected FIRST write leaves the server
+        // untouched, so the rollback is the literal truth. Only a rejected second
+        // leg can leave a partial state — `a` on both days when the delete fails
+        // (no loss), or `b` overwritten when a swap's second upsert fails — so the
+        // swap case re-upserts `b` on its original day before giving up, and the
+        // finally-invalidate refetches whatever the server really holds.
+        return upsertAsync({ album: { ...a, date: toDate }, theme, optimistic: false })
+          .then(() =>
+            b
+              ? upsertAsync({ album: { ...b, date: fromDate }, theme, optimistic: false }).catch(
+                  async (err: unknown) => {
+                    // `b` still carries `date: toDate` — this is "put it back".
+                    await upsertAsync({ album: b, theme, optimistic: false }).catch(() => undefined);
+                    throw err;
+                  },
+                )
+              : removeAsync({ date: fromDate, theme, optimistic: false }),
+          )
+          .then(
+            () => true,
+            () => {
+              rollback();
+              return false;
+            },
+          )
+          .finally(() => queryClient.invalidateQueries({ queryKey }));
+      };
+
+      const run = moveChainTail.then(doMove);
+      // The chain itself never rejects (doMove resolves false on failure; this
+      // guard only covers a synchronous throw), so later moves always run.
+      moveChainTail = run.catch(() => undefined);
+      return run;
     },
-    [albumsByDate, queryClient, queryKey, theme, configured, upsertAsync, removeAsync],
+    [poolById, queryClient, queryKey, theme, configured, upsertAsync, removeAsync],
   );
 
   const enrichSlot = useCallback<JournalContextValue["enrichSlot"]>(
