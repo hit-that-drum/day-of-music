@@ -1,6 +1,6 @@
 // monthly-view.tsx — Monthly Overview: editorial calendar with featured picks.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import dayjs from "dayjs";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ import {
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useBestOfMonthStatus } from "@/lib/day-of-music/best-of";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
+import { useNavSlide, useSwipeNav } from "@/lib/day-of-music/use-swipe-nav";
 import { Button, IconButton } from "@/components/day-of-music/atoms";
 import { Cover } from "@/components/day-of-music/cover";
 
@@ -67,6 +68,13 @@ export function MonthlyView({
   const month = current.month();
   const isCurrentMonth =
     dayjs(today).month() === month && dayjs(today).year() === year;
+  // Phone-only swipe: finger left → next month, right → previous.
+  const boardRef = useRef<HTMLDivElement>(null);
+  useSwipeNav(boardRef, { onLeft: onNext, onRight: onPrev });
+  // Phone-only slide-in when the month changes (DOW header + grid together).
+  // Zero-padded so "2026-10" > "2026-09" and "2027-01" > "2026-12" lexically.
+  const calRef = useRef<HTMLDivElement>(null);
+  useNavSlide(calRef, current.format("YYYY-MM"));
 
   // Mon-start month grid (5–6 rows).
   const lastOfMonth = current.endOf("month");
@@ -110,7 +118,7 @@ export function MonthlyView({
   const bestOfBlocked = bestOf.status === "locked" || bestOf.status === "pending";
 
   return (
-    <div className="dom-month">
+    <div className="dom-month" ref={boardRef}>
       <div className="dom-month-hd">
         <div className="dom-month-hd-left">
           <span className="dom-eyebrow">
@@ -233,7 +241,7 @@ export function MonthlyView({
       )}
       */}
 
-      <div className="dom-month-cal">
+      <div className="dom-month-cal" ref={calRef}>
         <div className="dom-month-cal-hd">
           {names.weekdayRowMonFirst().map((d, i) => (
             <div key={i} className="dom-month-cal-dow">

@@ -4084,6 +4084,40 @@
   .dom-addflow-title {
     font-size: 24px;
   }
+
+  /* ── Swipe navigation (lib/day-of-music/use-swipe-nav.ts) ─────────────────
+     pan-y keeps the vertical page scroll native and pinch-zoom stays allowed
+     (layout.tsx never disables user zoom). Without this both Chrome Android and
+     iOS Safari turn any pan — even a horizontal one with nothing to scroll —
+     into a scroll attempt and fire pointercancel, so the move stream dies.
+     Nothing inside either board scrolls horizontally (.dom-main is
+     overflow:hidden; the only overflow-x:auto is the legal table). Side effect:
+     double-tap-to-zoom is off on the boards (pinch still works); cells respond
+     to taps with no delay. The slide-in itself is a Web Animations call in
+     useNavSlide, not CSS, so it needs no rule here. */
+  .dom-week,
+  .dom-month {
+    touch-action: pan-y pinch-zoom;
+  }
+  /* Disabled month cells (out-of-month, and in-month future empties — which is
+     EVERY cell of a future month) must not swallow a swipe that starts on them:
+     Firefox dispatches no pointer events on disabled controls and nothing
+     bubbles to the grid. Let hit-testing fall through. They have no hover state
+     to lose (:not(:disabled):hover above). Trade-off, accepted: at phone width
+     an iOS long-press drag can no longer drop on a future empty cell of the
+     current month — the touch "move to another date" sheet is the phone's
+     reschedule path and ships with this. */
+  .dom-month-cal-cell:disabled {
+    pointer-events: none;
+  }
+  /* A long-press that is about to become a native iOS drag must not race the
+     text-selection magnifier on the title/artist text. */
+  .dom-day-draggable,
+  .dom-month-cal-cell[draggable="true"] {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }
 
 /* Monthly calendar cells are ~44px wide on a phone, where the day number and
