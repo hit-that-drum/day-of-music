@@ -15,7 +15,7 @@ import {
 import { X } from "lucide-react";
 import { toast } from "sonner";
 
-import { addDays, fmtDate, formatDisplayDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
+import { addDays, fmtDate, formatDisplayDate, parseDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { useLanguage, useT } from "@/lib/day-of-music/i18n";
@@ -135,7 +135,7 @@ function monthSegmentBounds(anchor: Date): { first: Date; last: Date } {
 
 export function DayOfMusicApp() {
   const rootRef = useRef<HTMLDivElement>(null);
-  const { logAlbum, updateSlot, moveSlot, removeSlot, enrichSlot } = useJournal();
+  const { logAlbum, updateSlot, moveSlot, removeSlot, enrichSlot, albumsByDate } = useJournal();
   const { setActiveTheme } = useActiveTheme();
   const { configured, loading: authLoading, user, signOut } = useAuth();
   // Storefront country drives date formatting so every displayed date matches
@@ -294,7 +294,10 @@ export function DayOfMusicApp() {
 
   // Drag-and-drop reschedule (onMove={moveSlot}): dropping onto an empty day
   // moves the album there; dropping onto a filled day swaps the two days.
-  // moveSlot is a stable ref, so it's passed straight through.
+  // moveSlot is a stable ref, so it's passed straight through (its Promise
+  // result is ignored there). Day Detail's reschedule arrives via handleMove
+  // below instead, so the `date` branch in handleUpdate is legacy — kept for
+  // safety in case a patch still carries a different date.
 
   // `date` identifies the slot. A patch carrying `date` is a reschedule (move);
   // otherwise it's a rating/note edit on the same slot.
@@ -326,6 +329,40 @@ export function DayOfMusicApp() {
       toast.success(t("toast.removed"));
     },
     [removeSlot, t],
+  );
+
+  // Reschedule from Day Detail. Same write path as drag-and-drop (moveSlot),
+  // with feedback: the modal closes, the board follows the entry when a board
+  // is showing, and the toast names where it went (a swap names the album that
+  // took its place). moveSlot stages the cache as soon as any earlier move has
+  // settled (moves are serialized in JournalProvider; an idle chain stages on
+  // the next microtask) and resolves false only after a rejected write
+  // restored the snapshot.
+  const handleMove = useCallback(
+    (from: string, to: string) => {
+      if (from === to) return;
+      // The slot can vanish under an open modal (removed on another device, or
+      // a refetch dropped it). Nothing to stage → report it, don't celebrate.
+      if (!albumsByDate[from]) {
+        setOpenAlbum(null);
+        toast.error(t("toast.moveFailed"));
+        return;
+      }
+      const displaced = albumsByDate[to];
+      const settled = moveSlot(from, to);
+      setOpenAlbum(null);
+      if (screen === "week" || screen === "month") setAnchor(parseDate(to));
+      const date = formatDisplayDate(to, country);
+      toast.success(
+        displaced
+          ? t("toast.swapped", { title: displaced.title, date })
+          : t("toast.moved", { date }),
+      );
+      void settled.then((ok) => {
+        if (!ok) toast.error(t("toast.moveFailed"));
+      });
+    },
+    [albumsByDate, moveSlot, screen, country, t],
   );
 
   // Replace: reopen the add-flow on the same day. Logging the new album at that
@@ -491,8 +528,10 @@ export function DayOfMusicApp() {
         <DayDetail
           key={`${openAlbum.id}:${openAlbum.date}`}
           album={openAlbum}
+          today={TODAY}
           onClose={() => setOpenAlbum(null)}
           onUpdate={handleUpdate}
+          onMove={handleMove}
           onEnrich={handleEnrich}
           onRemove={handleRemove}
           onReplace={handleReplace}

@@ -282,6 +282,8 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "action.continue": { en: "Continue", ko: "계속", ja: "次へ", zh: "继续", es: "Continuar" },
   "action.cancel": { en: "Cancel", ko: "취소", ja: "キャンセル", zh: "取消", es: "Cancelar" },
   "action.remove": { en: "Remove", ko: "삭제", ja: "削除", zh: "移除", es: "Quitar" },
+  "action.move": { en: "Move", ko: "이동", ja: "移動", zh: "移动", es: "Mover" },
+  "action.swap": { en: "Swap", ko: "바꾸기", ja: "入れ替える", zh: "交换", es: "Intercambiar" },
 
   // ── Shared field labels (Add flow · Day detail) ─────────────────────────
   "field.title": { en: "Title", ko: "제목", ja: "タイトル", zh: "标题", es: "Título" },
@@ -306,6 +308,8 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
     zh: "为 {date} 记录专辑",
     es: "Registrar un álbum para {date}",
   },
+  "aria.pickDate": { en: "Choose a new date for this entry", ko: "옮길 날짜 선택", ja: "移動先の日付を選択", zh: "选择新日期", es: "Elegir una nueva fecha" },
+  "aria.dayLogged": { en: "{date} — already has 〈{title}〉", ko: "{date} — 〈{title}〉 기록됨", ja: "{date} — 〈{title}〉あり", zh: "{date} — 已有〈{title}〉", es: "{date} — ya tiene 〈{title}〉" },
 
   // ── Shared bits reused across screens ───────────────────────────────────
   "common.today": { en: "TODAY", ko: "오늘", ja: "今日", zh: "今天", es: "HOY" },
@@ -477,6 +481,8 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "daydetail.reviseInfo": { en: "Revise info", ko: "정보 수정", ja: "情報を編集", zh: "修改信息", es: "Editar info" },
   "daydetail.replaceAlbum": { en: "Replace album", ko: "앨범 교체", ja: "アルバムを差し替え", zh: "替换专辑", es: "Reemplazar álbum" },
   "daydetail.removeConfirm": { en: "Remove from this day?", ko: "이 날에서 삭제할까요?", ja: "この日から削除しますか？", zh: "从这一天移除？", es: "¿Quitar de este día?" },
+  "daydetail.swapConfirm": { en: "Swap with 〈{title}〉 on {date}?", ko: "{date}의 〈{title}〉하고 자리를 바꿀까요?", ja: "{date}の〈{title}〉と入れ替えますか？", zh: "与 {date} 的〈{title}〉交换？", es: "¿Intercambiar con 〈{title}〉 del {date}?" },
+  "daydetail.saveNoteFirst": { en: "Save your note before moving this entry", ko: "메모를 먼저 저장하면 날짜를 옮길 수 있어요", ja: "メモを保存してから日付を移動できます", zh: "先保存备注，再移动日期", es: "Guarda la nota antes de mover la fecha" },
 
   // ── Weekly grid ─────────────────────────────────────────────────────────
   "week.eyebrow": { en: "weekly view", ko: "주간 큐레이션", ja: "週間ビュー", zh: "每周视图", es: "vista semanal" },
@@ -711,6 +717,11 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "toast.logged": { en: "Logged {title}", ko: "{title} 기록됨", ja: "{title} を記録しました", zh: "已记录 {title}", es: "Registrado: {title}" },
   "toast.loggedDaysDesc": { en: "{count} days · {rating}★", ko: "{count}일 · {rating}★", ja: "{count}日 · {rating}★", zh: "{count} 天 · {rating}★", es: "{count} días · {rating}★" },
   "toast.loggedDateDesc": { en: "{date} · {rating}★", ko: "{date} · {rating}★", ja: "{date} · {rating}★", zh: "{date} · {rating}★", es: "{date} · {rating}★" },
+
+  // ── Toasts (move / swap from Day Detail) ───────────────────────────────
+  "toast.moved": { en: "Moved to {date}", ko: "{date}로 옮겼어요", ja: "{date}に移動しました", zh: "已移到 {date}", es: "Movido al {date}" },
+  "toast.swapped": { en: "Swapped with 〈{title}〉 · now on {date}", ko: "〈{title}〉하고 자리를 바꿨어요 · {date}", ja: "〈{title}〉と入れ替えました · {date}", zh: "已与〈{title}〉交换 · {date}", es: "Intercambiado con 〈{title}〉 · ahora el {date}" },
+  "toast.moveFailed": { en: "Couldn't move it — check the board", ko: "옮기지 못했어요 — 보드를 확인해 주세요", ja: "移動できませんでした — ボードを確認してください", zh: "无法移动 — 请检查日历", es: "No se pudo mover — revisa el tablero" },
 
   // ── Mobile shell (phone-only chrome) ────────────────────────────────────
   "menu.title": { en: "More", ko: "더보기", ja: "その他", zh: "更多", es: "Más" },
