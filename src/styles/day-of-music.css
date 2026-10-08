@@ -4834,6 +4834,19 @@ button.dom-day-add:hover {
   flex-direction: column;
   align-items: center;
 }
+/* More sheet body — a child panel of the Modal (like .dom-addflow /
+   .dom-detail) that paints its own surface; .dom-modal itself is transparent.
+   All widths so the panel survives a resize past 760px with the sheet open
+   (its only trigger is phone-only, so desktop never renders it otherwise). */
+.dom-sheet-body {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 16px 12px;
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+}
 /* The one sheet-rise keyframe, shared by every phone bottom sheet. */
 @keyframes dom-sheet-up {
   from {
@@ -5108,8 +5121,8 @@ button.dom-day-add:hover {
     display: inline;
   }
   .dom-wp[data-mode="week"] .dom-wp-nav {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
   }
   .dom-wp[data-mode="week"] .dom-wp-dow-cell {
     font-size: 10px;
@@ -5118,6 +5131,7 @@ button.dom-day-add:hover {
     border-radius: 0;
   }
   .dom-wp[data-mode="week"] .dom-wp-day {
+    min-height: 44px;
     padding: 11px 0;
     font-size: 14px;
   }
@@ -5243,17 +5257,11 @@ button.dom-day-add:hover {
     margin-bottom: 12px;
   }
 
-  /* More sheet body (a plain child panel of the Modal; the sheet itself is
-     styled by the bottom-sheets section below) ─────────────────────────── */
+  /* More sheet body: surface/layout live in the all-widths hook group above;
+     inside the sheet the panel draws no edge of its own (the sheet has the
+     top rule) ─────────────────────────────────────────────────────────── */
   .dom-sheet-body {
-    flex: none;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 16px 16px 12px;
-    /* Child panels paint their own surface (like .dom-addflow / .dom-detail);
-       .dom-modal itself is transparent. */
-    background-color: var(--panel);
+    border: 0;
   }
   .dom-menu-langs {
     display: grid;
@@ -5394,6 +5402,11 @@ button.dom-day-add:hover {
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     animation: dom-sheet-up 0.25s ease;
+  }
+  /* The sheet takes focus on open when its panel has no field to focus
+     (focusUnlessPhone, modal.tsx) — like the week-jump sheet, no UA ring. */
+  .dom-modal:focus {
+    outline: none;
   }
   /* Header band: sticky so the ✕ never scrolls away; touch-action:none so a
      drag that starts here can't turn into a scroll of the sheet. The handle is
@@ -5665,9 +5678,14 @@ button.dom-day-add:hover {
     max-width: none;
     padding: 12px;
   }
+  /* Every control in the sheet is a 44px target — the arrows, the footer
+     buttons (the only phone path to confirm a swap) and the Today jump. */
   .dom-wp[data-mode="day"] .dom-wp-nav {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
+  }
+  .dom-wp[data-mode="day"] .dom-wp-foot .dom-btn {
+    min-height: 44px;
   }
   .dom-wp[data-mode="day"] .dom-wp-day {
     min-height: 44px;
@@ -5680,7 +5698,9 @@ button.dom-day-add:hover {
     height: 4px;
   }
   .dom-wp-jump-today {
-    min-height: 36px;
+    min-width: 44px;
+    min-height: 44px;
+    text-align: left;
   }
 }
 

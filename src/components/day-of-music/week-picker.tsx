@@ -109,6 +109,7 @@ export function WeekPicker({
         className="dom-wp"
         data-mode="week"
         role="dialog"
+        aria-modal="true"
         aria-label={t("week.jumpTitle")}
         ref={wpRef}
         tabIndex={-1}
@@ -125,9 +126,7 @@ export function WeekPicker({
             <span className="dom-wp-legacy">
               {MONTHS_LONG[monthIndex]} {cursor.year()}
             </span>
-            <span className="dom-wp-loc">
-              {names.monthLong(monthIndex)} {cursor.year()}
-            </span>
+            <span className="dom-wp-loc">{names.monthYear(cursor.toDate())}</span>
           </span>
           <IconButton
             icon={ArrowRight}
@@ -364,7 +363,7 @@ export function DayPicker({
           aria-label={t("aria.prevMonth")}
         />
         <span className="dom-wp-title" aria-live="polite">
-          {cursor.year()} · {names.monthLong(monthIndex)}
+          {names.monthYear(cursor.toDate())}
         </span>
         <IconButton
           icon={ArrowRight}

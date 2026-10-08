@@ -334,10 +334,9 @@ export function DayOfMusicApp() {
   // Reschedule from Day Detail. Same write path as drag-and-drop (moveSlot),
   // with feedback: the modal closes, the board follows the entry when a board
   // is showing, and the toast names where it went (a swap names the album that
-  // took its place). moveSlot stages the cache as soon as any earlier move has
-  // settled (moves are serialized in JournalProvider; an idle chain stages on
-  // the next microtask) and resolves false only after a rejected write
-  // restored the snapshot.
+  // took its place). moveSlot stages the cache synchronously (only its writes
+  // queue behind earlier moves' writes) and resolves false only after a
+  // rejected write restored the two slots.
   const handleMove = useCallback(
     (from: string, to: string) => {
       if (from === to) return;

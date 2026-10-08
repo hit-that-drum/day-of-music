@@ -335,9 +335,14 @@ export function JournalProvider({ children }: { children: ReactNode }) {
         album,
       };
       // The slot is (user_id, theme, date) — one album per day per theme.
-      const { error } = await supabase
-        .from("journal_entries")
-        .upsert(row, { onConflict: "user_id,theme,date" });
+      // Bounded like fetchJournal: a write pending forever behind the auth Web
+      // Lock would otherwise never reject, and moveSlot's write chain (below)
+      // would stall every later move behind it.
+      const { error } = await withTimeout(
+        supabase.from("journal_entries").upsert(row, { onConflict: "user_id,theme,date" }),
+        AUTH_CALL_TIMEOUT_MS,
+        "journal upsert",
+      );
       if (error) throw new Error(error.message);
       return { persisted: true };
     },
@@ -387,12 +392,16 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     mutationFn: async ({ date, theme: t }: RemoveVars) => {
       const supabase = getSupabaseBrowserClient();
       if (guest || !supabase || !userId) return { persisted: false };
-      const { error } = await supabase
-        .from("journal_entries")
-        .delete()
-        .eq("user_id", userId)
-        .eq("theme", t)
-        .eq("date", date);
+      const { error } = await withTimeout(
+        supabase
+          .from("journal_entries")
+          .delete()
+          .eq("user_id", userId)
+          .eq("theme", t)
+          .eq("date", date),
+        AUTH_CALL_TIMEOUT_MS,
+        "journal delete",
+      );
       if (error) throw new Error(error.message);
       return { persisted: true };
     },
@@ -461,12 +470,14 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   // rejection restores that one snapshot and resolves false so the caller
   // (Day Detail's reschedule) can report it; DnD callers ignore the result.
   //
-  // Moves are SERIALIZED: the board stays interactive while a move's writes are
-  // in flight (the detail closes at once; DnD never waited), so a second move
-  // could otherwise snapshot the first one's staged cache — and a late rollback
-  // of the first would silently wipe the second's staging. Each move therefore
-  // waits for the previous one to settle and reads its slots from the cache at
-  // that point (an idle chain runs on the next microtask, before paint). The
+  // Staging is SYNCHRONOUS (the board shows the move before the caller's toast,
+  // and a second DnD drop never waits on the first one's network); only the
+  // WRITES are serialized. The board stays interactive while a move's writes
+  // are in flight (the detail closes at once; DnD never waited), so two moves'
+  // legs could otherwise interleave on the server (A→B then B→C: the second
+  // move's delete of B racing the first's upsert onto B). Each move's writes
+  // therefore wait for the previous move's to settle, and a rollback restores
+  // only the two slots that move touched — never a later move's staging. The
   // tail lives at module level (like the custom-album stores above): there is
   // one JournalProvider per app, and the compiler lint rejects a ref or a
   // useState holder mutated from a callback that is handed out via context.
@@ -474,54 +485,59 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     (fromDate, toDate) => {
       if (fromDate === toDate) return Promise.resolve(true);
 
-      const doMove = (): Promise<boolean> => {
-        const previous = queryClient.getQueryData<JournalResponse>(queryKey);
-        const base = previous ?? { entries: [], albums: [], persisted: false };
-        // Resolve both slots from the cache as it stands NOW (a queued move
-        // must not act on the render-time memo of an earlier staged state).
-        const slotAt = (date: string): Album | undefined => {
-          const e = base.entries.find((x) => x.theme === theme && x.date === date);
-          if (!e) return undefined;
-          const meta = poolById.get(e.albumId) ?? base.albums.find((x) => x.id === e.albumId);
-          return meta ? { ...meta, date: e.date, rating: e.rating, note: e.note } : undefined;
-        };
-        const a = slotAt(fromDate);
-        if (!a) return Promise.resolve(false);
-        const b = slotAt(toDate);
+      // Resolve both slots from the cache as it stands NOW — a move staged
+      // earlier in the same tick is already in it, unlike the render-time memo.
+      const base = queryClient.getQueryData<JournalResponse>(queryKey) ?? {
+        entries: [],
+        albums: [],
+        persisted: false,
+      };
+      const slotAt = (date: string): Album | undefined => {
+        const e = base.entries.find((x) => x.theme === theme && x.date === date);
+        if (!e) return undefined;
+        const meta = poolById.get(e.albumId) ?? base.albums.find((x) => x.id === e.albumId);
+        return meta ? { ...meta, date: e.date, rating: e.rating, note: e.note } : undefined;
+      };
+      const a = slotAt(fromDate);
+      if (!a) return Promise.resolve(false);
+      const b = slotAt(toDate);
 
-        // Drop both slots in this theme, then re-add them swapped.
-        const kept = base.entries.filter(
-          (e) => e.theme !== theme || (e.date !== fromDate && e.date !== toDate),
-        );
-        const swapped: JournalEntry[] = [
-          ...kept,
-          { albumId: a.id, date: toDate, rating: a.rating, note: a.note, theme },
-        ];
-        if (b) {
-          swapped.push({
-            albumId: b.id,
-            date: fromDate,
-            rating: b.rating,
-            note: b.note,
-            theme,
-          });
-        }
-        queryClient.setQueryData<JournalResponse>(queryKey, { ...base, entries: swapped });
-        if (!configured) writeLocalEntries(swapped);
+      // Drop both slots in this theme, then re-add them swapped.
+      const touched = (e: JournalEntry) =>
+        e.theme === theme && (e.date === fromDate || e.date === toDate);
+      const swapped: JournalEntry[] = [
+        ...base.entries.filter((e) => !touched(e)),
+        { albumId: a.id, date: toDate, rating: a.rating, note: a.note, theme },
+      ];
+      if (b) {
+        swapped.push({
+          albumId: b.id,
+          date: fromDate,
+          rating: b.rating,
+          note: b.note,
+          theme,
+        });
+      }
+      queryClient.setQueryData<JournalResponse>(queryKey, { ...base, entries: swapped });
+      if (!configured) writeLocalEntries(swapped);
 
-        const rollback = () => {
-          if (previous) {
-            queryClient.setQueryData(queryKey, previous);
-            if (!configured) writeLocalEntries(previous.entries);
-          }
-        };
-        // Sequenced, not parallel: a rejected FIRST write leaves the server
-        // untouched, so the rollback is the literal truth. Only a rejected second
-        // leg can leave a partial state — `a` on both days when the delete fails
-        // (no loss), or `b` overwritten when a swap's second upsert fails — so the
-        // swap case re-upserts `b` on its original day before giving up, and the
-        // finally-invalidate refetches whatever the server really holds.
-        return upsertAsync({ album: { ...a, date: toDate }, theme, optimistic: false })
+      // Restore just the two touched slots on top of whatever the cache holds
+      // by then, so a later move's staging on other days survives. (A later
+      // move that reused one of these days is reconciled by the refetch.)
+      const rollback = () => {
+        const cur = queryClient.getQueryData<JournalResponse>(queryKey) ?? base;
+        const restored = [...cur.entries.filter((e) => !touched(e)), ...base.entries.filter(touched)];
+        queryClient.setQueryData<JournalResponse>(queryKey, { ...cur, entries: restored });
+        if (!configured) writeLocalEntries(restored);
+      };
+      // Sequenced, not parallel: a rejected FIRST write leaves the server
+      // untouched, so the rollback is the literal truth. Only a rejected second
+      // leg can leave a partial state — `a` on both days when the delete fails
+      // (no loss), or `b` overwritten when a swap's second upsert fails — so the
+      // swap case re-upserts `b` on its original day before giving up, and the
+      // finally-invalidate refetches whatever the server really holds.
+      const writes = (): Promise<boolean> =>
+        upsertAsync({ album: { ...a, date: toDate }, theme, optimistic: false })
           .then(() =>
             b
               ? upsertAsync({ album: { ...b, date: fromDate }, theme, optimistic: false }).catch(
@@ -541,10 +557,9 @@ export function JournalProvider({ children }: { children: ReactNode }) {
             },
           )
           .finally(() => queryClient.invalidateQueries({ queryKey }));
-      };
 
-      const run = moveChainTail.then(doMove);
-      // The chain itself never rejects (doMove resolves false on failure; this
+      const run = moveChainTail.then(writes);
+      // The chain itself never rejects (writes resolves false on failure; this
       // guard only covers a synchronous throw), so later moves always run.
       moveChainTail = run.catch(() => undefined);
       return run;

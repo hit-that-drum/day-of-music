@@ -37,10 +37,18 @@ const VELOCITY_FLOOR = 50;
 
 /** Callback ref replacing `autoFocus` inside modals: focuses on mount except on
  *  phones, where the sheet is still sliding up and the keyboard would cover its
- *  footer (iOS doesn't shrink dvh for the keyboard). Module-level so the ref
- *  identity is stable. Runs only on the client (refs attach during commit). */
+ *  footer (iOS doesn't shrink dvh for the keyboard). On phones focus still has
+ *  to ENTER the dialog (keyboard/AT users would otherwise be left on the opener
+ *  behind the scrim), so it lands on the sheet itself (tabIndex -1, no field →
+ *  no keyboard; preventScroll keeps the slide-up intact). Module-level so the
+ *  ref identity is stable. Runs only on the client (refs attach during commit). */
 export function focusUnlessPhone(el: HTMLElement | null) {
-  if (el && !window.matchMedia(PHONE_QUERY).matches) el.focus();
+  if (!el) return;
+  if (!window.matchMedia(PHONE_QUERY).matches) {
+    el.focus();
+    return;
+  }
+  el.closest<HTMLElement>(".dom-modal")?.focus({ preventScroll: true });
 }
 
 type Sample = { y: number; t: number };
@@ -62,6 +70,9 @@ export function Modal({
   const t = useT();
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<Drag | null>(null);
+  // Cleanup of the spring-back still pending from the last settle(), so a new
+  // drag or settle can cancel it (a stale one would reset the transition).
+  const settleRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -75,6 +86,7 @@ export function Modal({
   // transformed .dom-modal is the containing block for fixed descendants
   // (the nested public-link confirm's scrim), so it must never stay on.
   function settle(sheet: HTMLDivElement) {
+    settleRef.current?.();
     if (window.matchMedia(REDUCED_MOTION_QUERY).matches) {
       sheet.style.transition = "";
       sheet.style.transform = "";
@@ -82,11 +94,23 @@ export function Modal({
     }
     sheet.style.transition = "transform 0.2s ease";
     sheet.style.transform = "";
-    const done = () => {
-      sheet.style.transition = "";
+    // transitionend bubbles: a child's own transition (.dom-btn colours)
+    // ending mid-spring-back must not cut ours short, so only the sheet's
+    // transform counts. The timer is the fallback for when no transitionend
+    // ever comes (hidden tab, display:none) — this is the inline transition's
+    // only cleanup path.
+    const done = (ev?: Event) => {
+      if (ev && (ev.target !== sheet || (ev as TransitionEvent).propertyName !== "transform")) {
+        return;
+      }
+      window.clearTimeout(timer);
       sheet.removeEventListener("transitionend", done);
+      settleRef.current = null;
+      sheet.style.transition = "";
     };
+    const timer = window.setTimeout(done, 250);
     sheet.addEventListener("transitionend", done);
+    settleRef.current = done;
   }
 
   function onBarPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
@@ -106,6 +130,8 @@ export function Modal({
     } catch {
       return; // pointer already inactive (InvalidPointerId)
     }
+    // A spring-back still in flight is cut short by the new drag.
+    settleRef.current?.();
     // The entry keyframe (dom-sheet-up) wins over an inline transform for its
     // first 250ms; switching it off lands the sheet at rest so the drag shows
     // at once. It stays off for the life of the sheet — clearing it later
@@ -165,6 +191,7 @@ export function Modal({
       <div
         ref={sheetRef}
         className={className ? `dom-modal ${className}` : "dom-modal"}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
         <div
