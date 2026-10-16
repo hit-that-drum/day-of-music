@@ -14,13 +14,14 @@ import {
 } from "react";
 import { toast } from "sonner";
 
-import { addDays, fmtDate, formatDisplayDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
+import { addDays, fmtDate, formatDisplayDate, parseDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { useLanguage, useT } from "@/lib/day-of-music/i18n";
 import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
 import { useActiveTheme } from "@/lib/day-of-music/themes";
 import { isLocalStorageAvailable } from "@/lib/day-of-music/local-store";
+import { rememberTimeZone } from "@/lib/day-of-music/today";
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { AddFlow, type NewEntry } from "@/components/day-of-music/add-flow";
 import { DayDetail } from "@/components/day-of-music/day-detail";
@@ -39,9 +40,26 @@ import { WeeklyGrid } from "@/components/day-of-music/weekly-grid";
 
 export type ScreenId = "week" | "month" | "search" | "logs" | "profile";
 
-// Real current date. (The sample catalog covers Jan 5–18, 2026 — navigate back
-// to that week to see the demo data.) Evaluated client-side per page load.
-const TODAY = new Date();
+// "Today" is the listener's local calendar date, as YYYY-MM-DD. (The sample
+// catalog covers Jan 5–18, 2026 — navigate back to that week to see the demo
+// data.) The board can't just call new Date() while rendering: the server
+// renders in its own zone (and a module-level constant here froze the date at
+// module load, so a long-lived server served a stale day), while the browser
+// disagreed with that HTML for part of every day — a hydration error on every
+// fresh load. So the server passes the date it rendered with (`initialToday`,
+// see app/week/page.tsx) and the client reads its own through this store, like
+// tweaks: the server snapshot is what the HTML was built from, so hydration
+// matches by construction, and the browser's date replaces it in a re-render
+// right after hydration (after first paint) — a visible correction only when
+// the two disagree. Cached like the old constant, so an open tab still doesn't
+// roll over at midnight. A string, not a Date, so the snapshot keeps a stable
+// identity across renders.
+let localTodayKey: string | null = null;
+
+function getLocalTodayKey(): string {
+  if (localTodayKey === null) localTodayKey = fmtDate(new Date());
+  return localTodayKey;
+}
 
 // Tweaks are persisted client-side so the user's layout/theme choices survive
 // reloads. Bump the version suffix if the Tweaks shape changes incompatibly.
@@ -124,7 +142,13 @@ function monthSegmentBounds(anchor: Date): { first: Date; last: Date } {
   };
 }
 
-export function DayOfMusicApp() {
+export function DayOfMusicApp({
+  initialToday,
+}: {
+  /** YYYY-MM-DD the server rendered the board for — the listener's zone when
+   *  the tz cookie was present, otherwise the server's (see app/week/page.tsx). */
+  initialToday: string;
+}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const { logAlbum, updateSlot, moveSlot, removeSlot, enrichSlot } = useJournal();
   const { setActiveTheme } = useActiveTheme();
@@ -142,10 +166,25 @@ export function DayOfMusicApp() {
     getTweaksSnapshot,
     getTweaksServerSnapshot,
   );
+  // Server value during SSR + hydration, the browser's own date after mount
+  // (see the store above). The server snapshot closes over the prop; only the
+  // `subscribe` identity matters for resubscribing, so an inline arrow is fine.
+  const todayKey = useSyncExternalStore(subscribeNever, getLocalTodayKey, () => initialToday);
+  // As a Date — local midnight, like every day cell — for the cells' "is this
+  // day in the future" comparison and the nav helpers. Memoised on the key so
+  // everything derived from it keeps a stable identity.
+  const today = useMemo(() => parseDate(todayKey), [todayKey]);
   const [screen, setScreen] = useState<ScreenId>("week");
   // `anchor` is any day inside the currently-viewed page. The Monday-based
-  // `weekStart` and the visible `days` are derived from it (see below).
-  const [anchor, setAnchor] = useState<Date>(() => TODAY);
+  // `weekStart` and the visible `days` are derived from it (see below). null
+  // means "follow today": the board opens on today's week and still tracks it
+  // if the post-hydration correction moves today (first visit from a zone a
+  // day ahead of the server, across a week boundary). Once the user has
+  // navigated, the page they picked stays put — including a navigation that
+  // beats the correction (a click replayed during hydration), which keeps the
+  // server's week.
+  const [pickedAnchor, setAnchor] = useState<Date | null>(null);
+  const anchor = pickedAnchor ?? today;
   const [openAlbum, setOpenAlbum] = useState<Album | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   // When set, the add-flow opens with this date preselected (empty-day click).
@@ -180,6 +219,12 @@ export function DayOfMusicApp() {
 
   useEffect(() => {
     ensureFonts();
+  }, []);
+
+  // Leave the browser's zone in a cookie so the next server render can start
+  // from the listener's date instead of its own (no post-hydration correction).
+  useEffect(() => {
+    rememberTimeZone();
   }, []);
 
   useEffect(() => {
@@ -219,29 +264,38 @@ export function DayOfMusicApp() {
   // day in split mode, otherwise the week's Monday.
   const labelDate = monthDays[0] ?? weekStart;
 
+  // The updaters resolve a null (follow-today) anchor themselves: `a ?? today`.
   const prevWeek = useCallback(() => {
-    setAnchor((a) =>
+    setAnchor((a) => {
+      const cur = a ?? today;
       // Step to the day before the current segment's first visible day.
-      tweaks.weekSplit ? addDays(monthSegmentBounds(a).first, -1) : addDays(a, -7),
-    );
-  }, [tweaks.weekSplit]);
+      return tweaks.weekSplit ? addDays(monthSegmentBounds(cur).first, -1) : addDays(cur, -7);
+    });
+  }, [tweaks.weekSplit, today]);
 
   const nextWeek = useCallback(() => {
-    setAnchor((a) =>
+    setAnchor((a) => {
+      const cur = a ?? today;
       // Step to the day after the current segment's last visible day.
-      tweaks.weekSplit ? addDays(monthSegmentBounds(a).last, 1) : addDays(a, 7),
-    );
-  }, [tweaks.weekSplit]);
+      return tweaks.weekSplit ? addDays(monthSegmentBounds(cur).last, 1) : addDays(cur, 7);
+    });
+  }, [tweaks.weekSplit, today]);
 
   // Month nav (Monthly view). Anchor on the 1st of the target month; native
   // Date handles year rollover (month -1 / +12).
   const prevMonth = useCallback(() => {
-    setAnchor((a) => new Date(a.getFullYear(), a.getMonth() - 1, 1));
-  }, []);
+    setAnchor((a) => {
+      const cur = a ?? today;
+      return new Date(cur.getFullYear(), cur.getMonth() - 1, 1);
+    });
+  }, [today]);
 
   const nextMonth = useCallback(() => {
-    setAnchor((a) => new Date(a.getFullYear(), a.getMonth() + 1, 1));
-  }, []);
+    setAnchor((a) => {
+      const cur = a ?? today;
+      return new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+    });
+  }, [today]);
 
   // Keyboard nav: Esc closes modal; ←/→ change week when nothing is open.
   useEffect(() => {
@@ -407,7 +461,7 @@ export function DayOfMusicApp() {
               days={days}
               labelDate={labelDate}
               splitByMonth={tweaks.weekSplit}
-              today={TODAY}
+              today={today}
               onOpen={handleOpen}
               onAdd={(date) => {
                 setAddDate(date);
@@ -425,7 +479,7 @@ export function DayOfMusicApp() {
           {screen === "month" && (
             <MonthlyView
               anchor={anchor}
-              today={TODAY}
+              today={today}
               splitByMonth={tweaks.weekSplit}
               onOpen={handleOpen}
               onAdd={(date) => {
@@ -468,8 +522,7 @@ export function DayOfMusicApp() {
           defaultWeekStart={weekStart}
           // Clicked day wins; otherwise preselect today when it's in view.
           defaultDate={
-            addDate ??
-            (days.some((d) => fmtDate(d) === fmtDate(TODAY)) ? fmtDate(TODAY) : undefined)
+            addDate ?? (days.some((d) => fmtDate(d) === todayKey) ? todayKey : undefined)
           }
         />
       )}
@@ -499,7 +552,7 @@ export function DayOfMusicApp() {
         <BestOfMonthModal
           anchor={anchor}
           splitByMonth={tweaks.weekSplit}
-          today={TODAY}
+          today={today}
           onClose={() => setShowBestOfMonth(false)}
         />
       )}
