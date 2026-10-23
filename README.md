@@ -47,7 +47,11 @@ npm run dev
 npm run build
 npm run lint
 npm run typecheck
+npm test
 ```
+
+`npm test` runs the Vitest unit tests (`src/**/*.test.ts`) once; `npx vitest`
+watches instead.
 
 ## Docker
 
