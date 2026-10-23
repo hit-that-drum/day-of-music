@@ -57,15 +57,6 @@ export type Album = {
   tracksVersion?: number;
 };
 
-// User-added albums (from iTunes search) are the only source of albums now;
-// the seed catalog was intentionally emptied.
-export const ALBUMS: Album[] = [];
-
-// Lookup by date for fast access.
-export const ALBUMS_BY_DATE: Record<string, Album> = Object.fromEntries(
-  ALBUMS.map((a) => [a.date, a]),
-);
-
 // Format helpers
 export const MONTHS = [
   "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
@@ -79,12 +70,6 @@ export const MONTHS_LONG = [
 
 export const DOW = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
 export const DOW_KO = ["일", "월", "화", "수", "목", "금", "토"] as const;
-
-// Genres covered (used by search)
-export const GENRES = [
-  "Pop", "Hip-Hop", "Electronic", "Jazz", "Indie Folk", "R&B",
-  "Alt Rock", "Folk", "Latin · Reggaeton", "R&B · Dance",
-] as const;
 
 const EMPTY_GENRES = new Set(["", "-", "—", "–", "ㅡ"]);
 

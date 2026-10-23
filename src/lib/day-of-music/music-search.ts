@@ -1,6 +1,6 @@
 // music-search.ts — client-side helpers for /api/music/search (iTunes proxy).
 // Converts a search result into a full Album so it can be logged in the
-// journal alongside the static catalog.
+// journal.
 
 import type { Album, CoverSpec, CoverStyle } from "@/lib/day-of-music/data";
 import type { AlbumDetail, TrackItem } from "@/lib/day-of-music/music-types";

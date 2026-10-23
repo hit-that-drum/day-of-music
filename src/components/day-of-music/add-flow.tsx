@@ -1,6 +1,6 @@
 // add-flow.tsx — Add / Log Album: a 3-step modal (find → pick day → rate + note).
-// Step 1 searches the static catalog locally and the wider music catalog via
-// /api/music/search (free iTunes Search API proxy).
+// Step 1 searches the music catalog via /api/music/search (a free iTunes Search
+// API proxy), or resolves a pasted Apple Music album link.
 
 "use client";
 
@@ -8,7 +8,6 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
-  ALBUMS,
   addDays,
   fmtDate,
   formatDisplayDate,
@@ -39,13 +38,11 @@ export type NewEntry = {
   dates: string[];
   rating: number;
   note: string;
-  /** The picked album (catalog quick-pick or music-search result). Its metadata
-   *  is always carried so the journal can render and sync it — the pool isn't
-   *  seeded from the static catalog. */
+  /** The picked album (a search result, pasted link, track or manual entry).
+   *  Its metadata always travels with the entry — that's what lets the journal
+   *  render and sync it on another device. */
   album: Album;
 };
-
-const CATALOG_IDS = new Set(ALBUMS.map((a) => a.id));
 
 function useDebounced(value: string, delayMs: number): string {
   const [debounced, setDebounced] = useState(value);
@@ -147,13 +144,6 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
   // Album whose tracklist is expanded for picking a single track.
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const catalogResults = useMemo(() => {
-    const q = query.toLowerCase();
-    return ALBUMS.filter(
-      (a) => a.title.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q),
-    ).slice(0, 4);
-  }, [query]);
-
   // If the query is an Apple Music album link (or bare catalog id), resolve it
   // directly via the lookup API instead of running a text search.
   const pastedLink = parseAppleMusicLink(debouncedQuery);
@@ -193,13 +183,12 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
     if (pastedLink) {
       return urlAlbum.data ? [albumFromDetail(urlAlbum.data)] : [];
     }
-    const remote = (search.data ?? [])
-      .filter((r) => !CATALOG_IDS.has(r.id))
-      .map(albumFromSearchResult);
-    const merged = [...catalogResults, ...remote];
+    // First of any repeated id only — results are keyed by id.
     const seen = new Set<string>();
-    return merged.filter((a) => (seen.has(a.id) ? false : (seen.add(a.id), true)));
-  }, [pastedLink, urlAlbum.data, catalogResults, search.data]);
+    return (search.data ?? [])
+      .map(albumFromSearchResult)
+      .filter((a) => (seen.has(a.id) ? false : (seen.add(a.id), true)));
+  }, [pastedLink, urlAlbum.data, search.data]);
 
   const results = showAll
     ? allResults.slice(0, visibleCount)
