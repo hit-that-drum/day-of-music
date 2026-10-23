@@ -665,7 +665,6 @@ function SettingsForm({
           searchable
           searchPlaceholder={t("profile.searchCountry")}
           variant="underline"
-          size="medium"
         />
         <Button
           disabled={!dirty}

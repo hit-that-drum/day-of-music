@@ -175,12 +175,6 @@
   font-size: 13px;
   letter-spacing: -0.01em;
 }
-.dom-nav-ko {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  opacity: 0.55;
-}
 .dom-topbar-actions {
   display: flex;
   justify-content: flex-end;
@@ -663,25 +657,6 @@
   font-size: 11px;
   color: var(--ink2);
 }
-.dom-chip {
-  padding: 6px 12px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border: 1px solid var(--lineSoft);
-  color: var(--ink2);
-  background: transparent;
-  transition: background-color 0.12s;
-}
-.dom-chip:hover {
-  background-color: var(--chip);
-}
-.dom-chip[data-active="1"] {
-  background-color: var(--ink);
-  color: var(--bg);
-  border-color: var(--ink);
-}
 
 /* ── Weekly grid ────────────────────────────────────────────────────────── */
 
@@ -1104,8 +1079,7 @@
   background-color: var(--accent);
   color: #fff;
 }
-.dom-day[data-today="1"] .dom-day-dow,
-.dom-day[data-today="1"] .dom-day-dowKo {
+.dom-day[data-today="1"] .dom-day-dow {
   color: #fff;
   opacity: 1;
 }
@@ -1720,66 +1694,6 @@
   color: var(--ink3);
   white-space: nowrap;
 }
-.dom-accordion {
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-}
-.dom-accordion-item + .dom-accordion-item {
-  border-top: 1px solid var(--line);
-}
-.dom-accordion-trigger {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  cursor: pointer;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 66px;
-  padding: 14px 0;
-  text-align: left;
-}
-.dom-accordion-trigger:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
-.dom-accordion-title {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 28px;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.dom-accordion-meta {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink3);
-  white-space: nowrap;
-}
-.dom-accordion-icon {
-  color: var(--ink3);
-  transition:
-    color 0.2s ease,
-    transform 0.2s ease;
-}
-.dom-accordion-trigger:hover .dom-accordion-icon,
-.dom-accordion-trigger[aria-expanded="true"] .dom-accordion-icon {
-  color: var(--ink);
-}
-.dom-accordion-trigger[aria-expanded="true"] .dom-accordion-icon {
-  transform: rotate(180deg);
-}
-.dom-accordion-panel {
-  border-top: 1px solid var(--lineSoft);
-  padding-bottom: 26px;
-}
 .dom-stat-empty {
   font-family: var(--font-display);
   font-size: 13px;
@@ -1928,14 +1842,6 @@
 .dom-search-box {
   margin-bottom: 14px;
 }
-.dom-search-filters {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--lineSoft);
-}
 .dom-search-results {
   display: flex;
   flex-direction: column;
@@ -1993,23 +1899,8 @@
   color: var(--ink3);
   letter-spacing: 0.1em;
 }
-.dom-search-result-context {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--ink3);
-  letter-spacing: 0.08em;
-  margin: 0 0 8px;
-  text-transform: uppercase;
-}
 .dom-search-result-date {
   text-align: right;
-}
-.dom-search-result-day {
-  font-family: var(--font-display);
-  font-size: 38px;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: -0.03em;
 }
 .dom-search-result-dow {
   font-family: var(--font-mono);
@@ -2032,32 +1923,6 @@
   text-align: center;
   color: var(--ink3);
   font-family: var(--font-mono);
-}
-
-/* ── Placeholder panel (screens not yet built) ─────────────────────────── */
-
-.dom-placeholder {
-  padding: 80px 28px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  text-align: center;
-}
-.dom-placeholder h2 {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 28px;
-  letter-spacing: -0.02em;
-  margin: 0;
-}
-.dom-placeholder p {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink3);
-  margin: 0;
 }
 
 /* ── Day Detail modal ───────────────────────────────────────────────────── */
@@ -2962,32 +2827,6 @@
   color: var(--ink2);
   white-space: nowrap;
 }
-.dom-share-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-.dom-share-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.dom-share-cell > div:first-child {
-  box-shadow: var(--coverShadow);
-  width: 100%;
-  aspect-ratio: 1;
-}
-.dom-share-cell-title {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.2;
-}
-.dom-share-cell-artist {
-  font-family: var(--font-display);
-  font-size: 10px;
-  opacity: 0.7;
-}
 .dom-share-ft {
   display: flex;
   justify-content: space-between;
@@ -3462,33 +3301,6 @@
   text-transform: uppercase;
   color: var(--ink2);
 }
-.dom-tweak-select {
-  border: 1px solid var(--line);
-  background-color: var(--bg);
-  color: var(--ink);
-  padding: 7px 8px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-}
-.dom-tweak-radios {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-.dom-tweak-radio {
-  border: 1px solid var(--lineSoft);
-  color: var(--ink2);
-  padding: 5px 9px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.dom-tweak-radio[data-active="1"] {
-  background-color: var(--ink);
-  color: var(--bg);
-  border-color: var(--ink);
-}
 .dom-tweak-toggle-row {
   display: flex;
   align-items: center;
@@ -3524,9 +3336,6 @@
   }
   .dom-week-title h1 {
     font-size: 32px;
-  }
-  .dom-nav-ko {
-    display: none;
   }
   .dom-stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -3649,9 +3458,6 @@
     grid-column: 2;
     grid-row: 1 / span 2;
   }
-  .dom-theme-modal {
-    padding: 24px 20px;
-  }
   .dom-theme-recap-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3730,7 +3536,6 @@
     min-height: 40px;
     justify-content: center;
   }
-  .dom-nav-ko,
   .dom-brand-ko {
     display: none;
   }

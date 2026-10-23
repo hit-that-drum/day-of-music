@@ -38,7 +38,7 @@ export function DomSelectField({
   className?: string;
   labelClassName?: string;
   variant?: "default" | "underline";
-  size?: "default" | "medium" | "large";
+  size?: "default" | "large";
 }) {
   return (
     <div className={cn("dom-select-field", className)} data-variant={variant} data-size={size}>

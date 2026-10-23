@@ -1,6 +1,6 @@
 // atoms.tsx — small shared presentational atoms for Day of Music.
 
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps } from "react";
 import type { LucideIcon } from "lucide-react";
 
 import { normalizeGenre, type Album } from "@/lib/day-of-music/data";
@@ -74,22 +74,6 @@ export function BrandMark() {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- small static /public logo; next/image adds no value here
     <img className="dom-brand-mark" src="/icons/icon-192.png" alt="" width={24} height={24} />
-  );
-}
-
-export function Chip({
-  children,
-  active,
-  onClick,
-}: {
-  children: ReactNode;
-  active?: boolean;
-  onClick?: () => void;
-}) {
-  return (
-    <button className="dom-chip" data-active={active ? "1" : "0"} onClick={onClick}>
-      {children}
-    </button>
   );
 }
 
