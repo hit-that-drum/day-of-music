@@ -45,7 +45,13 @@ export default function AuthCallbackPage() {
     // Provider-side failure — consent denied, or the account isn't on the test
     // user list while the OAuth app is still unverified.
     if (providerError) {
-      notifyFailed(providerError);
+      // This is the mount effect of a fresh page load (the provider just
+      // redirected here). Calling now would lose the toast twice over: sonner's
+      // <Toaster> (a later sibling in Providers) only subscribes in its own
+      // mount effect, after this one, and `t` still has the first render's
+      // default language. One macrotask later both have caught up — the
+      // effect event reads the language committed by then.
+      setTimeout(() => notifyFailed(providerError), 0);
       router.replace("/signin");
       return;
     }
