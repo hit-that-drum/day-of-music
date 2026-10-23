@@ -10,7 +10,11 @@
 import dayjs from "dayjs";
 import { z } from "zod";
 
-import { localizeAlbumsInto } from "@/lib/day-of-music/itunes-lookup";
+import {
+  localizeAlbumsInto,
+  localizeArtistsInto,
+  localizeTracksInto,
+} from "@/lib/day-of-music/itunes-lookup";
 
 const searchParamsSchema = z.object({
   q: z.string().trim().min(1),
@@ -53,9 +57,16 @@ export type MusicSearchResult = {
   trackCount: number;
 };
 
-function mapResult(r: ITunesResult): MusicSearchResult | null {
-  const rawId = r.collectionId ?? r.trackId ?? r.artistId;
-  const title = r.collectionName ?? r.trackName ?? r.artistName;
+function mapResult(
+  r: ITunesResult,
+  type: keyof typeof ENTITY_BY_TYPE,
+): MusicSearchResult | null {
+  // A song row also carries its album's id and name; a track search is after
+  // the song itself, not one row per song naming its album.
+  const rawId =
+    type === "track" ? r.trackId : (r.collectionId ?? r.trackId ?? r.artistId);
+  const title =
+    type === "track" ? r.trackName : (r.collectionName ?? r.trackName ?? r.artistName);
   if (rawId == null || !title) return null;
 
   const releaseDate = r.releaseDate ?? "";
@@ -111,7 +122,7 @@ export async function GET(request: Request) {
       if (!resp.ok) return null;
       const body = JSON.parse(await resp.text()) as { results?: ITunesResult[] };
       return (body.results ?? [])
-        .map(mapResult)
+        .map((r) => mapResult(r, type))
         .filter((r): r is MusicSearchResult => r !== null);
     } catch {
       return null;
@@ -156,23 +167,31 @@ export async function GET(request: Request) {
     }
   }
 
+  // Name the results the way the listener's store does (see itunes-lookup.ts).
+  async function localize(
+    results: MusicSearchResult[],
+    store: string,
+  ): Promise<MusicSearchResult[]> {
+    // Artist rows are romanized even in the listener's own store ("Ha Hyun
+    // Sang" in KR), so artists always take the name from their album rows.
+    if (type === "artist") return localizeArtistsInto(results, preferred);
+    if (store === preferred) return localizeAlbumTitles(results, store);
+    // Results from a fallback store are named in that store's language — a KR
+    // listener, whose own store's search comes back empty, got the US store's
+    // "JAMONG SALGU CLUB" by "HANRORO" — so they're looked up by id in the
+    // listener's store instead.
+    return type === "album"
+      ? localizeAlbumsInto(results, store, preferred)
+      : localizeTracksInto(results, store, preferred);
+  }
+
   let anyStoreReached = false;
   for (const store of storefronts) {
     const results = await searchIn(store);
     if (results === null) continue;
     anyStoreReached = true;
     if (results.length > 0) {
-      // Results from a fallback store are named in that store's language — a KR
-      // listener, whose own store's search comes back empty, got the US store's
-      // "JAMONG SALGU CLUB" by "HANRORO". Those albums are looked up by id in
-      // the listener's store instead (see itunes-lookup.ts).
-      const localized =
-        store === preferred
-          ? await localizeAlbumTitles(results, store)
-          : type === "album"
-            ? await localizeAlbumsInto(results, store, preferred)
-            : results;
-      return Response.json({ results: localized });
+      return Response.json({ results: await localize(results, store) });
     }
   }
 
