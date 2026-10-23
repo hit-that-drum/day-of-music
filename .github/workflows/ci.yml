@@ -1,0 +1,53 @@
+# ci.yml — typecheck, lint, unit tests and a production build for every pull
+# request and every push to main / develop.
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push to a pull request supersedes the run in progress; runs on
+# main / develop always finish.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Same major version as the Dockerfile (node:22-alpine), so CI builds
+      # with the runtime that ships.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+      # Next's incremental build cache (see Next's ci-build-caching guide).
+      - uses: actions/cache@v6
+        with:
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+
+      # No Supabase keys on purpose: the app builds and runs without them, so
+      # this checks that everything compiles, not that a real project answers.
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1

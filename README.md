@@ -53,6 +53,11 @@ npm test
 `npm test` runs the Vitest unit tests (`src/**/*.test.ts`) once; `npx vitest`
 watches instead.
 
+CI ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) runs typecheck,
+lint, tests and `next build` on every pull request and every push to `main` /
+`develop`. It builds without Supabase keys, so it proves the app compiles, not
+that it reaches a real project.
+
 ## Docker
 
 ```bash
