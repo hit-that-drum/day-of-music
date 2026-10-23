@@ -30,14 +30,16 @@ import {
 import { createPortal } from "react-dom";
 
 import { useT } from "@/lib/day-of-music/i18n";
+import { PHONE_BREAKPOINT } from "@/lib/day-of-music/phone";
+import { POSTER_WIDTH } from "@/lib/day-of-music/poster-size";
 
-/** The width posters are laid out at — matches --dom-modal-w and save-card.ts's
- *  EXPORT_WIDTH, so what's on screen is what gets saved. */
-const REFERENCE_WIDTH = 1100;
+/** The width posters are laid out at — the same one save-card.ts exports at,
+ *  so what's on screen is what gets saved. */
+const REFERENCE_WIDTH = POSTER_WIDTH;
 
 /** Below this available width the fluid layout stops holding together (it's the
  *  app's own phone breakpoint), so scale instead of reflowing. */
-const FIT_BELOW = 760;
+const FIT_BELOW = PHONE_BREAKPOINT;
 
 type Fit = { scale: number; height: number };
 

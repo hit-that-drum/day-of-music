@@ -1930,7 +1930,7 @@
 .dom-scrim {
   /* Shared modal width — every overlay modal (Day Detail, Add/Log Album,
      Share Week/Month) reads this token so they're all the same size. */
-  --dom-modal-w: 1100px;
+  --dom-modal-w: 1100px; /* = POSTER_WIDTH (lib/day-of-music/poster-size.ts) */
   /* Everything a modal panel has to share the viewport with: this scrim's own
      top+bottom padding plus .dom-modal's reserved close-button gap. Panels size
      themselves with calc(100dvh - var(--dom-modal-chrome)), so shrinking either

@@ -36,10 +36,6 @@ import {
 
 import { PHONE_QUERY, REDUCED_MOTION_QUERY } from "@/lib/day-of-music/phone";
 
-/** The phone breakpoint exactly as the stylesheet spells it — re-exported from
- *  phone.ts so this module's public surface stays stable for its callers. */
-export { PHONE_QUERY };
-
 export type SwipeNavOptions = {
   /** Finger moved left (dx < 0) — callers pass their onNext. */
   onLeft: () => void;

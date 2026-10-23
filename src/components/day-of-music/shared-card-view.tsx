@@ -6,6 +6,7 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 
+import { POSTER_WIDTH } from "@/lib/day-of-music/poster-size";
 import { googleFontsHref, themeStyleVars } from "@/lib/day-of-music/theme";
 import type { SharePayload } from "@/lib/day-of-music/share-links";
 import {
@@ -55,7 +56,7 @@ export function SharedCardView({ payload }: { payload: SharePayload }) {
         {/* Posters keep their full-width layout at every viewport, so on a
             phone PosterFit scales the whole card down instead of letting the
             7-day grid reflow into unreadable 44px columns. */}
-        <div style={{ width: "100%", maxWidth: 1100 }}>
+        <div style={{ width: "100%", maxWidth: POSTER_WIDTH }}>
           <PosterFit>
             {payload.kind === "week" ? (
               <WeekPoster payload={payload} />
