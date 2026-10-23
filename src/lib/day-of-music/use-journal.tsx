@@ -49,7 +49,7 @@ type UpsertVars = { album: Album; theme: string; optimistic?: boolean };
 type RemoveVars = { date: string; theme: string; optimistic?: boolean };
 // `albums` carries the full metadata for every logged album so a second device
 // can render entries it never saw created. Built from each row's `album` blob.
-type JournalResponse = { entries: JournalEntry[]; albums: Album[]; persisted: boolean };
+type JournalResponse = { entries: JournalEntry[]; albums: Album[] };
 
 // Row shape of public.journal_entries (snake_case).
 type JournalRow = {
@@ -67,7 +67,6 @@ type JournalContextValue = {
   albums: Album[];
   allAlbums: JournalAlbum[];
   albumsByDate: Record<string, Album>;
-  getByDate: (date: string) => Album | undefined;
   /** Log (or replace) the album in the active theme's slot at `date`. */
   logAlbum: (album: Album, entry: { date: string; rating: number; note: string }) => void;
   /** Update the slot at `date` while keeping the same album id/date. */
@@ -80,7 +79,6 @@ type JournalContextValue = {
   removeSlot: (date: string) => void;
   /** Enrich the album in the slot at `date` (tracklist/release date). */
   enrichSlot: (date: string, patch: Partial<Album>) => void;
-  persisted: boolean;
 };
 
 export type JournalAlbum = Album & {
@@ -132,7 +130,7 @@ async function fetchJournal(userId: string | null): Promise<JournalResponse> {
 
   // Unconfigured local dev: localStorage is the only persistence.
   if (!supabase || !userId) {
-    return { entries: readLocalEntries(), albums: readCustomAlbums(), persisted: false };
+    return { entries: readLocalEntries(), albums: readCustomAlbums() };
   }
 
   // Bounded: a select() waits on supabase-js resolving an access token, which
@@ -162,7 +160,6 @@ async function fetchJournal(userId: string | null): Promise<JournalResponse> {
     // Older rows predate the `album` column and come back null — those albums
     // get backfilled from localStorage by the effect in JournalProvider.
     albums: rows.map((r) => r.album).filter((a): a is Album => Boolean(a)),
-    persisted: true,
   };
 }
 
@@ -329,7 +326,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       // Guests: the optimistic cache update in onMutate is their whole
       // persistence. Unconfigured: localStorage write-through in onMutate.
       const supabase = getSupabaseBrowserClient();
-      if (guest || !supabase || !userId) return { persisted: false };
+      if (guest || !supabase || !userId) return;
 
       const row = {
         user_id: userId,
@@ -350,14 +347,13 @@ export function JournalProvider({ children }: { children: ReactNode }) {
         "journal upsert",
       );
       if (error) throw new Error(error.message);
-      return { persisted: true };
     },
     onMutate: ({ album, theme: lane, optimistic = true }) => {
       // moveSlot updates the cache itself (one atomic swap with a single
       // rollback), so it opts out of this per-call optimistic update.
       if (!optimistic) return { previous: undefined };
       const previous = queryClient.getQueryData<JournalResponse>(queryKey);
-      const base = previous ?? { entries: [], albums: [], persisted: false };
+      const base = previous ?? { entries: [], albums: [] };
       const entry: JournalEntry = {
         albumId: album.id,
         date: album.date,
@@ -375,7 +371,6 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData<JournalResponse>(queryKey, {
         entries: nextEntries,
         albums: nextAlbums,
-        persisted: base.persisted,
       });
       // localStorage write-through only in unconfigured (no-Supabase) mode.
       if (!configured) writeLocalEntries(nextEntries);
@@ -397,7 +392,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   const remove = useMutation({
     mutationFn: async ({ date, theme: lane }: RemoveVars) => {
       const supabase = getSupabaseBrowserClient();
-      if (guest || !supabase || !userId) return { persisted: false };
+      if (guest || !supabase || !userId) return;
       const { error } = await withTimeout(
         supabase
           .from("journal_entries")
@@ -409,13 +404,12 @@ export function JournalProvider({ children }: { children: ReactNode }) {
         "journal delete",
       );
       if (error) throw new Error(error.message);
-      return { persisted: true };
     },
     onMutate: ({ date, theme: lane, optimistic = true }) => {
       // moveSlot manages the cache atomically; skip the per-call update.
       if (!optimistic) return { previous: undefined };
       const previous = queryClient.getQueryData<JournalResponse>(queryKey);
-      const base = previous ?? { entries: [], albums: [], persisted: false };
+      const base = previous ?? { entries: [], albums: [] };
       // Clear just this (theme, date) slot; album metadata stays in the pool.
       const nextEntries = base.entries.filter(
         (e) => !(e.date === date && e.theme === lane),
@@ -423,7 +417,6 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData<JournalResponse>(queryKey, {
         entries: nextEntries,
         albums: base.albums,
-        persisted: base.persisted,
       });
       if (!configured) writeLocalEntries(nextEntries);
       return { previous };
@@ -496,7 +489,6 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       const base = queryClient.getQueryData<JournalResponse>(queryKey) ?? {
         entries: [],
         albums: [],
-        persisted: false,
       };
       const slotAt = (date: string): Album | undefined => {
         const e = base.entries.find((x) => x.theme === theme && x.date === date);
@@ -669,15 +661,13 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       albums,
       allAlbums,
       albumsByDate,
-      getByDate: (date) => albumsByDate[date],
       logAlbum,
       updateSlot,
       moveSlot,
       removeSlot,
       enrichSlot,
-      persisted: query.data?.persisted ?? false,
     }),
-    [albums, allAlbums, albumsByDate, logAlbum, updateSlot, moveSlot, removeSlot, enrichSlot, query.data?.persisted],
+    [albums, allAlbums, albumsByDate, logAlbum, updateSlot, moveSlot, removeSlot, enrichSlot],
   );
 
   return <JournalContext.Provider value={value}>{children}</JournalContext.Provider>;

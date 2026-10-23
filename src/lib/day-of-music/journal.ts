@@ -14,6 +14,9 @@ export type JournalEntry = {
 // A partial edit applied to an album's journal layer (never the theme).
 export type JournalPatch = Partial<Omit<JournalEntry, "albumId" | "theme">>;
 
+// Local-mode (no Supabase) journal. The key still says v1 but holds the v2
+// array format; readLocalEntries in use-journal.tsx also reads the older v1
+// map. Don't rename it — journals already saved under it would be orphaned.
 export const JOURNAL_STORAGE_KEY = "day-of-music:journal:v1";
 export const CUSTOM_ALBUMS_STORAGE_KEY = "day-of-music:custom-albums:v1";
 
