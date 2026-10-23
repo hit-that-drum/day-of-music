@@ -42,15 +42,18 @@ export function Button({
   return <button type={type} className={buttonClass(variant, size, className)} {...props} />;
 }
 
+// The icon is aria-hidden and is the button's only content, so the label is
+// required by type — without it the button has no accessible name at all.
 export function IconButton({
   icon: Icon,
   iconSize = 18,
   type = "button",
   className,
   ...props
-}: Omit<ComponentProps<"button">, "children"> & {
+}: Omit<ComponentProps<"button">, "children" | "aria-label"> & {
   icon: LucideIcon;
   iconSize?: number;
+  "aria-label": string;
 }) {
   return (
     <button
