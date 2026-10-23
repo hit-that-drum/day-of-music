@@ -10,6 +10,8 @@
 import dayjs from "dayjs";
 import { z } from "zod";
 
+import { localizeAlbumsInto } from "@/lib/day-of-music/itunes-lookup";
+
 const searchParamsSchema = z.object({
   q: z.string().trim().min(1),
   type: z.enum(["album", "artist", "track"]).default("album"),
@@ -91,7 +93,8 @@ export async function GET(request: Request) {
   // Search the user's preferred storefront first, then fall back through the
   // common stores (deduped). Returns the first store that yields any results,
   // so a region-specific release surfaces even if the preferred store is empty.
-  const storefronts = [...new Set([country.toUpperCase(), "US", "KR", "JP", "GB"])];
+  const preferred = country.toUpperCase();
+  const storefronts = [...new Set([preferred, "US", "KR", "JP", "GB"])];
 
   async function searchIn(store: string): Promise<MusicSearchResult[] | null> {
     const itunesUrl = new URL("https://itunes.apple.com/search");
@@ -117,10 +120,10 @@ export async function GET(request: Request) {
 
   // The album SEARCH returns a storefront's *romanized* title (e.g.
   // "JAMONG SALGU CLUB") while the same store's SONG search carries the
-  // localized one ("자몽살구클럽"). One extra song query (in the store that
-  // produced the results) builds a collectionId → localized-title map, so album
-  // results read in the listener's language. Titles with no localized form, and
-  // non-album searches, are left untouched.
+  // localized one ("자몽살구클럽"). When the results come from the listener's own
+  // store, one extra song query there builds a collectionId → localized-title
+  // map, so album results read in the listener's language. Titles with no
+  // localized form, and non-album searches, are left untouched.
   async function localizeAlbumTitles(
     results: MusicSearchResult[],
     store: string,
@@ -159,7 +162,17 @@ export async function GET(request: Request) {
     if (results === null) continue;
     anyStoreReached = true;
     if (results.length > 0) {
-      return Response.json({ results: await localizeAlbumTitles(results, store) });
+      // Results from a fallback store are named in that store's language — a KR
+      // listener, whose own store's search comes back empty, got the US store's
+      // "JAMONG SALGU CLUB" by "HANRORO". Those albums are looked up by id in
+      // the listener's store instead (see itunes-lookup.ts).
+      const localized =
+        store === preferred
+          ? await localizeAlbumTitles(results, store)
+          : type === "album"
+            ? await localizeAlbumsInto(results, store, preferred)
+            : results;
+      return Response.json({ results: localized });
     }
   }
 

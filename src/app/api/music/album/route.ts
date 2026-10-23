@@ -12,6 +12,7 @@
 import dayjs from "dayjs";
 import { z } from "zod";
 
+import { lookupByIds } from "@/lib/day-of-music/itunes-lookup";
 import type { AlbumDetail, TrackItem } from "@/lib/day-of-music/music-types";
 
 const lookupParamsSchema = z.object({
@@ -159,46 +160,6 @@ export async function GET(request: Request) {
     return null;
   }
 
-  // Look songs up in a storefront by their TRACK ids. Some stores (notably KR)
-  // return an album from the album lookup but none of its songs — and the KR
-  // search index, which used to carry those songs (and was how titles got
-  // recovered), comes back empty for every query (observed Oct 2026). Looked up
-  // by their own ids, though, the songs are all there, localized: Korean titles
-  // ("하이웨이", not the US store's "Highway"), the localized artist, and the
-  // album's localized name on each row (the album lookup may romanize it to
-  // "JAMONG SALGU CLUB" while the rows say "자몽살구클럽"). Track ids are
-  // catalog-wide, so the ids from whichever store supplied the tracklist resolve
-  // here; a song the store doesn't carry is simply missing from the result.
-  async function lookupTracksIn(
-    store: string,
-    trackIds: number[],
-  ): Promise<Map<number, ITunesResult>> {
-    const rows = new Map<number, ITunesResult>();
-    // One request per 150 ids (a lookup takes at least 200; this keeps the URL
-    // under ~2,000 chars), so only a box set needs a second call.
-    const batches: number[][] = [];
-    for (let i = 0; i < trackIds.length; i += 150) batches.push(trackIds.slice(i, i + 150));
-    await Promise.all(
-      batches.map(async (batch) => {
-        const lookupUrl = new URL("https://itunes.apple.com/lookup");
-        lookupUrl.searchParams.set("id", batch.join(","));
-        lookupUrl.searchParams.set("country", store);
-        // No lang override → titles come back in the storefront's own language.
-        try {
-          const resp = await fetch(lookupUrl, { next: { revalidate: 3600 } });
-          if (!resp.ok) return;
-          const results = (JSON.parse(await resp.text()).results ?? []) as ITunesResult[];
-          for (const x of results) {
-            if (x.wrapperType === "track" && x.trackId != null) rows.set(x.trackId, x);
-          }
-        } catch {
-          /* a failed batch just leaves those songs with the fallback titles */
-        }
-      }),
-    );
-    return rows;
-  }
-
   // Prefer a storefront that returns the album AND usable tracks. Some stores
   // list an album (trackCount > 0) without individually-available songs, so if
   // a store yields no tracks we keep trying the other storefronts; only fall
@@ -268,16 +229,21 @@ export async function GET(request: Request) {
 
   // A tracklist from a *fallback* store is in that store's language — a KR
   // listener got the US store's "Highway". Re-localize it into the listener's
-  // store song by song (see lookupTracksIn), keeping the order; a song that store
-  // doesn't carry keeps its fallback title, so the list never shrinks. The same
-  // rows carry the album's localized name for the title.
+  // store by looking the songs up by TRACK id there (see itunes-lookup.ts for
+  // why that works when the album lookup doesn't), keeping the order; a song
+  // that store doesn't carry keeps its fallback title, so the list never shrinks.
+  // The same rows carry the album's localized name for the title.
   let localizedTitle: string | undefined;
   if (preferredStore && trackStore !== preferredStore && trackItems.length > 0) {
     const sourceCollectionId = collection.collectionId;
-    const rows = await lookupTracksIn(
+    const rows = new Map<number, ITunesResult>();
+    const found = await lookupByIds<ITunesResult>(
       preferredStore,
       trackItems.map((t) => t.trackId),
     );
+    for (const x of found) {
+      if (x.wrapperType === "track" && x.trackId != null) rows.set(x.trackId, x);
+    }
     trackItems = trackItems.map((t) => {
       const row = rows.get(t.trackId);
       const name = row?.trackCensoredName ?? row?.trackName;
