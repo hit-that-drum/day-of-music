@@ -117,7 +117,7 @@ export function ProfilePage() {
         <section className="dom-settings-card">
           <div className="dom-settings-label">{t("profile.section.themes")}</div>
           <ThemeManager
-            key={themes.map((t) => t.id).join("|")}
+            key={themes.map((theme) => theme.id).join("|")}
             initial={themes}
             synced={synced}
             onSave={saveThemes}
@@ -701,7 +701,7 @@ function ThemeManager({
   );
 
   const update = (i: number, patch: Partial<Theme>) =>
-    setList((l) => l.map((t, idx) => (idx === i ? { ...t, ...patch } : t)));
+    setList((l) => l.map((theme, idx) => (idx === i ? { ...theme, ...patch } : theme)));
   const move = (i: number, dir: 1 | -1) =>
     setList((l) => {
       const j = i + dir;

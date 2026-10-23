@@ -28,7 +28,10 @@ export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
   const themeLabels = useMemo(
     () =>
       new Map(
-        themes.map((t) => [t.id, t.emoji ? `${t.emoji} ${t.name}` : t.name]),
+        themes.map((theme) => [
+          theme.id,
+          theme.emoji ? `${theme.emoji} ${theme.name}` : theme.name,
+        ]),
       ),
     [themes],
   );

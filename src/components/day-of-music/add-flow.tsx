@@ -555,20 +555,20 @@ function TrackPanel({
     <div className="dom-addflow-tracks">
       <div className="dom-addflow-tracks-label">{t("addflow.pickTrack")}</div>
       {detail.trackItems.length > 0 ? (
-        detail.trackItems.map((t) => {
+        detail.trackItems.map((track) => {
           // Build the track album once so the compared id and the picked id
           // always match — the resolved detail's collection id may differ from
           // the row's id (the route falls back to an edition with tracks).
-          const trackAlbum = albumFromTrack(detail, t);
+          const trackAlbum = albumFromTrack(detail, track);
           return (
             <button
-              key={t.trackId}
+              key={track.trackId}
               className="dom-addflow-track"
               data-active={picked?.id === trackAlbum.id ? "1" : "0"}
               onClick={() => onPick(trackAlbum)}
             >
-              <span className="dom-addflow-track-name">{t.name}</span>
-              <span className="dom-addflow-track-artist">{t.artist}</span>
+              <span className="dom-addflow-track-name">{track.name}</span>
+              <span className="dom-addflow-track-artist">{track.artist}</span>
               {picked?.id === trackAlbum.id && (
                 <span className="dom-addflow-check">✓</span>
               )}

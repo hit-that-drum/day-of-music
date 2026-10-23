@@ -5,6 +5,14 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    rules: {
+      // A callback parameter named `t` silently hid the translator from
+      // useT() in several components. `_` stays allowed for ignored params.
+      "no-shadow": "off",
+      "@typescript-eslint/no-shadow": ["error", { allow: ["_"] }],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

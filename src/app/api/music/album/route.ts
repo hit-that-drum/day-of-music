@@ -80,9 +80,9 @@ export async function GET(request: Request) {
   // first, then common fallbacks, and use the first that has the album.
   const storefronts = [...new Set([country.toUpperCase(), "US", "KR", "JP", "GB"])];
 
-  async function lookupIn(store: string, id: string): Promise<ITunesResult[] | null> {
+  async function lookupIn(store: string, lookupId: string): Promise<ITunesResult[] | null> {
     const itunesUrl = new URL("https://itunes.apple.com/lookup");
-    itunesUrl.searchParams.set("id", id);
+    itunesUrl.searchParams.set("id", lookupId);
     itunesUrl.searchParams.set("entity", "song");
     itunesUrl.searchParams.set("country", store);
     // Normalize text (e.g. genre names) to English regardless of storefront.

@@ -12,9 +12,9 @@ export function ThemeTabs() {
   const { themes } = useThemes();
   const { activeTheme, setActiveTheme } = useActiveTheme();
   const active = resolveActiveTheme(themes, activeTheme);
-  const options = themes.map((t) => ({
-    value: t.id,
-    label: t.emoji ? `${t.emoji} ${t.name}` : t.name,
+  const options = themes.map((theme) => ({
+    value: theme.id,
+    label: theme.emoji ? `${theme.emoji} ${theme.name}` : theme.name,
   }));
 
   if (!themes.length) return null;

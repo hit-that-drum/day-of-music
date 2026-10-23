@@ -75,7 +75,7 @@ export function ProfileStats() {
     ? Math.round((allStats.fives.length / allStats.total) * 100)
     : 0;
   const openTheme = openThemeId
-    ? (themeRecaps.find((t) => t.id === openThemeId) ?? null)
+    ? (themeRecaps.find((recap) => recap.id === openThemeId) ?? null)
     : null;
 
   return (
