@@ -51,7 +51,7 @@ export function TweaksPanel({
     <div className="dom-tweaks-panel" role="dialog" aria-label={t("tweaks.title")} ref={panelRef}>
       <div className="dom-tweaks-panel-hd">
         <span className="dom-tweak-section dom-tweaks-panel-title">{t("tweaks.title")}</span>
-        <button className="dom-tweaks-close" onClick={onClose} aria-label={t("tweaks.close")}>
+        <button className="dom-tweaks-close" onClick={onClose} aria-label={t("modal.close")}>
           ✕
         </button>
       </div>

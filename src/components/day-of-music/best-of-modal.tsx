@@ -238,7 +238,7 @@ export function BestOfModal({
                   {t("bow.redo")}
                 </Button>
               )}
-              <Button onClick={handleSaveImage}>{t("bow.saveImage")}</Button>
+              <Button onClick={handleSaveImage}>{t("share.saveImage")}</Button>
             </div>
           </div>
         )}

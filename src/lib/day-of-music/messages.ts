@@ -1,16 +1,18 @@
 // messages.ts — UI copy for the five supported languages (EN · KO · JP · CN · SP).
 // Key-first so each string's five translations sit together (easy to review and
-// spot gaps). Typed as Record<Locale, string> per key so a missing translation
-// is a compile error. `{name}` tokens are filled by translate() in i18n.ts.
+// spot gaps). `satisfies Record<Locale, string>` per key makes a missing
+// translation a compile error, and MessageKey (below) does the same for an
+// unknown key at the t() call. `{name}` tokens are filled by translate() in
+// i18n.ts.
 //
-// Scope: the always-visible app chrome — header, Tweaks panel, and the Profile
-// settings surface. Deeper flows (add-flow, day detail, share, auth, the
-// Profile modals/toasts) still carry their original copy and migrate to these
-// keys incrementally using the same t() calls.
+// Keys are namespaced by surface (nav.*, profile.*, share.*, …). Generic
+// actions that read the same everywhere live once (action.cancel, modal.close);
+// a label that only happens to match another today (a button and the title it
+// opens) keeps its own key so its translation can diverge.
 
 import type { Locale } from "@/lib/day-of-music/i18n";
 
-export const MESSAGES: Record<string, Record<Locale, string>> = {
+export const MESSAGES = {
   // ── Header nav ──────────────────────────────────────────────────────────
   "nav.week": { en: "Week", ko: "주간", ja: "週間", zh: "周", es: "Semana" },
   "nav.month": { en: "Month", ko: "월간", ja: "月間", zh: "月", es: "Mes" },
@@ -65,7 +67,6 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   },
   "tweaks.on": { en: "On", ko: "켜짐", ja: "オン", zh: "开", es: "Sí" },
   "tweaks.off": { en: "Off", ko: "꺼짐", ja: "オフ", zh: "关", es: "No" },
-  "tweaks.close": { en: "Close", ko: "닫기", ja: "閉じる", zh: "关闭", es: "Cerrar" },
 
   // ── Profile: headings & sections ────────────────────────────────────────
   "profile.kicker": { en: "profile", ko: "프로필", ja: "プロフィール", zh: "个人资料", es: "perfil" },
@@ -130,7 +131,6 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
 
   // ── Profile: account actions ────────────────────────────────────────────
   "profile.changePassword": { en: "Change password", ko: "비밀번호 변경", ja: "パスワード変更", zh: "修改密码", es: "Cambiar contraseña" },
-  "profile.cancel": { en: "Cancel", ko: "취소", ja: "キャンセル", zh: "取消", es: "Cancelar" },
   "profile.deleteAccount": { en: "Delete account", ko: "회원 탈퇴", ja: "アカウント削除", zh: "注销账户", es: "Eliminar cuenta" },
 
   // ── Profile: theme manager ──────────────────────────────────────────────
@@ -201,7 +201,6 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "bow.progress": { en: "{cur} / {total}", ko: "{cur} / {total}", ja: "{cur} / {total}", zh: "{cur} / {total}", es: "{cur} / {total}" },
   "bow.champion": { en: "Best of Week", ko: "이 주의 베스트", ja: "今週のベスト", zh: "本周最佳", es: "Mejor de la semana" },
   "bow.redo": { en: "Start over", ko: "다시 하기", ja: "やり直す", zh: "重新开始", es: "Reiniciar" },
-  "bow.saveImage": { en: "Save image", ko: "이미지 저장", ja: "画像を保存", zh: "保存图片", es: "Guardar imagen" },
   "bow.empty": {
     en: "No albums logged this week.",
     ko: "이 주에 기록된 앨범이 없어요.",
@@ -728,4 +727,8 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "aria.tabbar": { en: "Main navigation", ko: "주 메뉴", ja: "メインナビゲーション", zh: "主导航", es: "Navegación principal" },
   "guest.bannerShort": { en: "Guest mode — edits aren't saved.", ko: "게스트 모드 — 나가면 기록이 초기화됩니다", ja: "ゲストモード — 離れるとリセット", zh: "访客模式 — 离开后将重置", es: "Modo invitado: nada se guarda" },
   "modal.close": { en: "Close", ko: "닫기", ja: "閉じる", zh: "关闭", es: "Cerrar" },
-};
+} satisfies Record<string, Record<Locale, string>>;
+
+/** Every key t() accepts, so a typo or a key that doesn't exist yet fails to
+ *  compile instead of rendering the raw key. */
+export type MessageKey = keyof typeof MESSAGES;

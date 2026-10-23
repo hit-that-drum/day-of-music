@@ -3,7 +3,12 @@
 // same live checklist. This is first-line UX only; the authoritative minimum
 // (length 8) is also enforced by Supabase server-side.
 
-export type PasswordRule = { id: string; label: string; test: (pw: string) => boolean };
+export type PasswordRule = {
+  /** Also the i18n key suffix: the checklist renders t(`pw.${id}`). */
+  id: "length" | "letter" | "number";
+  label: string;
+  test: (pw: string) => boolean;
+};
 
 export const PASSWORD_RULES: PasswordRule[] = [
   { id: "length", label: "At least 8 characters", test: (pw) => pw.length >= 8 },

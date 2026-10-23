@@ -191,7 +191,7 @@ function AccountActions({
             onClick={() => setPwOpen((v) => !v)}
             aria-expanded={pwOpen}
           >
-            {pwOpen ? t("profile.cancel") : t("profile.changePassword")}
+            {pwOpen ? t("action.cancel") : t("profile.changePassword")}
           </Button>
         )}
         <Button variant="danger-ghost" onClick={() => setConfirmOpen(true)}>

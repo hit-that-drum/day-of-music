@@ -9,10 +9,11 @@ import type { ScreenId } from "@/components/day-of-music/day-of-music-app";
 import { BrandMark, Button, IconButton, buttonClass } from "@/components/day-of-music/atoms";
 import { LanguageSwitch } from "@/components/day-of-music/language-switch";
 import { useT } from "@/lib/day-of-music/i18n";
+import type { MessageKey } from "@/lib/day-of-music/messages";
 
 // Each screen's label comes from the message dictionary (nav.*), rendered in
 // the current language only. Exported so the phone tab bar shares the list.
-export const SCREENS: { id: ScreenId; key: string }[] = [
+export const SCREENS: { id: ScreenId; key: MessageKey }[] = [
   { id: "week", key: "nav.week" },
   { id: "month", key: "nav.month" },
   { id: "search", key: "nav.journal" },

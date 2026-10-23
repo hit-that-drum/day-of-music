@@ -13,7 +13,7 @@
 import { useMemo } from "react";
 
 import { useProfile } from "@/lib/day-of-music/profile";
-import { MESSAGES } from "@/lib/day-of-music/messages";
+import { MESSAGES, type MessageKey } from "@/lib/day-of-music/messages";
 
 export type Locale = "en" | "ko" | "ja" | "zh" | "es";
 export type LanguagePref = "auto" | Locale;
@@ -54,15 +54,14 @@ function interpolate(str: string, params: Record<string, string | number>): stri
   return str.replace(/\{(\w+)\}/g, (m, key) => (key in params ? String(params[key]) : m));
 }
 
-// Resolve one key. Falls back current locale → English → the key itself, so a
-// key that isn't translated (or not defined yet) degrades gracefully.
+// Resolve one key. MessageKey and the `satisfies` check in messages.ts make
+// both a missing key and a missing translation compile errors, so no fallback.
 export function translate(
   locale: Locale,
-  key: string,
+  key: MessageKey,
   params?: Record<string, string | number>,
 ): string {
-  const entry = MESSAGES[key];
-  const raw = entry ? (entry[locale] ?? entry.en) : key;
+  const raw = MESSAGES[key][locale];
   return params ? interpolate(raw, params) : raw;
 }
 
@@ -90,10 +89,11 @@ export function useLanguage(): {
 }
 
 /** A `t(key, params?)` bound to the current effective locale. */
-export function useT(): (key: string, params?: Record<string, string | number>) => string {
+export function useT(): (key: MessageKey, params?: Record<string, string | number>) => string {
   const { locale } = useLanguage();
   return useMemo(
-    () => (key: string, params?: Record<string, string | number>) => translate(locale, key, params),
+    () => (key: MessageKey, params?: Record<string, string | number>) =>
+      translate(locale, key, params),
     [locale],
   );
 }
