@@ -10,6 +10,12 @@
 import dayjs from "dayjs";
 import { z } from "zod";
 
+import {
+  localizeAlbumsInto,
+  localizeArtistsInto,
+  localizeTracksInto,
+} from "@/lib/day-of-music/itunes-lookup";
+
 const searchParamsSchema = z.object({
   q: z.string().trim().min(1),
   type: z.enum(["album", "artist", "track"]).default("album"),
@@ -51,9 +57,16 @@ export type MusicSearchResult = {
   trackCount: number;
 };
 
-function mapResult(r: ITunesResult): MusicSearchResult | null {
-  const rawId = r.collectionId ?? r.trackId ?? r.artistId;
-  const title = r.collectionName ?? r.trackName ?? r.artistName;
+function mapResult(
+  r: ITunesResult,
+  type: keyof typeof ENTITY_BY_TYPE,
+): MusicSearchResult | null {
+  // A song row also carries its album's id and name; a track search is after
+  // the song itself, not one row per song naming its album.
+  const rawId =
+    type === "track" ? r.trackId : (r.collectionId ?? r.trackId ?? r.artistId);
+  const title =
+    type === "track" ? r.trackName : (r.collectionName ?? r.trackName ?? r.artistName);
   if (rawId == null || !title) return null;
 
   const releaseDate = r.releaseDate ?? "";
@@ -91,7 +104,8 @@ export async function GET(request: Request) {
   // Search the user's preferred storefront first, then fall back through the
   // common stores (deduped). Returns the first store that yields any results,
   // so a region-specific release surfaces even if the preferred store is empty.
-  const storefronts = [...new Set([country.toUpperCase(), "US", "KR", "JP", "GB"])];
+  const preferred = country.toUpperCase();
+  const storefronts = [...new Set([preferred, "US", "KR", "JP", "GB"])];
 
   async function searchIn(store: string): Promise<MusicSearchResult[] | null> {
     const itunesUrl = new URL("https://itunes.apple.com/search");
@@ -108,7 +122,7 @@ export async function GET(request: Request) {
       if (!resp.ok) return null;
       const body = JSON.parse(await resp.text()) as { results?: ITunesResult[] };
       return (body.results ?? [])
-        .map(mapResult)
+        .map((r) => mapResult(r, type))
         .filter((r): r is MusicSearchResult => r !== null);
     } catch {
       return null;
@@ -117,10 +131,10 @@ export async function GET(request: Request) {
 
   // The album SEARCH returns a storefront's *romanized* title (e.g.
   // "JAMONG SALGU CLUB") while the same store's SONG search carries the
-  // localized one ("자몽살구클럽"). One extra song query (in the store that
-  // produced the results) builds a collectionId → localized-title map, so album
-  // results read in the listener's language. Titles with no localized form, and
-  // non-album searches, are left untouched.
+  // localized one ("자몽살구클럽"). When the results come from the listener's own
+  // store, one extra song query there builds a collectionId → localized-title
+  // map, so album results read in the listener's language. Titles with no
+  // localized form, and non-album searches, are left untouched.
   async function localizeAlbumTitles(
     results: MusicSearchResult[],
     store: string,
@@ -153,13 +167,31 @@ export async function GET(request: Request) {
     }
   }
 
+  // Name the results the way the listener's store does (see itunes-lookup.ts).
+  async function localize(
+    results: MusicSearchResult[],
+    store: string,
+  ): Promise<MusicSearchResult[]> {
+    // Artist rows are romanized even in the listener's own store ("Ha Hyun
+    // Sang" in KR), so artists always take the name from their album rows.
+    if (type === "artist") return localizeArtistsInto(results, preferred);
+    if (store === preferred) return localizeAlbumTitles(results, store);
+    // Results from a fallback store are named in that store's language — a KR
+    // listener, whose own store's search comes back empty, got the US store's
+    // "JAMONG SALGU CLUB" by "HANRORO" — so they're looked up by id in the
+    // listener's store instead.
+    return type === "album"
+      ? localizeAlbumsInto(results, store, preferred)
+      : localizeTracksInto(results, store, preferred);
+  }
+
   let anyStoreReached = false;
   for (const store of storefronts) {
     const results = await searchIn(store);
     if (results === null) continue;
     anyStoreReached = true;
     if (results.length > 0) {
-      return Response.json({ results: await localizeAlbumTitles(results, store) });
+      return Response.json({ results: await localize(results, store) });
     }
   }
 

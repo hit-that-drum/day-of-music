@@ -52,6 +52,9 @@ export type Album = {
    *  Detail re-localize a stale tracklist when the listener's store country
    *  differs (e.g. tracks saved as US English, now viewing as KR). */
   tracksCountry?: string;
+  /** TRACKLIST_VERSION (music-types.ts) the `tracks` were fetched with. The Day
+   *  Detail re-fetches a tracklist saved by an older version of the route. */
+  tracksVersion?: number;
 };
 
 // User-added albums (from iTunes search) are the only source of albums now;
