@@ -19,6 +19,7 @@ import {
   fitArtwork,
   payloadBytes,
 } from "@/lib/day-of-music/share-artwork";
+import { tweaksStore } from "@/lib/day-of-music/tweaks";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 // ── Payload schemas ─────────────────────────────────────────────────────────
@@ -214,19 +215,13 @@ export function buildStatsSharePayload(args: {
   };
 }
 
-/** The sharer's current visual tweaks, read from the same localStorage key
- *  day-of-music-app.tsx persists (dom.tweaks.v1) — importing the store from
- *  there would be an app → card → lib import cycle. */
+/** The sharer's current visual tweaks. Validated like the public page will:
+ *  a value the schema doesn't know would make the whole link fail to parse,
+ *  so it's left out instead (the page then falls back to editorial). */
 export function readShareTheme(): ShareTheme | undefined {
-  if (typeof window === "undefined") return undefined;
-  try {
-    const raw = window.localStorage.getItem("dom.tweaks.v1");
-    if (!raw) return undefined;
-    const parsed = shareThemeSchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : undefined;
-  } catch {
-    return undefined;
-  }
+  const { aesthetic, typography } = tweaksStore.getSnapshot();
+  const parsed = shareThemeSchema.safeParse({ aesthetic, typography });
+  return parsed.success ? parsed.data : undefined;
 }
 
 /** One-line summary for the public page's meta description (text-only OG). */

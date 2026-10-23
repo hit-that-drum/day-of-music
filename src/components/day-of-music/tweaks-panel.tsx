@@ -13,15 +13,7 @@ import {
   type AestheticKey,
   type TypeKey,
 } from "@/lib/day-of-music/theme";
-
-export type Tweaks = {
-  aesthetic: AestheticKey;
-  typography: TypeKey;
-  /** When on, weeks never span two months: a week that crosses a month
-   *  boundary is shown as two separate pages (e.g. "December — Week 5" then
-   *  "January — Week 1"). Off keeps the continuous Mon–Sun week. */
-  weekSplit: boolean;
-};
+import type { Tweaks } from "@/lib/day-of-music/tweaks";
 
 export function TweaksPanel({
   open,

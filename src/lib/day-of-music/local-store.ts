@@ -100,13 +100,21 @@ export function makeStringStore(
   );
 }
 
-export function makeJsonStore<T>(key: string, fallback: T): Store<T> {
+export function makeJsonStore<T>(
+  key: string,
+  fallback: T,
+  // Optional: shape the parsed blob into a T (e.g. drop retired keys or fill in
+  // ones added since it was saved). Throwing here falls back like bad JSON does.
+  normalize?: (saved: unknown) => T,
+): Store<T> {
   return makeStore<T>(
     () => {
       if (typeof window === "undefined") return fallback;
       try {
         const raw = window.localStorage.getItem(key);
-        return raw ? (JSON.parse(raw) as T) : fallback;
+        if (!raw) return fallback;
+        const saved: unknown = JSON.parse(raw);
+        return normalize ? normalize(saved) : (saved as T);
       } catch {
         return fallback;
       }

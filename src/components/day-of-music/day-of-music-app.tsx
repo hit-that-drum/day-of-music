@@ -39,7 +39,8 @@ import { BestOfWeekModal } from "@/components/day-of-music/best-of-week-modal";
 import { BestOfMonthModal } from "@/components/day-of-music/best-of-month-modal";
 import { ThemeTabs } from "@/components/day-of-music/theme-tabs";
 import { TopBar } from "@/components/day-of-music/top-bar";
-import { TweaksPanel, type Tweaks } from "@/components/day-of-music/tweaks-panel";
+import { TweaksPanel } from "@/components/day-of-music/tweaks-panel";
+import { setTweak, useTweaks } from "@/lib/day-of-music/tweaks";
 import { WeeklyGrid } from "@/components/day-of-music/weekly-grid";
 
 export type ScreenId = "week" | "month" | "search" | "logs" | "profile";
@@ -65,16 +66,6 @@ function getLocalTodayKey(): string {
   return localTodayKey;
 }
 
-// Tweaks are persisted client-side so the user's layout/theme choices survive
-// reloads. Bump the version suffix if the Tweaks shape changes incompatibly.
-const TWEAKS_KEY = "dom.tweaks.v1";
-
-const DEFAULT_TWEAKS: Tweaks = {
-  aesthetic: "editorial",
-  typography: "editorial",
-  weekSplit: false,
-};
-
 // Snapshot fns for the blocked-storage probe — module-level so their identity
 // is stable across renders (useSyncExternalStore resubscribes when it changes).
 // Whether storage works can't change within a page's life, so nothing to
@@ -87,55 +78,6 @@ const getStorageBlockedServer = () => false;
 // sessionStorage (per tab — guest edits already vanish on leave). Server
 // snapshot is false, so SSR renders the banner and the client flips after mount.
 const guestBannerDismissed = makeSessionFlagStore("dom.guestBanner.dismissed.v1");
-
-function loadTweaks(): Tweaks {
-  if (typeof window === "undefined") return DEFAULT_TWEAKS;
-  try {
-    const raw = window.localStorage.getItem(TWEAKS_KEY);
-    if (!raw) return DEFAULT_TWEAKS;
-    const saved = JSON.parse(raw) as Partial<Tweaks>;
-    // Copy only active settings so retired keys from older saved blobs do not
-    // remain in the live snapshot.
-    return {
-      aesthetic: saved.aesthetic ?? DEFAULT_TWEAKS.aesthetic,
-      typography: saved.typography ?? DEFAULT_TWEAKS.typography,
-      weekSplit: saved.weekSplit ?? DEFAULT_TWEAKS.weekSplit,
-    };
-  } catch {
-    return DEFAULT_TWEAKS;
-  }
-}
-
-// Tweaks live in a tiny external store so they can be read with
-// useSyncExternalStore — that loads the persisted value on the client without
-// a hydration mismatch (server renders defaults, client swaps in after mount)
-// and avoids calling setState inside an effect.
-let tweaksSnapshot: Tweaks | null = null;
-const tweaksListeners = new Set<() => void>();
-
-function getTweaksSnapshot(): Tweaks {
-  if (tweaksSnapshot === null) tweaksSnapshot = loadTweaks();
-  return tweaksSnapshot;
-}
-
-function getTweaksServerSnapshot(): Tweaks {
-  return DEFAULT_TWEAKS;
-}
-
-function subscribeTweaks(cb: () => void): () => void {
-  tweaksListeners.add(cb);
-  return () => tweaksListeners.delete(cb);
-}
-
-function writeTweaks(next: Tweaks): void {
-  tweaksSnapshot = next;
-  try {
-    window.localStorage.setItem(TWEAKS_KEY, JSON.stringify(next));
-  } catch {
-    /* storage unavailable (private mode / quota) — ignore */
-  }
-  tweaksListeners.forEach((l) => l());
-}
 
 // First and last day of the anchor's Mon–Sun week that still belong to the
 // anchor's month. Used by week nav in split mode to step just past the visible
@@ -169,12 +111,8 @@ export function DayOfMusicApp({
   const { locale } = useLanguage();
   const t = useT();
 
-  // Persisted across reloads via localStorage (see the store helpers above).
-  const tweaks = useSyncExternalStore(
-    subscribeTweaks,
-    getTweaksSnapshot,
-    getTweaksServerSnapshot,
-  );
+  // Persisted across reloads via localStorage (see lib/day-of-music/tweaks.ts).
+  const tweaks = useTweaks();
   // Server value during SSR + hydration, the browser's own date after mount
   // (see the store above). The server snapshot closes over the prop; only the
   // `subscribe` identity matters for resubscribing, so an inline arrow is fine.
@@ -222,12 +160,6 @@ export function DayOfMusicApp({
     setShowMore(false);
     setReplaceTarget(null);
   }, []);
-
-  const setTweak = useCallback(
-    <K extends keyof Tweaks>(key: K, value: Tweaks[K]) =>
-      writeTweaks({ ...getTweaksSnapshot(), [key]: value }),
-    [],
-  );
 
   useEffect(() => {
     ensureFonts();
