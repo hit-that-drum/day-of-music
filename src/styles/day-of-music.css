@@ -1346,151 +1346,6 @@
   margin-top: 4px;
 }
 
-/* Featured pick block */
-.dom-month-feature {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 24px;
-  margin-bottom: 36px;
-  padding-bottom: 32px;
-  border-bottom: 1px solid var(--lineSoft);
-}
-.dom-month-feature-hero {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 28px;
-  align-items: center;
-  cursor: pointer;
-  padding: 4px;
-  transition: transform 0.2s ease;
-}
-.dom-month-feature-hero:hover {
-  transform: translateY(-2px);
-}
-.dom-month-feature-hero .dom-cover {
-  box-shadow: var(--coverShadow);
-}
-.dom-month-feature-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-.dom-feature-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  color: var(--accent);
-  text-transform: uppercase;
-}
-.dom-feature-title {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 42px;
-  letter-spacing: -0.03em;
-  line-height: 1;
-  margin-top: 2px;
-}
-.dom-feature-artist {
-  font-family: var(--font-display);
-  font-size: 20px;
-  opacity: 0.85;
-  line-height: 1.2;
-}
-.dom-feature-artist span {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink3);
-  letter-spacing: 0.1em;
-}
-.dom-feature-note {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 16px;
-  line-height: 1.45;
-  color: var(--ink2);
-  margin: 6px 0 0;
-  padding-left: 14px;
-  border-left: 2px solid var(--accent);
-  max-width: 520px;
-}
-.dom-feature-meta-line {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  margin-top: 8px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  color: var(--ink3);
-  text-transform: uppercase;
-}
-.dom-feature-meta-line .dom-dot {
-  opacity: 0.5;
-}
-.dom-month-feature-side {
-  border-left: 1px solid var(--lineSoft);
-  padding-left: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.dom-feature-side-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  color: var(--ink3);
-  text-transform: uppercase;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--lineSoft);
-}
-.dom-feature-side-item {
-  display: grid;
-  grid-template-columns: 72px 1fr auto;
-  gap: 14px;
-  align-items: center;
-  width: 100%;
-  padding: 4px;
-  transition: background-color 0.12s ease;
-}
-.dom-feature-side-item:hover {
-  background-color: var(--chip);
-}
-.dom-feature-side-item .dom-cover {
-  box-shadow: var(--coverShadow);
-}
-.dom-feature-side-title {
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-.dom-feature-side-artist {
-  font-family: var(--font-display);
-  font-size: 12px;
-  opacity: 0.75;
-  margin-top: 2px;
-}
-.dom-feature-side-date {
-  text-align: right;
-}
-.dom-feature-side-date > span:first-child {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 500;
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-.dom-feature-side-dow {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  color: var(--ink3);
-  margin-top: 2px;
-}
-
 /* Calendar */
 .dom-month-cal {
   border-top: 1px solid var(--line);
@@ -3729,22 +3584,6 @@
     justify-self: end;
     gap: 18px;
   }
-  .dom-month-feature {
-    grid-template-columns: 1fr;
-  }
-  .dom-month-feature-hero {
-    grid-template-columns: 200px 1fr;
-    gap: 18px;
-  }
-  .dom-feature-title {
-    font-size: 32px;
-  }
-  .dom-month-feature-side {
-    border-left: 0;
-    border-top: 1px solid var(--lineSoft);
-    padding-left: 0;
-    padding-top: 18px;
-  }
 }
 
 @media (max-width: 760px) {
@@ -3780,16 +3619,6 @@
     justify-self: stretch;
     flex-wrap: wrap;
     gap: 14px;
-  }
-  .dom-month-feature-hero {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-  .dom-month-feature-hero .dom-cover {
-    max-width: 240px;
-  }
-  .dom-feature-title {
-    font-size: 28px;
   }
   .dom-month-cal-cell {
     padding: 8px 8px 10px;

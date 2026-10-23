@@ -1,4 +1,6 @@
-// monthly-view.tsx — Monthly Overview: editorial calendar with featured picks.
+// monthly-view.tsx — Monthly Overview: editorial calendar of the month.
+
+"use client";
 
 import { useRef, useState } from "react";
 import dayjs from "dayjs";
@@ -6,13 +8,9 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  // DOW, — used only by the temporarily-disabled feature section below
-  // DOW_KO / MONTHS_LONG — now localized via useDateNames (Intl)
-  // MONTHS,
   addDays,
   fmtDate,
   normalizeGenre,
-  // parseDate,
   startOfWeek,
   type Album,
 } from "@/lib/day-of-music/data";
@@ -87,11 +85,6 @@ export function MonthlyView({
     const d = dayjs(a.date);
     return d.month() === month && d.year() === year;
   });
-
-  // Feature section temporarily disabled (to be moved elsewhere):
-  // const featured = monthAlbums.filter((a) => a.rating === 5);
-  // const heroPick = featured[0] ?? monthAlbums[0];
-  // const restFeatured = featured.slice(1, 4);
 
   const totalLogged = monthAlbums.length;
   const completion = Math.round((totalLogged / lastOfMonth.date()) * 100);
@@ -184,62 +177,6 @@ export function MonthlyView({
           </div>
         </div>
       </div>
-
-      {/* PICK OF THE MONTH / ALSO FIVE-STARS — temporarily disabled, to be moved
-          elsewhere. Re-enable the DOW / MONTHS / parseDate imports and the
-          featured / heroPick / restFeatured vars above when restoring.
-      {heroPick && (
-        <div className="dom-month-feature">
-          <div
-            className="dom-month-feature-hero"
-            onClick={() => onOpen(heroPick)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") onOpen(heroPick);
-            }}
-          >
-            <Cover album={heroPick} size={280} />
-            <div className="dom-month-feature-meta">
-              <div className="dom-feature-eyebrow">★ pick of the month · 이달의 픽</div>
-              <div className="dom-feature-title">{heroPick.title}</div>
-              <div className="dom-feature-artist">
-                {heroPick.artist}
-                {heroPick.titleKo && <span> · {heroPick.titleKo}</span>}
-              </div>
-              <p className="dom-feature-note">&ldquo;{heroPick.note}&rdquo;</p>
-              <div className="dom-feature-meta-line">
-                <span>{heroPick.genre}</span>
-                <span className="dom-dot">·</span>
-                <span>{heroPick.year}</span>
-                <span className="dom-dot">·</span>
-                <span>
-                  {String(parseDate(heroPick.date).getDate()).padStart(2, "0")} {MONTHS[month]}
-                </span>
-              </div>
-            </div>
-          </div>
-          {restFeatured.length > 0 && (
-            <div className="dom-month-feature-side">
-              <div className="dom-feature-side-label">also five-stars · 다섯별</div>
-              {restFeatured.map((a) => (
-                <button key={a.id} className="dom-feature-side-item" onClick={() => onOpen(a)}>
-                  <Cover album={a} size={72} />
-                  <div>
-                    <div className="dom-feature-side-title">{a.title}</div>
-                    <div className="dom-feature-side-artist">{a.artist}</div>
-                  </div>
-                  <div className="dom-feature-side-date">
-                    <span>{String(parseDate(a.date).getDate()).padStart(2, "0")}</span>
-                    <span className="dom-feature-side-dow">{DOW[parseDate(a.date).getDay()]}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-      */}
 
       <div className="dom-month-cal" ref={calRef}>
         <div className="dom-month-cal-hd">
