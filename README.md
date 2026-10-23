@@ -11,7 +11,6 @@ See [`mobile/README.md`](./mobile/README.md) for dev and TestFlight instructions
 - React 19
 - TypeScript
 - Tailwind CSS v4
-- Zustand for editor state
 - TanStack Query for server state
 - Supabase (auth + Postgres, queried directly via supabase-js with RLS)
 - lucide-react icons
