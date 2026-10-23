@@ -7,14 +7,26 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useEffectEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { useT } from "@/lib/day-of-music/i18n";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const t = useT();
+
+  // Effect Events read the current language without making the effect below
+  // depend on it: the code exchange must run exactly once (a code can't be
+  // exchanged twice), so a language resolving after mount must not re-run it.
+  const notifyFailed = useEffectEvent((reason: string) => {
+    toast.error(t("auth.callback.failed", { reason }));
+  });
+  const notifyConfirmedElsewhere = useEffectEvent(() => {
+    toast.success(t("auth.callback.confirmedElsewhere"));
+  });
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -33,7 +45,7 @@ export default function AuthCallbackPage() {
     // Provider-side failure — consent denied, or the account isn't on the test
     // user list while the OAuth app is still unverified.
     if (providerError) {
-      toast.error(`로그인이 완료되지 않았어요: ${providerError}`);
+      notifyFailed(providerError);
       router.replace("/signin");
       return;
     }
@@ -50,7 +62,7 @@ export default function AuthCallbackPage() {
         // here; only the session exchange failed. The usual cause is that the
         // code_verifier isn't in *this* browser — i.e. the link was opened on a
         // different device than the one that signed up.
-        toast.success("이메일 확인이 완료되었어요. 이 기기에서 다시 로그인해 주세요.");
+        notifyConfirmedElsewhere();
         router.replace("/signin");
         return;
       }
@@ -66,9 +78,9 @@ export default function AuthCallbackPage() {
     <div className="dom-stage">
       <div className="dom-root" data-grid="1" style={{ placeItems: "center" }}>
         <div className="dom-signin" style={{ textAlign: "center" }}>
-          <div className="dom-signin-eyebrow">로그인 · signing in</div>
+          <div className="dom-signin-eyebrow">{t("auth.callback.eyebrow")}</div>
           <p className="dom-signin-sub" style={{ margin: 0 }}>
-            로그인 처리 중이에요… 잠시만 기다려 주세요.
+            {t("auth.callback.body")}
           </p>
         </div>
       </div>

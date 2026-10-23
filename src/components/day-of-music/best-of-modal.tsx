@@ -11,6 +11,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { DOW, DOW_KO, parseDate } from "@/lib/day-of-music/data";
 import { useThemes, useActiveTheme } from "@/lib/day-of-music/themes";
@@ -157,9 +158,10 @@ export function BestOfModal({
     setState({ phase: "options" });
   }
 
-  function handleSaveImage() {
+  async function handleSaveImage() {
     if (!posterRef.current) return;
-    void saveCardAsImage(posterRef.current, fileName);
+    if (await saveCardAsImage(posterRef.current, fileName)) toast.success(t("share.imageSaved"));
+    else toast.error(t("share.imageFailed"));
   }
 
   // Name the round by how many contenders enter it (byes included), so a round

@@ -105,9 +105,9 @@ export function ShareCard({
     themeName,
   ]);
 
-  function handleSaveImage() {
-    if (!cardRef.current) return;
-    void saveCardAsImage(cardRef.current, shareFileName([themeName, monthLabel, weekNum]));
+  async function handleSaveImage() {
+    if (!cardRef.current) return false;
+    return saveCardAsImage(cardRef.current, shareFileName([themeName, monthLabel, weekNum]));
   }
 
   return (

@@ -25,7 +25,8 @@ export function ShareActions({
   onSaveImage,
 }: {
   payload: SharePayload;
-  onSaveImage: () => void;
+  /** Resolves whether the PNG was produced (see saveCardAsImage). */
+  onSaveImage: () => Promise<boolean>;
 }) {
   const { configured, loading, user } = useAuth();
   const [busy, setBusy] = useState(false);
@@ -57,6 +58,11 @@ export function ShareActions({
     }
   }
 
+  async function saveImage() {
+    if (await onSaveImage()) toast.success(t("share.imageSaved"));
+    else toast.error(t("share.imageFailed"));
+  }
+
   return (
     <div className="dom-share-actions-wrap">
       <div className="dom-share-actions">
@@ -73,7 +79,7 @@ export function ShareActions({
             {t("share.signInToShare")}
           </Link>
         ) : null}
-        <Button onClick={onSaveImage}>{t("share.saveImage")}</Button>
+        <Button onClick={saveImage}>{t("share.saveImage")}</Button>
       </div>
       {guestWeekLink && (
         <p className="dom-share-guest-warning" role="note">

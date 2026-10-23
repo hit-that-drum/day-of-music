@@ -11,6 +11,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useSyncExternalStore,
@@ -34,6 +35,7 @@ import {
   useThemes,
 } from "@/lib/day-of-music/themes";
 import { useAuth } from "@/components/day-of-music/auth-provider";
+import { useT } from "@/lib/day-of-music/i18n";
 import {
   AUTH_CALL_TIMEOUT_MS,
   getSupabaseBrowserClient,
@@ -224,6 +226,7 @@ let moveChainTail: Promise<unknown> = Promise.resolve();
 export function JournalProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const { configured, user } = useAuth();
+  const t = useT();
   const userId = user?.id ?? null;
   const queryKey = useMemo(() => ["journal", userId ?? "anon"] as const, [userId]);
 
@@ -253,14 +256,17 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   // rejecting on a Web Lock timeout) indistinguishable from "you logged
   // nothing". Say so instead, and keep the reason in the console for a report.
   const queryError = query.error;
+  // An Effect Event so a language change re-renders the next toast without
+  // re-announcing an error that is still the same one.
+  const notifyLoadFailed = useEffectEvent((error: unknown) => {
+    toast.error(
+      t("toast.loadFailed", { reason: error instanceof Error ? error.message : String(error) }),
+    );
+  });
   useEffect(() => {
     if (!queryError) return;
     console.error("journal load failed", queryError);
-    toast.error(
-      `기록을 불러오지 못했어요: ${
-        queryError instanceof Error ? queryError.message : String(queryError)
-      }`,
-    );
+    notifyLoadFailed(queryError);
   }, [queryError]);
 
   // User-added albums (from music search). Guests get the in-memory bucket;
@@ -319,7 +325,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   // its journal overlay — that metadata blob is what lets another device render
   // the entry. The journal columns (date/rating/note) are derived from it.
   const upsert = useMutation({
-    mutationFn: async ({ album, theme: t }: UpsertVars) => {
+    mutationFn: async ({ album, theme: lane }: UpsertVars) => {
       // Guests: the optimistic cache update in onMutate is their whole
       // persistence. Unconfigured: localStorage write-through in onMutate.
       const supabase = getSupabaseBrowserClient();
@@ -327,7 +333,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
 
       const row = {
         user_id: userId,
-        theme: t,
+        theme: lane,
         album_id: album.id,
         date: album.date,
         rating: album.rating,
@@ -346,7 +352,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       if (error) throw new Error(error.message);
       return { persisted: true };
     },
-    onMutate: ({ album, theme: t, optimistic = true }) => {
+    onMutate: ({ album, theme: lane, optimistic = true }) => {
       // moveSlot updates the cache itself (one atomic swap with a single
       // rollback), so it opts out of this per-call optimistic update.
       if (!optimistic) return { previous: undefined };
@@ -357,11 +363,11 @@ export function JournalProvider({ children }: { children: ReactNode }) {
         date: album.date,
         rating: album.rating,
         note: album.note,
-        theme: t,
+        theme: lane,
       };
       // Replace whatever was in this (theme, date) slot.
       const nextEntries = [
-        ...base.entries.filter((e) => !(e.date === album.date && e.theme === t)),
+        ...base.entries.filter((e) => !(e.date === album.date && e.theme === lane)),
         entry,
       ];
       // The album-metadata pool is keyed by id (theme-independent).
@@ -378,7 +384,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     onError: (err, vars, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
       // moveSlot (optimistic:false) owns its own failure toast.
-      if (vars.optimistic !== false) toast.error("저장하지 못했어요", { description: err.message });
+      if (vars.optimistic !== false) toast.error(t("toast.saveFailed"), { description: err.message });
     },
     // moveSlot runs two legs back to back; a refetch kicked off after the FIRST
     // leg could land mid-sequence and briefly show the half-moved server state.
@@ -389,7 +395,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   });
 
   const remove = useMutation({
-    mutationFn: async ({ date, theme: t }: RemoveVars) => {
+    mutationFn: async ({ date, theme: lane }: RemoveVars) => {
       const supabase = getSupabaseBrowserClient();
       if (guest || !supabase || !userId) return { persisted: false };
       const { error } = await withTimeout(
@@ -397,7 +403,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
           .from("journal_entries")
           .delete()
           .eq("user_id", userId)
-          .eq("theme", t)
+          .eq("theme", lane)
           .eq("date", date),
         AUTH_CALL_TIMEOUT_MS,
         "journal delete",
@@ -405,14 +411,14 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       if (error) throw new Error(error.message);
       return { persisted: true };
     },
-    onMutate: ({ date, theme: t, optimistic = true }) => {
+    onMutate: ({ date, theme: lane, optimistic = true }) => {
       // moveSlot manages the cache atomically; skip the per-call update.
       if (!optimistic) return { previous: undefined };
       const previous = queryClient.getQueryData<JournalResponse>(queryKey);
       const base = previous ?? { entries: [], albums: [], persisted: false };
       // Clear just this (theme, date) slot; album metadata stays in the pool.
       const nextEntries = base.entries.filter(
-        (e) => !(e.date === date && e.theme === t),
+        (e) => !(e.date === date && e.theme === lane),
       );
       queryClient.setQueryData<JournalResponse>(queryKey, {
         entries: nextEntries,

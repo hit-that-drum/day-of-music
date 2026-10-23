@@ -55,9 +55,9 @@ export function StatsShareCard({
     [title, username, themeLabel, sub, showFives, stats],
   );
 
-  function handleSaveImage() {
-    if (!cardRef.current) return;
-    void saveCardAsImage(cardRef.current, shareFileName(filenameParts));
+  async function handleSaveImage() {
+    if (!cardRef.current) return false;
+    return saveCardAsImage(cardRef.current, shareFileName(filenameParts));
   }
 
   return (

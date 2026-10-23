@@ -91,9 +91,9 @@ export function MonthShareCard({
     };
   }, [anchor, month, year, monthLabel, albums, albumsByDate, username, themeEmoji, themeName]);
 
-  function handleSaveImage() {
-    if (!cardRef.current) return;
-    void saveCardAsImage(cardRef.current, shareFileName([themeName, monthLabel, year]));
+  async function handleSaveImage() {
+    if (!cardRef.current) return false;
+    return saveCardAsImage(cardRef.current, shareFileName([themeName, monthLabel, year]));
   }
 
   return (

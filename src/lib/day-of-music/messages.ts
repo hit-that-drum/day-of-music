@@ -609,6 +609,17 @@ export const MESSAGES = {
   "auth.google": { en: "Continue with Google", ko: "Google로 계속", ja: "Google で続ける", zh: "使用 Google 继续", es: "Continuar con Google" },
   "auth.kakao": { en: "Continue with Kakao", ko: "카카오로 계속", ja: "Kakao で続ける", zh: "使用 Kakao 继续", es: "Continuar con Kakao" },
   "auth.guestContinue": { en: "Continue as guest", ko: "게스트로 계속", ja: "ゲストとして続ける", zh: "以访客身份继续", es: "Continuar como invitado" },
+  // /auth/callback — finishing an OAuth or email-confirmation redirect.
+  "auth.callback.eyebrow": { en: "Signing in", ko: "로그인", ja: "ログイン", zh: "登录", es: "Iniciando sesión" },
+  "auth.callback.body": { en: "Signing you in… just a moment.", ko: "로그인 처리 중이에요… 잠시만 기다려 주세요.", ja: "ログインしています… 少々お待ちください。", zh: "正在登录… 请稍候。", es: "Iniciando sesión… un momento." },
+  "auth.callback.failed": { en: "Sign-in didn't complete: {reason}", ko: "로그인이 완료되지 않았어요: {reason}", ja: "ログインが完了しませんでした: {reason}", zh: "登录未完成：{reason}", es: "No se completó el inicio de sesión: {reason}" },
+  "auth.callback.confirmedElsewhere": {
+    en: "Your email is confirmed. Please sign in again on this device.",
+    ko: "이메일 확인이 완료되었어요. 이 기기에서 다시 로그인해 주세요.",
+    ja: "メールアドレスの確認が完了しました。この端末でもう一度ログインしてください。",
+    zh: "邮箱已确认。请在此设备上重新登录。",
+    es: "Tu correo está confirmado. Vuelve a iniciar sesión en este dispositivo.",
+  },
   // Only seen in a local dev setup without Supabase keys.
   "auth.notConfigured": {
     en: "Auth isn't configured yet — add Supabase keys to .env.local.",
@@ -681,6 +692,8 @@ export const MESSAGES = {
   // ── Share actions (link + confirm modal + toasts) ───────────────────────
   "share.createLink": { en: "Create public link", ko: "공개 링크 만들기", ja: "公開リンクを作成", zh: "创建公开链接", es: "Crear enlace público" },
   "share.signInToShare": { en: "Sign in to share", ko: "공유하려면 로그인", ja: "共有するにはサインイン", zh: "登录后分享", es: "Inicia sesión para compartir" },
+  "share.imageSaved": { en: "Image saved", ko: "이미지를 저장했어요", ja: "画像を保存しました", zh: "图片已保存", es: "Imagen guardada" },
+  "share.imageFailed": { en: "Couldn't save image", ko: "이미지를 저장하지 못했어요", ja: "画像を保存できませんでした", zh: "无法保存图片", es: "No se pudo guardar la imagen" },
   "share.makeYourOwn": { en: "Make your own →", ko: "나도 만들어 보기 →", ja: "自分でも作ってみる →", zh: "我也来做一张 →", es: "Crea el tuyo →" },
   "share.saveImage": { en: "Save image", ko: "이미지 저장", ja: "画像を保存", zh: "保存图片", es: "Guardar imagen" },
   "share.guestWarning": {
@@ -732,6 +745,8 @@ export const MESSAGES = {
   "toast.logged": { en: "Logged {title}", ko: "{title} 기록됨", ja: "{title} を記録しました", zh: "已记录 {title}", es: "Registrado: {title}" },
   "toast.loggedDaysDesc": { en: "{count} days · {rating}★", ko: "{count}일 · {rating}★", ja: "{count}日 · {rating}★", zh: "{count} 天 · {rating}★", es: "{count} días · {rating}★" },
   "toast.loggedDateDesc": { en: "{date} · {rating}★", ko: "{date} · {rating}★", ja: "{date} · {rating}★", zh: "{date} · {rating}★", es: "{date} · {rating}★" },
+  "toast.loadFailed": { en: "Couldn't load your journal: {reason}", ko: "기록을 불러오지 못했어요: {reason}", ja: "記録を読み込めませんでした: {reason}", zh: "无法加载记录：{reason}", es: "No se pudo cargar tu diario: {reason}" },
+  "toast.saveFailed": { en: "Couldn't save", ko: "저장하지 못했어요", ja: "保存できませんでした", zh: "保存失败", es: "No se pudo guardar" },
 
   // ── Toasts (move / swap from Day Detail) ───────────────────────────────
   "toast.moved": { en: "Moved to {date}", ko: "{date}로 옮겼어요", ja: "{date}に移動しました", zh: "已移到 {date}", es: "Movido al {date}" },
