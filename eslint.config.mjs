@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Design reference bundle — Babel-in-browser prototype, not production code.
     "design_handoff_day_of_music/**",
+    // Claude Code settings and its git worktrees (full checkouts of this repo).
+    ".claude/**",
   ]),
 ]);
 
