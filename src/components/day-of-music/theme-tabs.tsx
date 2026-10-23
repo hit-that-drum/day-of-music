@@ -4,9 +4,11 @@
 "use client";
 
 import { DomSelectField } from "@/components/day-of-music/dom-select";
+import { useT } from "@/lib/day-of-music/i18n";
 import { resolveActiveTheme, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
 
 export function ThemeTabs() {
+  const t = useT();
   const { themes } = useThemes();
   const { activeTheme, setActiveTheme } = useActiveTheme();
   const active = resolveActiveTheme(themes, activeTheme);
@@ -20,6 +22,7 @@ export function ThemeTabs() {
   return (
     <DomSelectField
       label="Theme"
+      ariaLabel={t("tweaks.theme")}
       className="dom-theme-select"
       value={active}
       options={options}

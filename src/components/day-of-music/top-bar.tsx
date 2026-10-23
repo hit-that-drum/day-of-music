@@ -3,15 +3,16 @@
 "use client";
 
 import Link from "next/link";
+import { Ellipsis, SlidersHorizontal } from "lucide-react";
 
 import type { ScreenId } from "@/components/day-of-music/day-of-music-app";
-import { BrandMark, Button, buttonClass } from "@/components/day-of-music/atoms";
+import { BrandMark, Button, IconButton, buttonClass } from "@/components/day-of-music/atoms";
 import { LanguageSwitch } from "@/components/day-of-music/language-switch";
 import { useT } from "@/lib/day-of-music/i18n";
 
 // Each screen's label comes from the message dictionary (nav.*), rendered in
-// the current language only.
-const SCREENS: { id: ScreenId; key: string }[] = [
+// the current language only. Exported so the phone tab bar shares the list.
+export const SCREENS: { id: ScreenId; key: string }[] = [
   { id: "week", key: "nav.week" },
   { id: "month", key: "nav.month" },
   { id: "search", key: "nav.journal" },
@@ -25,6 +26,7 @@ export function TopBar({
   screen,
   onScreen,
   onTweaks,
+  onMore,
   account = null,
   showAuthLinks = false,
 }: {
@@ -32,6 +34,8 @@ export function TopBar({
   onScreen: (id: ScreenId) => void;
   /** Toggle the Tweaks panel (lives in the header now, not floating). */
   onTweaks: () => void;
+  /** Open the phone overflow sheet (language / account / legal). */
+  onMore: () => void;
   account?: Account | null;
   /** Show Sign in / Sign up links (guest mode). */
   showAuthLinks?: boolean;
@@ -40,7 +44,7 @@ export function TopBar({
   const tagline = t("brand.tagline");
 
   return (
-    <header className="dom-topbar">
+    <header className="dom-topbar dom-topbar-app">
       <Link href="/" className="dom-brand">
         <BrandMark />
         <span className="dom-brand-name">Day of Music</span>
@@ -52,6 +56,7 @@ export function TopBar({
             key={s.id}
             className="dom-nav-btn"
             data-active={screen === s.id ? "1" : "0"}
+            aria-current={screen === s.id ? "page" : undefined}
             onClick={() => onScreen(s.id)}
           >
             <span className="dom-nav-label">{t(s.key)}</span>
@@ -78,6 +83,23 @@ export function TopBar({
             </Link>
           </>
         )}
+      </div>
+      {/* Phone-only header icons (display:none on desktop). */}
+      <div className="dom-topbar-m">
+        <IconButton
+          icon={SlidersHorizontal}
+          iconSize={20}
+          data-dom-tweaks-trigger
+          onClick={onTweaks}
+          aria-label={t("tweaks.title")}
+        />
+        <IconButton
+          icon={Ellipsis}
+          iconSize={20}
+          onClick={onMore}
+          aria-haspopup="dialog"
+          aria-label={t("menu.title")}
+        />
       </div>
     </header>
   );

@@ -113,7 +113,7 @@ const INTL_TAG: Record<Locale, string> = {
 // Formatters are pure and reusable — build each (locale × option) once.
 const dtfCache = new Map<string, Intl.DateTimeFormat>();
 function dtf(locale: Locale, opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
-  const key = `${INTL_TAG[locale]}|${opts.weekday ?? ""}|${opts.month ?? ""}|${opts.day ?? ""}`;
+  const key = `${INTL_TAG[locale]}|${opts.year ?? ""}|${opts.weekday ?? ""}|${opts.month ?? ""}|${opts.day ?? ""}`;
   let f = dtfCache.get(key);
   if (!f) {
     f = new Intl.DateTimeFormat(INTL_TAG[locale], opts);
@@ -139,6 +139,12 @@ export function monthDayShort(locale: Locale, date: Date): string {
   return dtf(locale, { month: "short", day: "numeric" }).format(date);
 }
 
+/** Month + year in the locale's own order, e.g. "October 2026" · "2026년 10월"
+ *  · "2026年10月" · "octubre de 2026". The phone pickers' headings. */
+export function monthYear(locale: Locale, date: Date): string {
+  return dtf(locale, { year: "numeric", month: "long" }).format(date);
+}
+
 /** The seven short weekday names, Monday-first. (2024-01-01 is a Monday.) */
 export function weekdayRowMonFirst(locale: Locale): string[] {
   return Array.from({ length: 7 }, (_, i) => weekdayShort(locale, new Date(2024, 0, 1 + i)));
@@ -149,6 +155,7 @@ export function useDateNames(): {
   weekdayShort: (date: Date) => string;
   monthLong: (monthIndex: number) => string;
   monthDayShort: (date: Date) => string;
+  monthYear: (date: Date) => string;
   weekdayRowMonFirst: () => string[];
 } {
   const { locale } = useLanguage();
@@ -157,6 +164,7 @@ export function useDateNames(): {
       weekdayShort: (date: Date) => weekdayShort(locale, date),
       monthLong: (monthIndex: number) => monthLong(locale, monthIndex),
       monthDayShort: (date: Date) => monthDayShort(locale, date),
+      monthYear: (date: Date) => monthYear(locale, date),
       weekdayRowMonFirst: () => weekdayRowMonFirst(locale),
     }),
     [locale],

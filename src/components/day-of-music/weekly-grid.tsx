@@ -2,8 +2,8 @@
 
 "use client";
 
-import { useCallback, useState, type DragEvent } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { useCallback, useRef, useState, type DragEvent } from "react";
+import { ArrowLeft, ArrowRight, CalendarSearch } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -16,6 +16,7 @@ import {
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useBestOfWeekStatus, type BestOfStatus } from "@/lib/day-of-music/best-of";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
+import { useNavSlide, useSwipeNav } from "@/lib/day-of-music/use-swipe-nav";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button, IconButton, MetaLine } from "@/components/day-of-music/atoms";
 import { WeekPicker } from "@/components/day-of-music/week-picker";
@@ -64,6 +65,43 @@ export function WeeklyGrid({
   // Drives the Best-of button's colour, so the week's state is visible without
   // opening the modal.
   const bestOf = useBestOfWeekStatus(days, labelDate, splitByMonth, today);
+  // Phone-only swipe: finger left → next week, right → previous (the hook
+  // ignores mouse pointers and ≥761px viewports itself).
+  const boardRef = useRef<HTMLDivElement>(null);
+  useSwipeNav(boardRef, { onLeft: onNext, onRight: onPrev });
+  // Phone-only slide-in when the visible week changes. Keyed on labelDate, not
+  // days[0]: in split mode prev/next can move between two segments of the same
+  // Mon–Sun week (day-of-music-app.tsx prevWeek/nextWeek) and days[0] would not
+  // change. YYYY-MM-DD compares lexicographically.
+  const gridRef = useRef<HTMLDivElement>(null);
+  useNavSlide(gridRef, fmtDate(labelDate));
+
+  // Colour is never the only cue: every non-plain state also carries a hint
+  // spelling itself out (and "done" a 🏆) — the Minimal aesthetic's accent
+  // equals its ink, and colour alone excludes colour-blind readers either way.
+  // Days are named by weekday, the natural handle for a day inside one week.
+  // Computed once here because the Best-of / Share pair renders twice (header
+  // row on desktop, the grid's label cell on phones).
+  const bestOfHint =
+    bestOf.status === "done" && bestOf.winnerDate
+      ? t("bow.doneHint", { day: names.weekdayShort(parseDate(bestOf.winnerDate)) })
+      : bestOf.status === "locked"
+        ? t("bow.lockedHint", { day: names.weekdayShort(bestOf.lastDay) })
+        : bestOf.status === "empty"
+          ? t("bow.emptyHint")
+          : undefined;
+
+  // A locked week still takes the click — it answers with the reason instead of
+  // opening the tournament. `disabled` would swallow the tap and leave a
+  // touch-only user with no way to reach the explanation (no hover, no title).
+  const locked = bestOf.status === "locked";
+  const boardActionProps = {
+    bestOfStatus: bestOf.status,
+    bestOfHint,
+    locked,
+    onBestOf,
+    onShare,
+  };
   const monthLabel = names.monthLong(labelDate.getMonth());
   const weekNum = weekOfMonth(labelDate);
   const labelMonth = labelDate.getMonth();
@@ -89,7 +127,7 @@ export function WeeklyGrid({
   }
 
   return (
-    <div className="dom-week">
+    <div className="dom-week" ref={boardRef}>
       <WeekHeader
         segments={segments}
         labelDate={labelDate}
@@ -97,25 +135,24 @@ export function WeeklyGrid({
         onPrev={onPrev}
         onNext={onNext}
         onJump={onJump}
-        onShare={onShare}
-        onBestOf={onBestOf}
-        bestOfStatus={bestOf.status}
-        bestOfWinnerDate={bestOf.winnerDate}
-        bestOfLastDay={bestOf.lastDay}
+        {...boardActionProps}
       />
       <div
         className="dom-grid"
+        ref={gridRef}
         style={{ ["--cols" as string]: days.length }}
       >
         {/* Label cell — only visible in the 2-column mobile grid. */}
         <div className="dom-grid-label">
-          <div className="dom-grid-label-inner">
+          <div className="dom-grid-label-inner" aria-live="polite">
             <div className="dom-month-name">{monthLabel.toUpperCase()}</div>
             <div className="dom-month-sub">· {t("week.weekN", { n: weekNum })}</div>
             <div className="dom-month-tag">
               {labelDate.getFullYear()} · {t("week.curation")}
             </div>
           </div>
+          {/* Best-of + Share live here on phones (display:none on desktop). */}
+          <BoardActions {...boardActionProps} />
         </div>
         {days.map((d) => {
           const outOfMonth = isOutOfMonth(d);
@@ -141,6 +178,46 @@ export function WeeklyGrid({
   );
 }
 
+type BoardActionProps = {
+  /** Whether this week's Best-of is playable, already decided, or has nothing
+   *  to judge — shown as the button's colour. */
+  bestOfStatus: BestOfStatus;
+  /** Spelled-out reason behind the colour (tooltip / toast / aria). */
+  bestOfHint: string | undefined;
+  /** Locked weeks take the click and answer with the hint instead. */
+  locked: boolean;
+  onBestOf: () => void;
+  onShare: () => void;
+};
+
+// Best-of + Share. Rendered twice: in the header's action row (desktop) and in
+// the grid's phone-only label cell. CSS shows exactly one of the two per
+// breakpoint (display:contents in the row on desktop, display:none there on
+// phones), so the desktop header row is byte-identical to before.
+function BoardActions({ bestOfStatus, bestOfHint, locked, onBestOf, onShare }: BoardActionProps) {
+  const t = useT();
+  return (
+    <div className="dom-board-actions">
+      <Button
+        variant="ghost"
+        onClick={locked ? () => toast(bestOfHint) : onBestOf}
+        data-bestof={bestOfStatus}
+        title={bestOfHint}
+        aria-disabled={locked || undefined}
+        aria-label={bestOfHint && `${t("bow.button")} — ${bestOfHint}`}
+      >
+        {bestOfStatus === "done" && (
+          <span className="dom-bestof-trophy" aria-hidden="true">
+            🏆
+          </span>
+        )}
+        {t("bow.button")}
+      </Button>
+      <Button onClick={onShare}>{t("week.shareWeek").toUpperCase()}</Button>
+    </div>
+  );
+}
+
 function WeekHeader({
   segments,
   labelDate,
@@ -151,49 +228,21 @@ function WeekHeader({
   onShare,
   onBestOf,
   bestOfStatus,
-  bestOfWinnerDate,
-  bestOfLastDay,
-}: {
+  bestOfHint,
+  locked,
+}: BoardActionProps & {
   segments: { key: number; monthLabel: string; weekNum: number }[];
   labelDate: Date;
   today: Date;
   onPrev: () => void;
   onNext: () => void;
   onJump: (date: Date) => void;
-  onShare: () => void;
-  onBestOf: () => void;
-  /** Whether this week's Best-of is playable, already decided, or has nothing
-   *  to judge — shown as the button's colour. */
-  bestOfStatus: BestOfStatus;
-  /** YYYY-MM-DD of the champion, when decided (named in the button's tooltip). */
-  bestOfWinnerDate?: string;
-  /** The segment's closing day — the day the tournament unlocks. */
-  bestOfLastDay: Date;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const t = useT();
-  const names = useDateNames();
-
-  // Colour is never the only cue: every non-plain state also carries a hint
-  // spelling itself out (and "done" a 🏆) — the Minimal aesthetic's accent
-  // equals its ink, and colour alone excludes colour-blind readers either way.
-  // Days are named by weekday, the natural handle for a day inside one week.
-  const bestOfHint =
-    bestOfStatus === "done" && bestOfWinnerDate
-      ? t("bow.doneHint", { day: names.weekdayShort(parseDate(bestOfWinnerDate)) })
-      : bestOfStatus === "locked"
-        ? t("bow.lockedHint", { day: names.weekdayShort(bestOfLastDay) })
-        : bestOfStatus === "empty"
-          ? t("bow.emptyHint")
-          : undefined;
-
-  // A locked week still takes the click — it answers with the reason instead of
-  // opening the tournament. `disabled` would swallow the tap and leave a
-  // touch-only user with no way to reach the explanation (no hover, no title).
-  const locked = bestOfStatus === "locked";
 
   return (
-    <div className="dom-week-hd">
+    <div className="dom-week-hd dom-week-hd-board">
       <div className="dom-week-title">
         <span className="dom-eyebrow">{t("week.eyebrow")}</span>
         <div className="dom-week-title-anchor">
@@ -231,25 +280,30 @@ function WeekHeader({
           )}
         </div>
       </div>
+      {/* DOM order = phone visual order: [←] [jump] [→] then Best-of/Share. On
+          desktop the jump button is display:none and .dom-board-actions is
+          display:contents, so the flex row stays ← → Best-of Share. */}
       <div className="dom-week-actions">
         <IconButton icon={ArrowLeft} onClick={onPrev} aria-label={t("aria.prevWeek")} />
-        <IconButton icon={ArrowRight} onClick={onNext} aria-label={t("aria.nextWeek")} />
         <Button
           variant="ghost"
-          onClick={locked ? () => toast(bestOfHint) : onBestOf}
-          data-bestof={bestOfStatus}
-          title={bestOfHint}
-          aria-disabled={locked || undefined}
-          aria-label={bestOfHint && `${t("bow.button")} — ${bestOfHint}`}
+          size="sm"
+          className="dom-week-jump"
+          onClick={() => setPickerOpen((o) => !o)}
+          aria-haspopup="dialog"
+          aria-expanded={pickerOpen}
         >
-          {bestOfStatus === "done" && (
-            <span className="dom-bestof-trophy" aria-hidden="true">
-              🏆
-            </span>
-          )}
-          {t("bow.button")}
+          <CalendarSearch size={16} aria-hidden="true" />
+          {t("week.jumpTitle")}
         </Button>
-        <Button onClick={onShare}>{t("week.shareWeek").toUpperCase()}</Button>
+        <IconButton icon={ArrowRight} onClick={onNext} aria-label={t("aria.nextWeek")} />
+        <BoardActions
+          bestOfStatus={bestOfStatus}
+          bestOfHint={bestOfHint}
+          locked={locked}
+          onBestOf={onBestOf}
+          onShare={onShare}
+        />
       </div>
     </div>
   );

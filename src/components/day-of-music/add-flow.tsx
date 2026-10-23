@@ -31,7 +31,7 @@ import { useCountry } from "@/lib/day-of-music/profile";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button } from "@/components/day-of-music/atoms";
-import { Modal } from "@/components/day-of-music/modal";
+import { Modal, focusUnlessPhone } from "@/components/day-of-music/modal";
 
 export type NewEntry = {
   /** One or more days to log this album on. The same album/rating/note is
@@ -251,7 +251,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
             <label className="dom-addflow-label">{t("addflow.findLabel")}</label>
             <input
               className="dom-input"
-              autoFocus
+              ref={focusUnlessPhone}
               placeholder={t("addflow.searchPlaceholder")}
               value={query}
               onChange={(e) => {
@@ -370,7 +370,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
             <label className="dom-addflow-label">{t("field.title")}</label>
             <input
               className="dom-input"
-              autoFocus
+              ref={focusUnlessPhone}
               placeholder={t("addflow.titlePlaceholder")}
               value={manualTitle}
               onChange={(e) => setManualTitle(e.target.value)}
