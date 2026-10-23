@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
@@ -26,7 +26,7 @@ import {
   type ProfilePatch,
 } from "@/lib/day-of-music/profile";
 import { useThemes, type Theme } from "@/lib/day-of-music/themes";
-import { useLanguage, useT } from "@/lib/day-of-music/i18n";
+import { dateTimeLong, useLanguage, useT, type Locale } from "@/lib/day-of-music/i18n";
 
 // Display labels for the OAuth providers we support (icons live in brand-icons).
 const PROVIDER_LABELS: Record<string, string> = {
@@ -143,6 +143,7 @@ function AccountActions({
   const { updatePassword, deleteAccount } = useAuth();
   const router = useRouter();
   const t = useT();
+  const deleteTitleId = useId();
 
   const [pwOpen, setPwOpen] = useState(false);
   const [password, setPassword] = useState("");
@@ -164,7 +165,7 @@ function AccountActions({
       toast.error(error);
       return;
     }
-    toast.success("비밀번호가 변경되었어요.");
+    toast.success(t("profile.pw.changed"));
     setPassword("");
     setPwOpen(false);
   }
@@ -178,7 +179,7 @@ function AccountActions({
       toast.error(error);
       return;
     }
-    toast.success("계정이 삭제되었습니다.");
+    toast.success(t("profile.delete.done"));
     router.replace("/");
   }
 
@@ -208,7 +209,7 @@ function AccountActions({
           <input
             className="dom-input"
             type="password"
-            placeholder="New password"
+            placeholder={t("profile.pw.placeholder")}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
@@ -241,27 +242,26 @@ function AccountActions({
             })}
           </ul>
           <Button type="submit" disabled={pwInvalid || pwBusy}>
-            {pwBusy ? "One moment…" : "Update password"}
+            {pwBusy ? t("auth.oneMoment") : t("profile.pw.submit")}
           </Button>
         </form>
       )}
 
       {confirmOpen && (
         <Modal
-          label="Delete account confirmation"
+          labelledBy={deleteTitleId}
           className="dom-danger-modal-wrap"
           onClose={() => {
             if (!delBusy) setConfirmOpen(false);
           }}
         >
           <div className="dom-danger-modal">
-            <h2 className="dom-danger-modal-title">
-              회원 탈퇴 · Delete account
+            <h2 className="dom-danger-modal-title" id={deleteTitleId}>
+              {t("profile.deleteAccount")}
             </h2>
             <p className="dom-danger-modal-body">
-              This permanently deletes your account and all of its journal
-              entries and shared cards. This <strong>cannot be undone</strong>.
-              Type <strong>{email}</strong> to confirm.
+              {t("profile.delete.body")} <strong>{t("profile.delete.irreversible")}</strong>{" "}
+              <EmphasizedEmail template={t("profile.delete.typeEmail")} email={email} />
             </p>
             <input
               className="dom-input"
@@ -271,7 +271,7 @@ function AccountActions({
               autoComplete="off"
               autoCapitalize="off"
               spellCheck={false}
-              aria-label="Type your email to confirm deletion"
+              aria-label={t("profile.delete.inputAria")}
             />
             <div className="dom-settings-actions" style={{ marginTop: 4 }}>
               <Button
@@ -279,19 +279,32 @@ function AccountActions({
                 onClick={() => setConfirmOpen(false)}
                 disabled={delBusy}
               >
-                Cancel
+                {t("action.cancel")}
               </Button>
               <Button
                 variant="danger"
                 onClick={handleDelete}
                 disabled={!confirmed || delBusy}
               >
-                {delBusy ? "Deleting…" : "Delete forever"}
+                {delBusy ? t("action.deleting") : t("profile.delete.submit")}
               </Button>
             </div>
           </div>
         </Modal>
       )}
+    </>
+  );
+}
+
+// A translated sentence with its {email} token in bold. Split on the token
+// instead of interpolating, so the markup survives each language's word order.
+function EmphasizedEmail({ template, email }: { template: string; email: string }) {
+  const [before = "", after = ""] = template.split("{email}");
+  return (
+    <>
+      {before}
+      <strong>{email}</strong>
+      {after}
     </>
   );
 }
@@ -303,12 +316,6 @@ type SharedCardRow = {
   token: string;
   kind: "week" | "month" | "stats";
   created_at: string;
-};
-
-const SHARED_CARD_KIND_LABEL: Record<SharedCardRow["kind"], string> = {
-  week: "주간 카드",
-  month: "월간 카드",
-  stats: "통계 카드",
 };
 
 function SharedLinksSummaryCard({ userId }: { userId: string }) {
@@ -346,8 +353,8 @@ function SharedLinksSummaryCard({ userId }: { userId: string }) {
           aria-live="polite"
           aria-label={
             total === null
-              ? "공유 링크 개수를 불러오는 중"
-              : `공유 링크 ${total}개, 최대 ${MAX_SHARED_CARDS}개`
+              ? t("profile.sharedLinks.countLoading")
+              : t("profile.sharedLinks.countAria", { count: total, max: MAX_SHARED_CARDS })
           }
         >
           <strong>{total ?? "—"}</strong>
@@ -357,7 +364,7 @@ function SharedLinksSummaryCard({ userId }: { userId: string }) {
         <div
           className="dom-share-manager-meter"
           role="progressbar"
-          aria-label="공유 링크 사용량"
+          aria-label={t("profile.sharedLinks.usageAria")}
           aria-valuemin={0}
           aria-valuemax={MAX_SHARED_CARDS}
           aria-valuenow={total ?? undefined}
@@ -385,16 +392,10 @@ function SharedLinksSummaryCard({ userId }: { userId: string }) {
   );
 }
 
-function formatSharedCardDate(value: string): string {
+function formatSharedCardDate(value: string, locale: Locale): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+  return dateTimeLong(locale, date);
 }
 
 function SharedLinksModal({
@@ -409,22 +410,25 @@ function SharedLinksModal({
   const [cards, setCards] = useState<SharedCardRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
+  // Which failure, not its text: the message is translated at render, so
+  // loadCards (an effect dependency) doesn't change with the language.
+  const [loadError, setLoadError] = useState<"unavailable" | "loadFailed" | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const t = useT();
+  const { locale } = useLanguage();
+  const titleId = useId();
 
   const loadCards = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) {
-      setLoadError(
-        "공유 링크를 불러올 수 없습니다. Supabase 설정을 확인해 주세요.",
-      );
+      setLoadError("unavailable");
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    setLoadError("");
+    setLoadError(null);
     const { data, count, error } = await supabase
       .from("shared_cards")
       .select("id, token, kind, created_at", { count: "exact" })
@@ -433,9 +437,7 @@ function SharedLinksModal({
       .limit(MAX_SHARED_CARDS);
 
     if (error) {
-      setLoadError(
-        "공유 링크를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-      );
+      setLoadError("loadFailed");
       setLoading(false);
       return;
     }
@@ -457,9 +459,9 @@ function SharedLinksModal({
       await navigator.clipboard.writeText(
         `${window.location.origin}/s/${token}`,
       );
-      toast.success("공유 링크를 복사했어요.");
+      toast.success(t("profile.sharedLinks.copied"));
     } catch {
-      toast.error("링크를 복사하지 못했습니다.");
+      toast.error(t("profile.sharedLinks.copyFailed"));
     }
   }
 
@@ -467,7 +469,7 @@ function SharedLinksModal({
     if (deletingId) return;
     const supabase = getSupabaseBrowserClient();
     if (!supabase) {
-      toast.error("공유 링크를 삭제할 수 없습니다.");
+      toast.error(t("profile.sharedLinks.deleteUnavailable"));
       return;
     }
 
@@ -479,7 +481,7 @@ function SharedLinksModal({
       .eq("user_id", userId);
 
     if (error) {
-      toast.error("공유 링크를 삭제하지 못했습니다.");
+      toast.error(t("profile.sharedLinks.deleteFailed"));
       setDeletingId(null);
       return;
     }
@@ -490,14 +492,14 @@ function SharedLinksModal({
     onTotalChange(nextTotal);
     setConfirmDeleteId(null);
     setDeletingId(null);
-    toast.success("공유 링크가 삭제되었습니다.");
+    toast.success(t("profile.sharedLinks.deleted"));
   }
 
   const usagePercent = Math.min(100, (total / MAX_SHARED_CARDS) * 100);
 
   return (
     <Modal
-      label="공유 링크 관리"
+      labelledBy={titleId}
       className="dom-share-manager-wrap"
       onClose={() => {
         if (!deletingId) onClose();
@@ -506,8 +508,8 @@ function SharedLinksModal({
       <section className="dom-share-manager">
         <header className="dom-share-manager-header">
           <div>
-            <span className="dom-settings-label">shared links · 공유 링크</span>
-            <h2>공유 링크 관리</h2>
+            <span className="dom-settings-label">{t("profile.section.sharedLinks")}</span>
+            <h2 id={titleId}>{t("profile.sharedLinks.title")}</h2>
           </div>
           <strong className="dom-share-manager-count">
             {total} / {MAX_SHARED_CARDS}
@@ -517,7 +519,7 @@ function SharedLinksModal({
         <div
           className="dom-share-manager-meter"
           role="progressbar"
-          aria-label="공유 링크 사용량"
+          aria-label={t("profile.sharedLinks.usageAria")}
           aria-valuemin={0}
           aria-valuemax={MAX_SHARED_CARDS}
           aria-valuenow={Math.min(total, MAX_SHARED_CARDS)}
@@ -526,25 +528,23 @@ function SharedLinksModal({
         </div>
 
         <p className="dom-share-manager-note">
-          계정당 최대 {MAX_SHARED_CARDS}개의 링크를 보관할 수 있습니다. 링크를
-          삭제하면 해당 주소는 즉시 열리지 않지만, 다른 사람이 이미 저장한
-          이미지는 삭제되지 않습니다.
+          {t("profile.sharedLinks.limitNote", { max: MAX_SHARED_CARDS })}
         </p>
 
         {loading ? (
           <div className="dom-share-manager-state" role="status">
-            공유 링크를 불러오는 중…
+            {t("profile.sharedLinks.loading")}
           </div>
         ) : loadError ? (
           <div className="dom-share-manager-state">
-            <p>{loadError}</p>
+            <p>{t(`profile.sharedLinks.${loadError}`)}</p>
             <Button variant="ghost" size="sm" onClick={() => void loadCards()}>
-              다시 시도
+              {t("action.retry")}
             </Button>
           </div>
         ) : cards.length === 0 ? (
           <div className="dom-share-manager-state">
-            아직 만든 공유 링크가 없습니다.
+            {t("profile.sharedLinks.empty")}
           </div>
         ) : (
           <ul className="dom-share-list">
@@ -554,8 +554,8 @@ function SharedLinksModal({
               return (
                 <li className="dom-share-list-item" key={card.id}>
                   <div className="dom-share-list-info">
-                    <strong>{SHARED_CARD_KIND_LABEL[card.kind]}</strong>
-                    <span>{formatSharedCardDate(card.created_at)}</span>
+                    <strong>{t(`profile.sharedLinks.kind.${card.kind}`)}</strong>
+                    <span>{formatSharedCardDate(card.created_at, locale)}</span>
                     <code title={card.token}>…{card.token.slice(-8)}</code>
                   </div>
                   <div className="dom-share-list-actions">
@@ -567,7 +567,7 @@ function SharedLinksModal({
                           onClick={() => setConfirmDeleteId(null)}
                           disabled={deleting}
                         >
-                          취소
+                          {t("action.cancel")}
                         </Button>
                         <Button
                           variant="danger"
@@ -575,7 +575,7 @@ function SharedLinksModal({
                           onClick={() => void deleteLink(card.id)}
                           disabled={deleting}
                         >
-                          {deleting ? "삭제 중…" : "링크 삭제"}
+                          {deleting ? t("action.deleting") : t("profile.sharedLinks.delete")}
                         </Button>
                       </>
                     ) : (
@@ -586,14 +586,14 @@ function SharedLinksModal({
                           target="_blank"
                           rel="noreferrer"
                         >
-                          열기
+                          {t("profile.sharedLinks.open")}
                         </a>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => void copyLink(card.token)}
                         >
-                          복사
+                          {t("profile.sharedLinks.copy")}
                         </Button>
                         <Button
                           variant="danger-ghost"
@@ -601,7 +601,7 @@ function SharedLinksModal({
                           onClick={() => setConfirmDeleteId(card.id)}
                           disabled={Boolean(deletingId)}
                         >
-                          삭제
+                          {t("action.delete")}
                         </Button>
                       </>
                     )}
@@ -715,7 +715,7 @@ function ThemeManager({
   const add = () =>
     setList((l) => [
       ...l,
-      { id: crypto.randomUUID(), name: "New theme", emoji: "🎵" },
+      { id: crypto.randomUUID(), name: t("profile.themes.newName"), emoji: "🎵" },
     ]);
 
   return (

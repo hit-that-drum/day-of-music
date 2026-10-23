@@ -54,14 +54,19 @@ export function focusUnlessPhone(el: HTMLElement | null) {
 type Sample = { y: number; t: number };
 type Drag = { id: number; startY: number; dy: number; samples: Sample[] };
 
+// The dialog's accessible name: its visible title when it has one (so the two
+// can't drift apart), otherwise a label of its own.
+type ModalName =
+  | { /** Accessible dialog name (aria-label). */ label: string; labelledBy?: undefined }
+  | { /** id of the visible title (aria-labelledby). */ labelledBy: string; label?: undefined };
+
 export function Modal({
   label,
+  labelledBy,
   onClose,
   className,
   children,
-}: {
-  /** Accessible dialog name (aria-label). */
-  label: string;
+}: ModalName & {
   onClose: () => void;
   /** Extra class(es) on the panel wrapper, for modal-specific layout. */
   className?: string;
@@ -187,6 +192,7 @@ export function Modal({
       role="dialog"
       aria-modal="true"
       aria-label={label}
+      aria-labelledby={labelledBy}
     >
       <div
         ref={sheetRef}

@@ -113,7 +113,17 @@ const INTL_TAG: Record<Locale, string> = {
 // Formatters are pure and reusable — build each (locale × option) once.
 const dtfCache = new Map<string, Intl.DateTimeFormat>();
 function dtf(locale: Locale, opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
-  const key = `${INTL_TAG[locale]}|${opts.year ?? ""}|${opts.weekday ?? ""}|${opts.month ?? ""}|${opts.day ?? ""}`;
+  // Every option the helpers below pass must be part of the key, or two
+  // different formats would share one cached formatter.
+  const key = [
+    INTL_TAG[locale],
+    opts.year,
+    opts.weekday,
+    opts.month,
+    opts.day,
+    opts.hour,
+    opts.minute,
+  ].join("|");
   let f = dtfCache.get(key);
   if (!f) {
     f = new Intl.DateTimeFormat(INTL_TAG[locale], opts);
@@ -143,6 +153,18 @@ export function monthDayShort(locale: Locale, date: Date): string {
  *  · "2026年10月" · "octubre de 2026". The phone pickers' headings. */
 export function monthYear(locale: Locale, date: Date): string {
   return dtf(locale, { year: "numeric", month: "long" }).format(date);
+}
+
+/** Full date + time, e.g. "October 24, 2026 at 08:15 AM" · "2026년 10월 24일
+ *  오전 08:15". When a share link was made, in the profile's link manager. */
+export function dateTimeLong(locale: Locale, date: Date): string {
+  return dtf(locale, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
 /** The seven short weekday names, Monday-first. (2024-01-01 is a Monday.) */

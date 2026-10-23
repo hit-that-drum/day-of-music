@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -32,6 +32,7 @@ export function ShareActions({
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const t = useT();
+  const confirmTitleId = useId();
 
   const signedIn = configured && Boolean(user);
   const guestWeekLink = !loading && !signedIn && payload.kind === "week";
@@ -89,7 +90,7 @@ export function ShareActions({
 
       {confirmOpen && (
         <Modal
-          label={t("share.confirmModalLabel")}
+          labelledBy={confirmTitleId}
           className="dom-public-link-modal-wrap"
           onClose={() => {
             if (!busy) setConfirmOpen(false);
@@ -97,7 +98,7 @@ export function ShareActions({
         >
           <div className="dom-public-link-modal">
             <span className="dom-settings-label">{t("share.publicLinkLabel")}</span>
-            <h2>{t("share.confirmTitle")}</h2>
+            <h2 id={confirmTitleId}>{t("share.confirmTitle")}</h2>
             <p>{t("share.confirmBody")}</p>
             <div className="dom-public-link-notice">
               {signedIn ? (

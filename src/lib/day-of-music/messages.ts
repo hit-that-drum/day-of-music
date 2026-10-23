@@ -132,10 +132,27 @@ export const MESSAGES = {
   // ── Profile: account actions ────────────────────────────────────────────
   "profile.changePassword": { en: "Change password", ko: "비밀번호 변경", ja: "パスワード変更", zh: "修改密码", es: "Cambiar contraseña" },
   "profile.deleteAccount": { en: "Delete account", ko: "회원 탈퇴", ja: "アカウント削除", zh: "注销账户", es: "Eliminar cuenta" },
+  "profile.pw.placeholder": { en: "New password", ko: "새 비밀번호", ja: "新しいパスワード", zh: "新密码", es: "Nueva contraseña" },
+  "profile.pw.submit": { en: "Update password", ko: "비밀번호 변경", ja: "パスワードを更新", zh: "更新密码", es: "Actualizar contraseña" },
+  "profile.pw.changed": { en: "Password changed.", ko: "비밀번호가 변경되었어요.", ja: "パスワードを変更しました。", zh: "密码已修改。", es: "Contraseña cambiada." },
+  "profile.delete.body": {
+    en: "This permanently deletes your account and all of its journal entries and shared cards.",
+    ko: "계정과 모든 저널 기록, 공유 카드가 영구히 삭제됩니다.",
+    ja: "アカウントと、すべてのジャーナル記録・共有カードが完全に削除されます。",
+    zh: "这将永久删除你的账户及其所有日志记录和分享卡片。",
+    es: "Esto elimina para siempre tu cuenta y todas sus entradas del diario y tarjetas compartidas.",
+  },
+  "profile.delete.irreversible": { en: "This cannot be undone.", ko: "되돌릴 수 없어요.", ja: "元に戻すことはできません。", zh: "此操作无法撤销。", es: "No se puede deshacer." },
+  // {email} is rendered in bold, so every translation must keep the token.
+  "profile.delete.typeEmail": { en: "Type {email} to confirm.", ko: "확인하려면 {email} 주소를 입력해 주세요.", ja: "確認のため {email} と入力してください。", zh: "请输入 {email} 以确认。", es: "Escribe {email} para confirmar." },
+  "profile.delete.inputAria": { en: "Type your email to confirm deletion", ko: "탈퇴를 확인하려면 이메일을 입력하세요", ja: "削除を確認するためメールアドレスを入力", zh: "输入邮箱以确认删除", es: "Escribe tu correo para confirmar la eliminación" },
+  "profile.delete.submit": { en: "Delete forever", ko: "영구 삭제", ja: "完全に削除", zh: "永久删除", es: "Eliminar para siempre" },
+  "profile.delete.done": { en: "Your account has been deleted.", ko: "계정이 삭제되었습니다.", ja: "アカウントを削除しました。", zh: "账户已删除。", es: "Tu cuenta se ha eliminado." },
 
   // ── Profile: theme manager ──────────────────────────────────────────────
   "profile.themes.add": { en: "Add theme", ko: "테마 추가", ja: "テーマを追加", zh: "添加主题", es: "Añadir tema" },
   "profile.themes.save": { en: "Save themes", ko: "테마 저장", ja: "テーマを保存", zh: "保存主题", es: "Guardar temas" },
+  "profile.themes.newName": { en: "New theme", ko: "새 테마", ja: "新しいテーマ", zh: "新主题", es: "Nuevo tema" },
   "profile.themes.note": {
     en: "Each theme is its own daily lane. {syncNote} Deleting one hides its entries without erasing them from the server.",
     ko: "각 테마는 하나의 하루 레인입니다. {syncNote} 삭제해도 그 테마의 기록은 서버에서 지워지지 않고 숨겨집니다.",
@@ -153,6 +170,35 @@ export const MESSAGES = {
     zh: "在一处查看并管理你创建的所有分享链接。",
     es: "Consulta y gestiona en un solo lugar todos los enlaces que has creado.",
   },
+
+  // ── Profile: share link manager (modal) ─────────────────────────────────
+  "profile.sharedLinks.title": { en: "Manage share links", ko: "공유 링크 관리", ja: "共有リンクの管理", zh: "管理分享链接", es: "Gestionar enlaces compartidos" },
+  "profile.sharedLinks.countLoading": { en: "Loading share link count", ko: "공유 링크 개수를 불러오는 중", ja: "共有リンクの数を読み込み中", zh: "正在加载分享链接数量", es: "Cargando el número de enlaces" },
+  "profile.sharedLinks.countAria": { en: "{count} of {max} share links", ko: "공유 링크 {count}개, 최대 {max}개", ja: "共有リンク {count}件(最大{max}件)", zh: "分享链接 {count} 个，最多 {max} 个", es: "{count} de {max} enlaces compartidos" },
+  "profile.sharedLinks.usageAria": { en: "Share link usage", ko: "공유 링크 사용량", ja: "共有リンクの使用量", zh: "分享链接用量", es: "Uso de enlaces compartidos" },
+  "profile.sharedLinks.limitNote": {
+    en: "Each account can keep up to {max} links. Deleting a link stops its address from opening right away, but images other people already saved stay with them.",
+    ko: "계정당 최대 {max}개의 링크를 보관할 수 있습니다. 링크를 삭제하면 해당 주소는 즉시 열리지 않지만, 다른 사람이 이미 저장한 이미지는 삭제되지 않습니다.",
+    ja: "1アカウントにつき最大{max}件のリンクを保存できます。リンクを削除するとそのアドレスはすぐに開けなくなりますが、他の人がすでに保存した画像は削除されません。",
+    zh: "每个账户最多可保留 {max} 个链接。删除链接后该地址将立即无法打开，但他人已保存的图片不会被删除。",
+    es: "Cada cuenta puede guardar hasta {max} enlaces. Al eliminar uno, su dirección deja de abrirse al instante, pero las imágenes que otros ya guardaron no se borran.",
+  },
+  "profile.sharedLinks.loading": { en: "Loading share links…", ko: "공유 링크를 불러오는 중…", ja: "共有リンクを読み込み中…", zh: "正在加载分享链接…", es: "Cargando enlaces…" },
+  "profile.sharedLinks.unavailable": { en: "Share links aren't available. Check the Supabase settings.", ko: "공유 링크를 불러올 수 없습니다. Supabase 설정을 확인해 주세요.", ja: "共有リンクを読み込めません。Supabase の設定を確認してください。", zh: "无法加载分享链接。请检查 Supabase 设置。", es: "Los enlaces no están disponibles. Revisa la configuración de Supabase." },
+  "profile.sharedLinks.loadFailed": { en: "Couldn't load share links. Please try again in a moment.", ko: "공유 링크를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.", ja: "共有リンクを読み込めませんでした。しばらくしてからもう一度お試しください。", zh: "无法加载分享链接。请稍后重试。", es: "No se pudieron cargar los enlaces. Inténtalo de nuevo en un momento." },
+  "profile.sharedLinks.empty": { en: "You haven't created any share links yet.", ko: "아직 만든 공유 링크가 없습니다.", ja: "まだ共有リンクを作成していません。", zh: "你还没有创建分享链接。", es: "Aún no has creado enlaces compartidos." },
+  // Rendered as profile.sharedLinks.kind.<shared_cards.kind>.
+  "profile.sharedLinks.kind.week": { en: "Week card", ko: "주간 카드", ja: "週間カード", zh: "周卡片", es: "Tarjeta semanal" },
+  "profile.sharedLinks.kind.month": { en: "Month card", ko: "월간 카드", ja: "月間カード", zh: "月卡片", es: "Tarjeta mensual" },
+  "profile.sharedLinks.kind.stats": { en: "Stats card", ko: "통계 카드", ja: "統計カード", zh: "统计卡片", es: "Tarjeta de estadísticas" },
+  "profile.sharedLinks.open": { en: "Open", ko: "열기", ja: "開く", zh: "打开", es: "Abrir" },
+  "profile.sharedLinks.copy": { en: "Copy", ko: "복사", ja: "コピー", zh: "复制", es: "Copiar" },
+  "profile.sharedLinks.delete": { en: "Delete link", ko: "링크 삭제", ja: "リンクを削除", zh: "删除链接", es: "Eliminar enlace" },
+  "profile.sharedLinks.copied": { en: "Share link copied.", ko: "공유 링크를 복사했어요.", ja: "共有リンクをコピーしました。", zh: "已复制分享链接。", es: "Enlace copiado." },
+  "profile.sharedLinks.copyFailed": { en: "Couldn't copy the link.", ko: "링크를 복사하지 못했습니다.", ja: "リンクをコピーできませんでした。", zh: "无法复制链接。", es: "No se pudo copiar el enlace." },
+  "profile.sharedLinks.deleteUnavailable": { en: "Share links can't be deleted right now.", ko: "공유 링크를 삭제할 수 없습니다.", ja: "共有リンクを削除できません。", zh: "目前无法删除分享链接。", es: "No se pueden eliminar enlaces ahora." },
+  "profile.sharedLinks.deleteFailed": { en: "Couldn't delete the share link.", ko: "공유 링크를 삭제하지 못했습니다.", ja: "共有リンクを削除できませんでした。", zh: "无法删除分享链接。", es: "No se pudo eliminar el enlace." },
+  "profile.sharedLinks.deleted": { en: "Share link deleted.", ko: "공유 링크가 삭제되었습니다.", ja: "共有リンクを削除しました。", zh: "分享链接已删除。", es: "Enlace eliminado." },
 
   // ── Shared aria labels (theme editor rows) ──────────────────────────────
   "aria.themeEmoji": { en: "Theme emoji", ko: "테마 이모지", ja: "テーマの絵文字", zh: "主题表情", es: "Emoji del tema" },
@@ -280,6 +326,9 @@ export const MESSAGES = {
   "action.back": { en: "Back", ko: "뒤로", ja: "戻る", zh: "返回", es: "Atrás" },
   "action.continue": { en: "Continue", ko: "계속", ja: "次へ", zh: "继续", es: "Continuar" },
   "action.cancel": { en: "Cancel", ko: "취소", ja: "キャンセル", zh: "取消", es: "Cancelar" },
+  "action.retry": { en: "Try again", ko: "다시 시도", ja: "再試行", zh: "重试", es: "Reintentar" },
+  "action.delete": { en: "Delete", ko: "삭제", ja: "削除", zh: "删除", es: "Eliminar" },
+  "action.deleting": { en: "Deleting…", ko: "삭제 중…", ja: "削除中…", zh: "正在删除…", es: "Eliminando…" },
   "action.remove": { en: "Remove", ko: "삭제", ja: "削除", zh: "移除", es: "Quitar" },
   "action.move": { en: "Move", ko: "이동", ja: "移動", zh: "移动", es: "Mover" },
   "action.swap": { en: "Swap", ko: "바꾸기", ja: "入れ替える", zh: "交换", es: "Intercambiar" },
@@ -703,7 +752,6 @@ export const MESSAGES = {
     zh: "访客分享链接无法删除或撤回。任何拥有链接的人都可查看。",
     es: "Los enlaces de invitado no se pueden eliminar ni revocar. Cualquiera con el enlace puede verlo.",
   },
-  "share.confirmModalLabel": { en: "Confirm public link creation", ko: "공개 링크 생성 확인", ja: "公開リンク作成の確認", zh: "确认创建公开链接", es: "Confirmar creación de enlace público" },
   "share.publicLinkLabel": { en: "public link", ko: "공개 링크", ja: "公開リンク", zh: "公开链接", es: "enlace público" },
   "share.confirmTitle": { en: "Create a public link?", ko: "공개 링크를 만들까요?", ja: "公開リンクを作成しますか？", zh: "要创建公开链接吗？", es: "¿Crear un enlace público?" },
   "share.confirmBody": {
