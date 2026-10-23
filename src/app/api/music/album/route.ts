@@ -159,41 +159,44 @@ export async function GET(request: Request) {
     return null;
   }
 
-  // Recover an album's tracklist from a storefront's SEARCH index. Some stores
-  // (notably KR) return no individual songs from the album LOOKUP yet still
-  // index those songs for search — so we search the artist's songs and keep the
-  // ones on this exact album, which gives the localized (e.g. Korean) titles +
-  // their track order. The full album name makes a poor search term (special
-  // chars match nothing), so we search by artist and filter by collection id.
-  // Also surfaces the album's localized title (`collectionName`): the lookup may
-  // romanize it ("JAMONG SALGU CLUB") while the song rows carry the Korean
-  // original ("자몽살구클럽").
-  type RecoveredAlbum = { tracks: TrackItem[]; collectionName?: string };
-  async function tracksViaSearch(
+  // Look songs up in a storefront by their TRACK ids. Some stores (notably KR)
+  // return an album from the album lookup but none of its songs — and the KR
+  // search index, which used to carry those songs (and was how titles got
+  // recovered), comes back empty for every query (observed Oct 2026). Looked up
+  // by their own ids, though, the songs are all there, localized: Korean titles
+  // ("하이웨이", not the US store's "Highway"), the localized artist, and the
+  // album's localized name on each row (the album lookup may romanize it to
+  // "JAMONG SALGU CLUB" while the rows say "자몽살구클럽"). Track ids are
+  // catalog-wide, so the ids from whichever store supplied the tracklist resolve
+  // here; a song the store doesn't carry is simply missing from the result.
+  async function lookupTracksIn(
     store: string,
-    artist: string,
-    targetCollectionId: number,
-  ): Promise<RecoveredAlbum> {
-    if (!artist || !Number.isFinite(targetCollectionId)) return { tracks: [] };
-    try {
-      const searchUrl = new URL("https://itunes.apple.com/search");
-      searchUrl.searchParams.set("term", artist);
-      searchUrl.searchParams.set("media", "music");
-      searchUrl.searchParams.set("entity", "song");
-      searchUrl.searchParams.set("limit", "200");
-      searchUrl.searchParams.set("country", store);
-      // No lang override → titles come back in the storefront's own language.
-      const resp = await fetch(searchUrl, { next: { revalidate: 3600 } });
-      if (!resp.ok) return { tracks: [] };
-      const results = (JSON.parse(await resp.text()).results ?? []) as ITunesResult[];
-      const onAlbum = results.filter((x) => x.collectionId === targetCollectionId);
-      return {
-        tracks: buildTrackItems(onAlbum, onAlbum[0] ?? ({} as ITunesResult)),
-        collectionName: onAlbum[0]?.collectionName,
-      };
-    } catch {
-      return { tracks: [] };
-    }
+    trackIds: number[],
+  ): Promise<Map<number, ITunesResult>> {
+    const rows = new Map<number, ITunesResult>();
+    // One request per 150 ids (a lookup takes at least 200; this keeps the URL
+    // under ~2,000 chars), so only a box set needs a second call.
+    const batches: number[][] = [];
+    for (let i = 0; i < trackIds.length; i += 150) batches.push(trackIds.slice(i, i + 150));
+    await Promise.all(
+      batches.map(async (batch) => {
+        const lookupUrl = new URL("https://itunes.apple.com/lookup");
+        lookupUrl.searchParams.set("id", batch.join(","));
+        lookupUrl.searchParams.set("country", store);
+        // No lang override → titles come back in the storefront's own language.
+        try {
+          const resp = await fetch(lookupUrl, { next: { revalidate: 3600 } });
+          if (!resp.ok) return;
+          const results = (JSON.parse(await resp.text()).results ?? []) as ITunesResult[];
+          for (const x of results) {
+            if (x.wrapperType === "track" && x.trackId != null) rows.set(x.trackId, x);
+          }
+        } catch {
+          /* a failed batch just leaves those songs with the fallback titles */
+        }
+      }),
+    );
+    return rows;
   }
 
   // Prefer a storefront that returns the album AND usable tracks. Some stores
@@ -263,26 +266,26 @@ export async function GET(request: Request) {
   const display = preferredCollection ?? collection;
   const displayArtist = display.artistName ?? collection.artistName ?? "";
 
-  // Ask the listener's storefront's SONG index about this album. It serves two
-  // purposes, so we run it whenever the album exists in that store (not only on
-  // the fallback path) — that keeps the Day Detail title consistent with the
-  // search results, which always localize:
-  //   1. Title: the lookup may romanize the album name ("JAMONG SALGU CLUB")
-  //      while the song rows carry the localized one ("자몽살구클럽").
-  //   2. Tracks: if our tracklist came from a *fallback* store (wrong language),
-  //      swap in the localized one — but only when it's at least as complete, so
-  //      we never trade a full English tracklist for a partial localized one.
+  // A tracklist from a *fallback* store is in that store's language — a KR
+  // listener got the US store's "Highway". Re-localize it into the listener's
+  // store song by song (see lookupTracksIn), keeping the order; a song that store
+  // doesn't carry keeps its fallback title, so the list never shrinks. The same
+  // rows carry the album's localized name for the title.
   let localizedTitle: string | undefined;
-  if (preferredStore && displayArtist) {
-    const localized = await tracksViaSearch(preferredStore, displayArtist, Number(collectionId));
-    if (localized.collectionName) localizedTitle = localized.collectionName;
-    if (
-      trackStore !== preferredStore &&
-      localized.tracks.length > 0 &&
-      localized.tracks.length >= trackItems.length
-    ) {
-      trackItems = localized.tracks;
-    }
+  if (preferredStore && trackStore !== preferredStore && trackItems.length > 0) {
+    const sourceCollectionId = collection.collectionId;
+    const rows = await lookupTracksIn(
+      preferredStore,
+      trackItems.map((t) => t.trackId),
+    );
+    trackItems = trackItems.map((t) => {
+      const row = rows.get(t.trackId);
+      const name = row?.trackCensoredName ?? row?.trackName;
+      return row && name ? { ...t, name, artist: row.artistName ?? t.artist } : t;
+    });
+    localizedTitle = [...rows.values()].find(
+      (x) => x.collectionId === sourceCollectionId && x.collectionName,
+    )?.collectionName;
   }
 
   // A fallback tracklist carries that store's artist on each row (e.g. "BTS").

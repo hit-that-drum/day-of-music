@@ -3,6 +3,13 @@
 // music-search.ts (which consume the route's JSON). Kept in one place so the
 // server and client can't drift.
 
+/** Version of the album route's track-title localization. Bump it when the
+ *  route starts returning better-localized titles: the Day Detail stores it on
+ *  each album (`tracksVersion`) and re-fetches a tracklist saved by an older
+ *  version once. 2 = KR titles recovered by track id (KR tracklists saved
+ *  before that are in the US store's English). */
+export const TRACKLIST_VERSION = 2;
+
 /** A single selectable track (for logging one track off an album). */
 export type TrackItem = { trackId: number; name: string; artist: string };
 

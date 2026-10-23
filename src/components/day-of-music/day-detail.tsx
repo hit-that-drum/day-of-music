@@ -13,6 +13,7 @@ import {
 } from "@/lib/day-of-music/data";
 import { isManualAlbum, readManualArtwork } from "@/lib/day-of-music/manual-artwork";
 import { fetchAlbumDetail } from "@/lib/day-of-music/music-search";
+import { TRACKLIST_VERSION } from "@/lib/day-of-music/music-types";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { Cover } from "@/components/day-of-music/cover";
@@ -90,11 +91,15 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
   // come back localized — and persist them onto the album. We also re-fetch when
   // the stored tracklist was saved for a different store (e.g. old US-English
   // tracks now viewed as KR), so the same localization the Add flow shows
-  // applies here too.
+  // applies here too — or by an older version of the route's localization
+  // (TRACKLIST_VERSION): KR tracklists saved before the route recovered Korean
+  // titles say "KR" but hold the US store's English.
   useEffect(() => {
     if (!album.id.startsWith("itunes-")) return;
     const needsTracks = album.tracks.length === 0;
-    const staleTracks = album.tracks.length > 0 && album.tracksCountry !== country;
+    const staleTracks =
+      album.tracks.length > 0 &&
+      (album.tracksCountry !== country || album.tracksVersion !== TRACKLIST_VERSION);
     const needsDate = !album.releaseDate;
     if (!needsTracks && !staleTracks && !needsDate) return;
 
@@ -105,6 +110,7 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
       if ((needsTracks || staleTracks) && detail.tracks.length) {
         patch.tracks = detail.tracks;
         patch.tracksCountry = country;
+        patch.tracksVersion = TRACKLIST_VERSION;
         // Localize the album title/artist to the listener's store as well —
         // Korean when the catalog has it (the lookup sometimes romanizes the
         // title), otherwise the original. Only adopt non-empty, changed values.
@@ -117,7 +123,7 @@ export function DayDetail({ album, onClose, onUpdate, onEnrich, onRemove, onRepl
     return () => {
       cancelled = true;
     };
-  }, [album.id, album.date, album.title, album.artist, album.tracks.length, album.tracksCountry, album.releaseDate, country, onEnrich]);
+  }, [album.id, album.date, album.title, album.artist, album.tracks.length, album.tracksCountry, album.tracksVersion, album.releaseDate, country, onEnrich]);
 
   // Rating commits immediately, so render straight from the album prop (single
   // source of truth) rather than mirroring it in local state that could drift.
