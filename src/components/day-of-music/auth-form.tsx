@@ -9,7 +9,8 @@ import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/day-of-music/auth-provider";
 import { BrandMark, Button } from "@/components/day-of-music/atoms";
-import { PASSWORD_RULES, passwordIssues } from "@/lib/day-of-music/password";
+import { passwordIssues } from "@/lib/day-of-music/password";
+import { PasswordRules } from "@/components/day-of-music/password-rules";
 import { useT } from "@/lib/day-of-music/i18n";
 import { GoogleIcon, KakaoIcon } from "@/components/day-of-music/brand-icons";
 
@@ -69,7 +70,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     if (!email.trim() || !password) return;
     // Enforce the password policy on signup only, so existing accounts aren't
     // locked out at sign-in. The checklist below already shows what's missing.
-    if (mode === "signup" && passwordIssues(password).length > 0) {
+    if (signupInvalid) {
       setStatus("error");
       setMessage(t("auth.pwRequirements"));
       return;
@@ -136,32 +137,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
               aria-describedby={mode === "signup" ? "dom-pw-rules" : undefined}
               required
             />
-            {mode === "signup" && (
-              <ul
-                className="dom-pw-rules"
-                id="dom-pw-rules"
-                aria-label={t("auth.pwRulesAria")}
-              >
-                {PASSWORD_RULES.map((rule) => {
-                  const met = rule.test(password);
-                  return (
-                    <li
-                      key={rule.id}
-                      className="dom-pw-rule"
-                      data-met={met ? "1" : "0"}
-                    >
-                      <span className="dom-pw-rule-mark" aria-hidden="true">
-                        {met ? "✓" : "○"}
-                      </span>
-                      <span>{t(`pw.${rule.id}`)}</span>
-                      <span className="dom-visually-hidden">
-                        {met ? ` ${t("auth.met")}` : ` ${t("auth.notMet")}`}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            {mode === "signup" && <PasswordRules password={password} id="dom-pw-rules" />}
             <Button
               type="submit"
               disabled={!configured || status === "busy" || signupInvalid}

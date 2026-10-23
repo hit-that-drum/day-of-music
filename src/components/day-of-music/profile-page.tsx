@@ -16,7 +16,8 @@ import {
 } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
 import { DomSelectField } from "@/components/day-of-music/dom-select";
-import { PASSWORD_RULES, passwordIssues } from "@/lib/day-of-music/password";
+import { passwordIssues } from "@/lib/day-of-music/password";
+import { PasswordRules } from "@/components/day-of-music/password-rules";
 import { GoogleIcon, KakaoIcon } from "@/components/day-of-music/brand-icons";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
@@ -217,30 +218,7 @@ function AccountActions({
             aria-describedby="dom-change-pw-rules"
             required
           />
-          <ul
-            className="dom-pw-rules"
-            id="dom-change-pw-rules"
-            aria-label={t("auth.pwRulesAria")}
-          >
-            {PASSWORD_RULES.map((rule) => {
-              const met = rule.test(password);
-              return (
-                <li
-                  key={rule.id}
-                  className="dom-pw-rule"
-                  data-met={met ? "1" : "0"}
-                >
-                  <span className="dom-pw-rule-mark" aria-hidden="true">
-                    {met ? "✓" : "○"}
-                  </span>
-                  <span>{t(`pw.${rule.id}`)}</span>
-                  <span className="dom-visually-hidden">
-                    {met ? ` ${t("auth.met")}` : ` ${t("auth.notMet")}`}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+          <PasswordRules password={password} id="dom-change-pw-rules" />
           <Button type="submit" disabled={pwInvalid || pwBusy}>
             {pwBusy ? t("auth.oneMoment") : t("profile.pw.submit")}
           </Button>
