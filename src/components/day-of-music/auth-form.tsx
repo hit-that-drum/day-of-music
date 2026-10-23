@@ -109,8 +109,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
           {!configured && (
             <p className="dom-signin-msg" data-error="1">
-              Auth isn&apos;t configured yet — add Supabase keys to .env.local.
-              You can still <Link href="/week">use the app as a guest</Link>.
+              {t("auth.notConfigured")} <Link href="/week">{t("auth.guestContinue")} →</Link>
             </p>
           )}
 

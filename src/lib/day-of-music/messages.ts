@@ -322,6 +322,13 @@ export const MESSAGES = {
     es: "Aún no hay géneros registrados.",
   },
 
+  // ── Select dropdown (dom-select) defaults ───────────────────────────────
+  "select.placeholder": { en: "Select…", ko: "선택…", ja: "選択…", zh: "请选择…", es: "Seleccionar…" },
+  "select.searchPlaceholder": { en: "Search…", ko: "검색…", ja: "検索…", zh: "搜索…", es: "Buscar…" },
+  "select.search": { en: "Search", ko: "검색", ja: "検索", zh: "搜索", es: "Buscar" },
+  "select.searchLabel": { en: "Search {label}", ko: "{label} 검색", ja: "{label}を検索", zh: "搜索{label}", es: "Buscar {label}" },
+  "select.noMatches": { en: "No matches", ko: "일치하는 항목이 없어요", ja: "一致する項目がありません", zh: "没有匹配项", es: "Sin coincidencias" },
+
   // ── Legal link labels ───────────────────────────────────────────────────
   "legal.termsLink": { en: "Terms of Service", ko: "이용약관", ja: "利用規約", zh: "服务条款", es: "Términos del servicio" },
   "legal.privacyLink": { en: "Privacy Policy", ko: "개인정보 처리방침", ja: "プライバシーポリシー", zh: "隐私政策", es: "Política de privacidad" },
@@ -602,6 +609,14 @@ export const MESSAGES = {
   "auth.google": { en: "Continue with Google", ko: "Google로 계속", ja: "Google で続ける", zh: "使用 Google 继续", es: "Continuar con Google" },
   "auth.kakao": { en: "Continue with Kakao", ko: "카카오로 계속", ja: "Kakao で続ける", zh: "使用 Kakao 继续", es: "Continuar con Kakao" },
   "auth.guestContinue": { en: "Continue as guest", ko: "게스트로 계속", ja: "ゲストとして続ける", zh: "以访客身份继续", es: "Continuar como invitado" },
+  // Only seen in a local dev setup without Supabase keys.
+  "auth.notConfigured": {
+    en: "Auth isn't configured yet — add Supabase keys to .env.local.",
+    ko: "로그인이 아직 설정되지 않았어요 — .env.local에 Supabase 키를 추가하세요.",
+    ja: "ログインはまだ設定されていません — .env.local に Supabase のキーを追加してください。",
+    zh: "尚未配置登录 — 请在 .env.local 中添加 Supabase 密钥。",
+    es: "El inicio de sesión aún no está configurado: añade las claves de Supabase a .env.local.",
+  },
   "auth.terms": {
     en: "By creating an account, you agree to Day of Music's {terms} and can review the {privacy}.",
     ko: "계정을 만들면 Day of Music {terms}에 동의하는 것으로 보며, {privacy}을 확인할 수 있습니다.",
@@ -666,6 +681,7 @@ export const MESSAGES = {
   // ── Share actions (link + confirm modal + toasts) ───────────────────────
   "share.createLink": { en: "Create public link", ko: "공개 링크 만들기", ja: "公開リンクを作成", zh: "创建公开链接", es: "Crear enlace público" },
   "share.signInToShare": { en: "Sign in to share", ko: "공유하려면 로그인", ja: "共有するにはサインイン", zh: "登录后分享", es: "Inicia sesión para compartir" },
+  "share.makeYourOwn": { en: "Make your own →", ko: "나도 만들어 보기 →", ja: "自分でも作ってみる →", zh: "我也来做一张 →", es: "Crea el tuyo →" },
   "share.saveImage": { en: "Save image", ko: "이미지 저장", ja: "画像を保存", zh: "保存图片", es: "Guardar imagen" },
   "share.guestWarning": {
     en: "Guest share links can't be deleted or revoked. Anyone with the link can view it.",

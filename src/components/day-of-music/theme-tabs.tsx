@@ -21,8 +21,7 @@ export function ThemeTabs() {
 
   return (
     <DomSelectField
-      label="Theme"
-      ariaLabel={t("tweaks.theme")}
+      label={t("tweaks.theme")}
       className="dom-theme-select"
       value={active}
       options={options}

@@ -10,6 +10,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
+import { useT } from "@/lib/day-of-music/i18n";
 import { cn } from "@/lib/utils";
 
 export type DomSelectOption = { value: string; label: string };
@@ -52,10 +53,11 @@ export function DomSelect({
   options,
   onChange,
   ariaLabel,
-  placeholder = "Select…",
+  placeholder,
   searchable = false,
-  searchPlaceholder = "Search…",
+  searchPlaceholder,
 }: DomSelectProps) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   // Index of the keyboard-highlighted option — into the *filtered* list below.
   const [active, setActive] = useState(-1);
@@ -186,7 +188,7 @@ export function DomSelect({
         onKeyDown={onTriggerKeyDown}
       >
         <span className="dom-select-value" data-empty={selected ? "0" : "1"}>
-          {selected ? selected.label : placeholder}
+          {selected ? selected.label : (placeholder ?? t("select.placeholder"))}
         </span>
         <span className="dom-select-caret" aria-hidden>
           ▾
@@ -206,8 +208,10 @@ export function DomSelect({
                 aria-controls={listId}
                 aria-autocomplete="list"
                 aria-activedescendant={active >= 0 ? optionId(active) : undefined}
-                aria-label={ariaLabel ? `Search ${ariaLabel}` : "Search"}
-                placeholder={searchPlaceholder}
+                aria-label={
+                  ariaLabel ? t("select.searchLabel", { label: ariaLabel }) : t("select.search")
+                }
+                placeholder={searchPlaceholder ?? t("select.searchPlaceholder")}
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);
@@ -221,7 +225,7 @@ export function DomSelect({
           <ul className="dom-select-list" role="listbox" aria-label={ariaLabel} id={listId} ref={listRef}>
             {filtered.length === 0 ? (
               <li className="dom-select-empty" role="presentation">
-                No matches
+                {t("select.noMatches")}
               </li>
             ) : (
               filtered.map((o, i) => (

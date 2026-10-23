@@ -8,9 +8,11 @@ import Link from "next/link";
 
 import { buttonClass } from "@/components/day-of-music/atoms";
 import { useAuth } from "@/components/day-of-music/auth-provider";
+import { useT } from "@/lib/day-of-music/i18n";
 
 export function SharedCardCta() {
   const { loading, user } = useAuth();
+  const t = useT();
 
   // Hide while the persisted Supabase session is being restored so signed-in
   // viewers never see the CTA flash briefly before it disappears.
@@ -19,7 +21,7 @@ export function SharedCardCta() {
   return (
     <div className="dom-share-actions">
       <Link href="/week" className={buttonClass("solid")}>
-        Make your own →
+        {t("share.makeYourOwn")}
       </Link>
     </div>
   );
