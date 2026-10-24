@@ -338,6 +338,7 @@ export const MESSAGES = {
   "field.artist": { en: "Artist", ko: "아티스트", ja: "アーティスト", zh: "艺人", es: "Artista" },
   "field.genre": { en: "Genre", ko: "장르", ja: "ジャンル", zh: "流派", es: "Género" },
   "field.year": { en: "Year", ko: "연도", ja: "年", zh: "年份", es: "Año" },
+  "field.rating": { en: "Rating", ko: "별점", ja: "評価", zh: "评分", es: "Valoración" },
   "field.note": { en: "Note", ko: "메모", ja: "メモ", zh: "备注", es: "Nota" },
   "field.cover": { en: "Cover image", ko: "커버 이미지", ja: "カバー画像", zh: "封面图片", es: "Portada" },
 
@@ -346,7 +347,6 @@ export const MESSAGES = {
   "aria.nextWeek": { en: "Next week", ko: "다음 주", ja: "次の週", zh: "下一周", es: "Semana siguiente" },
   "aria.prevMonth": { en: "Previous month", ko: "이전 달", ja: "前の月", zh: "上个月", es: "Mes anterior" },
   "aria.nextMonth": { en: "Next month", ko: "다음 달", ja: "次の月", zh: "下个月", es: "Mes siguiente" },
-  "aria.rateStars": { en: "Rate {n} stars", ko: "별점 {n}점", ja: "{n}つ星で評価", zh: "评 {n} 星", es: "Calificar con {n} estrellas" },
   "aria.starsN": { en: "{n} stars", ko: "별 {n}개", ja: "{n}つ星", zh: "{n} 星", es: "{n} estrellas" },
   "aria.openAlbum": { en: "Open {title}", ko: "{title} 열기", ja: "{title}を開く", zh: "打开 {title}", es: "Abrir {title}" },
   "aria.logForDate": {

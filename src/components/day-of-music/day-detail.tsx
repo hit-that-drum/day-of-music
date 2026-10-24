@@ -19,6 +19,7 @@ import { useCountry } from "@/lib/day-of-music/profile";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { Cover } from "@/components/day-of-music/cover";
+import { RatingInput } from "@/components/day-of-music/rating-input";
 import { Button } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
 import { DayPicker, SwapConfirm } from "@/components/day-of-music/week-picker";
@@ -290,20 +291,11 @@ export function DayDetail({ album, today, onClose, onUpdate, onMove, onEnrich, o
 
           {tab === "journal" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div className="dom-rate-row">
-                {/* Fixed 5-star row — index is a stable key. */}
-                {Array.from({ length: 5 }, (_, i) => (
-                  <button
-                    key={i}
-                    className="dom-star"
-                    data-on={i + 1 <= album.rating ? "1" : "0"}
-                    onClick={() => commitRating(i + 1)}
-                    aria-label={t("aria.rateStars", { n: i + 1 })}
-                  >
-                    ★
-                  </button>
-                ))}
-              </div>
+              <RatingInput
+                value={album.rating}
+                onChange={commitRating}
+                label={t("field.rating")}
+              />
               {/* Desktop rendering — the native field, unchanged visually; hidden ≤760. */}
               <div className="dom-edit-field dom-move-native">
                 <label className="dom-edit-label" htmlFor={nativeDateId}>{t("daydetail.loggedOn")}</label>

@@ -2253,14 +2253,9 @@
   color: var(--ink3);
 }
 
-.dom-rating-input {
-  display: flex;
-  gap: 4px;
-}
-.dom-rating-input button {
+.dom-rate-row[data-size="lg"] .dom-star {
   font-size: 28px;
   padding: 2px 4px;
-  line-height: 1;
 }
 .dom-addflow {
   width: 100%;

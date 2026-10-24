@@ -29,6 +29,7 @@ import { readManualArtwork } from "@/lib/day-of-music/manual-artwork";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { Cover } from "@/components/day-of-music/cover";
+import { RatingInput } from "@/components/day-of-music/rating-input";
 import { Button } from "@/components/day-of-music/atoms";
 import { Modal, focusUnlessPhone } from "@/components/day-of-music/modal";
 
@@ -432,13 +433,12 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
         {step === 3 && (
           <div className="dom-addflow-body">
             <label className="dom-addflow-label">{t("addflow.yourRating")}</label>
-            <div className="dom-rating-input">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <button key={i} onClick={() => setRating(i)} aria-label={t("aria.starsN", { n: i })}>
-                  <span style={{ color: i <= rating ? "var(--ink)" : "var(--lineSoft)" }}>★</span>
-                </button>
-              ))}
-            </div>
+            <RatingInput
+              value={rating}
+              onChange={setRating}
+              label={t("addflow.yourRating")}
+              size="lg"
+            />
             <label className="dom-addflow-label" style={{ marginTop: 14 }}>
               {t("field.note")}
             </label>
