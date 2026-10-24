@@ -19,7 +19,8 @@ import { addDays, fmtDate, formatDisplayDate, parseDate, startOfWeek, type Album
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { useT } from "@/lib/day-of-music/i18n";
-import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
+import type { JournalAlbum } from "@/lib/day-of-music/journal";
+import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useActiveTheme } from "@/lib/day-of-music/themes";
 import {
   isLocalStorageAvailable,

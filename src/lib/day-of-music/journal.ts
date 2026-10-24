@@ -2,6 +2,8 @@
 // The journal layer is what the user owns: which day an album was logged, its
 // rating, and note. The albums themselves live in a separate metadata pool.
 
+import type { Album } from "@/lib/day-of-music/data";
+
 export type JournalEntry = {
   albumId: string;
   date: string; // YYYY-MM-DD
@@ -13,6 +15,14 @@ export type JournalEntry = {
 
 // A partial edit applied to an album's journal layer (never the theme).
 export type JournalPatch = Partial<Omit<JournalEntry, "albumId" | "theme">>;
+
+/** An album's own metadata — what the metadata pool keeps per album id —
+ *  without a day's journal overlay (date, rating, note); mergeEntry in
+ *  journal-cache.ts puts the two together. */
+export type AlbumMeta = Omit<Album, "date" | "rating" | "note">;
+
+/** A logged album together with the themed lane it was logged in. */
+export type JournalAlbum = Album & Pick<JournalEntry, "theme">;
 
 // Local-mode (no Supabase) journal. The key still says v1 but holds the v2
 // array format; readLocalEntries in use-journal.tsx also reads the older v1

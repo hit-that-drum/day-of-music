@@ -6,7 +6,8 @@ import { useMemo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { getAlbumStats, type AlbumStats } from "@/lib/day-of-music/album-stats";
-import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
+import type { JournalAlbum } from "@/lib/day-of-music/journal";
+import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useThemes } from "@/lib/day-of-music/themes";
 import { useT } from "@/lib/day-of-music/i18n";
 import { StatsShareCard } from "@/components/day-of-music/stats-share-card";

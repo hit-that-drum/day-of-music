@@ -10,6 +10,7 @@
 // the payload (share-artwork.ts shrinks it to fit the transport).
 
 import type { Album } from "@/lib/day-of-music/data";
+import type { JournalAlbum } from "@/lib/day-of-music/journal";
 import type { AlbumStats } from "@/lib/day-of-music/album-stats";
 import {
   base64url,
@@ -38,7 +39,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
  *  week board is the picture on the poster and in the saved image. Filtering
  *  it by scheme happens only when a link is minted (share-artwork.ts), where
  *  it actually matters. */
-export function sanitizeAlbum(a: Album & { theme?: string }): SharedAlbum {
+export function sanitizeAlbum(a: Album | JournalAlbum): SharedAlbum {
   return {
     id: a.id,
     date: a.date,
@@ -53,7 +54,7 @@ export function sanitizeAlbum(a: Album & { theme?: string }): SharedAlbum {
     ...(a.kind ? { kind: a.kind } : {}),
     ...(a.albumTitle ? { albumTitle: a.albumTitle } : {}),
     rating: a.rating,
-    ...(a.theme ? { theme: a.theme } : {}),
+    ...("theme" in a && a.theme ? { theme: a.theme } : {}),
   };
 }
 
@@ -63,7 +64,7 @@ export function buildStatsSharePayload(args: {
   themeLabel: string;
   sub: string;
   showFives: boolean;
-  stats: AlbumStats<Album & { theme: string }>;
+  stats: AlbumStats<JournalAlbum>;
 }): StatsSharePayload {
   const { stats } = args;
   return {

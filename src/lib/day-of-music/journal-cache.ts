@@ -8,7 +8,7 @@
 
 import { coverFromSeed } from "@/lib/day-of-music/cover-seed";
 import type { Album } from "@/lib/day-of-music/data";
-import type { JournalEntry } from "@/lib/day-of-music/journal";
+import type { AlbumMeta, JournalEntry } from "@/lib/day-of-music/journal";
 
 export type JournalCache = { entries: JournalEntry[]; albums: Album[] };
 
@@ -49,7 +49,7 @@ export function isSlot(entry: JournalEntry, theme: string, date: string): boolea
 
 /** An album as a day shows it: its metadata plus that day's journal overlay. */
 export function mergeEntry(
-  meta: Album,
+  meta: AlbumMeta,
   entry: Pick<JournalEntry, "date" | "rating" | "note">,
 ): Album {
   return { ...meta, date: entry.date, rating: entry.rating, note: entry.note };

@@ -23,6 +23,7 @@ import type { Album } from "@/lib/day-of-music/data";
 import {
   CUSTOM_ALBUMS_STORAGE_KEY,
   JOURNAL_STORAGE_KEY,
+  type JournalAlbum,
   type JournalEntry,
   type JournalPatch,
 } from "@/lib/day-of-music/journal";
@@ -94,10 +95,6 @@ type JournalContextValue = {
   removeSlot: (date: string) => void;
   /** Enrich the album in the slot at `date` (tracklist/release date). */
   enrichSlot: (date: string, patch: Partial<Album>) => void;
-};
-
-export type JournalAlbum = Album & {
-  theme: string;
 };
 
 function readLocalEntries(): JournalEntry[] {
