@@ -14,7 +14,9 @@ import {
   localizeAlbumsInto,
   localizeArtistsInto,
   localizeTracksInto,
+  type ITunesRow,
 } from "@/lib/day-of-music/itunes-lookup";
+import type { MusicSearchResult } from "@/lib/day-of-music/music-types";
 
 const searchParamsSchema = z.object({
   q: z.string().trim().min(1),
@@ -32,33 +34,8 @@ const ENTITY_BY_TYPE = {
   track: "song",
 } as const;
 
-type ITunesResult = {
-  wrapperType?: string;
-  collectionId?: number;
-  trackId?: number;
-  artistId?: number;
-  collectionName?: string;
-  trackName?: string;
-  artistName?: string;
-  primaryGenreName?: string;
-  releaseDate?: string;
-  artworkUrl100?: string;
-  trackCount?: number;
-};
-
-export type MusicSearchResult = {
-  id: string;
-  title: string;
-  artist: string;
-  genre: string;
-  year: number;
-  releaseDate: string;
-  artworkUrl: string;
-  trackCount: number;
-};
-
 function mapResult(
-  r: ITunesResult,
+  r: ITunesRow,
   type: keyof typeof ENTITY_BY_TYPE,
 ): MusicSearchResult | null {
   // A song row also carries its album's id and name; a track search is after
@@ -120,7 +97,7 @@ export async function GET(request: Request) {
       // Cache identical queries for an hour (iTunes rate limit is ~20/min).
       const resp = await fetch(itunesUrl, { next: { revalidate: 3600 } });
       if (!resp.ok) return null;
-      const body = JSON.parse(await resp.text()) as { results?: ITunesResult[] };
+      const body = JSON.parse(await resp.text()) as { results?: ITunesRow[] };
       return (body.results ?? [])
         .map((r) => mapResult(r, type))
         .filter((r): r is MusicSearchResult => r !== null);
@@ -150,7 +127,7 @@ export async function GET(request: Request) {
       // No lang override → song rows carry the storefront's localized album name.
       const resp = await fetch(songUrl, { next: { revalidate: 3600 } });
       if (!resp.ok) return results;
-      const songs = (JSON.parse(await resp.text()).results ?? []) as ITunesResult[];
+      const songs = (JSON.parse(await resp.text()).results ?? []) as ITunesRow[];
       const titleByCollection = new Map<number, string>();
       for (const s of songs) {
         if (s.collectionId != null && s.collectionName && !titleByCollection.has(s.collectionId)) {

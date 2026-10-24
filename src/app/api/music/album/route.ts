@@ -12,7 +12,7 @@
 import dayjs from "dayjs";
 import { z } from "zod";
 
-import { lookupByIds } from "@/lib/day-of-music/itunes-lookup";
+import { lookupByIds, type ITunesRow } from "@/lib/day-of-music/itunes-lookup";
 import type { AlbumDetail, TrackItem } from "@/lib/day-of-music/music-types";
 
 const lookupParamsSchema = z.object({
@@ -24,23 +24,6 @@ const lookupParamsSchema = z.object({
     .regex(/^[a-zA-Z]{2}$/, "country must be a 2-letter code")
     .default("US"),
 });
-
-type ITunesResult = {
-  wrapperType?: string;
-  kind?: string;
-  collectionId?: number;
-  trackId?: number;
-  collectionName?: string;
-  trackName?: string;
-  trackCensoredName?: string;
-  artistName?: string;
-  primaryGenreName?: string;
-  releaseDate?: string;
-  artworkUrl100?: string;
-  trackCount?: number;
-  discNumber?: number;
-  trackNumber?: number;
-};
 
 // AlbumDetail / TrackItem are shared with the client (music-types.ts) so the
 // route's JSON shape and the client's expected shape can't drift.
@@ -80,7 +63,7 @@ export async function GET(request: Request) {
   // first, then common fallbacks, and use the first that has the album.
   const storefronts = [...new Set([country.toUpperCase(), "US", "KR", "JP", "GB"])];
 
-  async function lookupIn(store: string, lookupId: string): Promise<ITunesResult[] | null> {
+  async function lookupIn(store: string, lookupId: string): Promise<ITunesRow[] | null> {
     const itunesUrl = new URL("https://itunes.apple.com/lookup");
     itunesUrl.searchParams.set("id", lookupId);
     itunesUrl.searchParams.set("entity", "song");
@@ -91,14 +74,14 @@ export async function GET(request: Request) {
       // Cache identical lookups for an hour (iTunes rate limit is ~20/min).
       const resp = await fetch(itunesUrl, { next: { revalidate: 3600 } });
       if (!resp.ok) return null;
-      const body = JSON.parse(await resp.text()) as { results?: ITunesResult[] };
+      const body = JSON.parse(await resp.text()) as { results?: ITunesRow[] };
       return body.results ?? [];
     } catch {
       return null;
     }
   }
 
-  function buildTrackItems(r: ITunesResult[], coll: ITunesResult): TrackItem[] {
+  function buildTrackItems(r: ITunesRow[], coll: ITunesRow): TrackItem[] {
     return r
       .filter((x) => x.wrapperType === "track" && x.kind === "song")
       .sort(
@@ -126,10 +109,10 @@ export async function GET(request: Request) {
   async function findAlbumWithTracks(
     artist: string,
     name: string,
-  ): Promise<{ collection: ITunesResult; trackItems: TrackItem[] } | null> {
+  ): Promise<{ collection: ITunesRow; trackItems: TrackItem[] } | null> {
     if (!artist || !name) return null;
     for (const store of storefronts) {
-      let albums: ITunesResult[];
+      let albums: ITunesRow[];
       try {
         const searchUrl = new URL("https://itunes.apple.com/search");
         searchUrl.searchParams.set("term", `${artist} ${name}`);
@@ -139,7 +122,7 @@ export async function GET(request: Request) {
         searchUrl.searchParams.set("lang", "en_us");
         const resp = await fetch(searchUrl, { next: { revalidate: 3600 } });
         if (!resp.ok) continue;
-        albums = (JSON.parse(await resp.text()).results ?? []) as ITunesResult[];
+        albums = (JSON.parse(await resp.text()).results ?? []) as ITunesRow[];
       } catch {
         continue;
       }
@@ -164,15 +147,15 @@ export async function GET(request: Request) {
   // list an album (trackCount > 0) without individually-available songs, so if
   // a store yields no tracks we keep trying the other storefronts; only fall
   // back to a collection-only result if none of them have tracks.
-  let collection: ITunesResult | undefined;
+  let collection: ITunesRow | undefined;
   let trackItems: TrackItem[] = [];
-  let fallbackCollection: ITunesResult | undefined;
+  let fallbackCollection: ITunesRow | undefined;
   let fallbackTrackItems: TrackItem[] = [];
   // The album's metadata in the listener's own storefront (the first entry, as
   // the list is country-first). We display title/artist from here even when the
   // tracklist had to come from a fallback store — so a KR listener sees
   // "방탄소년단", not the "BTS" of whichever store happened to carry the songs.
-  let preferredCollection: ITunesResult | undefined;
+  let preferredCollection: ITunesRow | undefined;
   let preferredStore: string | undefined;
   // Which storefront the chosen tracklist came from — if it's not the listener's
   // own store, the track titles are in a fallback language and we try to recover.
@@ -236,8 +219,8 @@ export async function GET(request: Request) {
   let localizedTitle: string | undefined;
   if (preferredStore && trackStore !== preferredStore && trackItems.length > 0) {
     const sourceCollectionId = collection.collectionId;
-    const rows = new Map<number, ITunesResult>();
-    const found = await lookupByIds<ITunesResult>(
+    const rows = new Map<number, ITunesRow>();
+    const found = await lookupByIds(
       preferredStore,
       trackItems.map((t) => t.trackId),
     );

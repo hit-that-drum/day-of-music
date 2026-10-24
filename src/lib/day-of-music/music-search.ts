@@ -4,20 +4,9 @@
 
 import type { Album } from "@/lib/day-of-music/data";
 import { coverFromSeed } from "@/lib/day-of-music/cover-seed";
-import type { AlbumDetail, TrackItem } from "@/lib/day-of-music/music-types";
+import type { AlbumDetail, MusicSearchResult, TrackItem } from "@/lib/day-of-music/music-types";
 
-export type { AlbumDetail, TrackItem };
-
-export type MusicSearchResult = {
-  id: string;
-  title: string;
-  artist: string;
-  genre: string;
-  year: number;
-  releaseDate: string;
-  artworkUrl: string;
-  trackCount: number;
-};
+export type { AlbumDetail, MusicSearchResult, TrackItem };
 
 export async function searchMusic(
   query: string,

@@ -15,15 +15,24 @@
 // store ("Ha Hyun Sang" even in KR), so an artist's name comes from their
 // album rows instead.
 
-/** The fields of an iTunes Lookup row these helpers read. */
-type LookupRow = {
+/** One row of an iTunes Search or Lookup response: an artist, a collection
+ *  (album) or a track, with the fields the /api/music routes read. */
+export type ITunesRow = {
   wrapperType?: string;
+  kind?: string;
   artistId?: number;
   collectionId?: number;
   trackId?: number;
   artistName?: string;
   collectionName?: string;
   trackName?: string;
+  trackCensoredName?: string;
+  primaryGenreName?: string;
+  releaseDate?: string;
+  artworkUrl100?: string;
+  trackCount?: number;
+  discNumber?: number;
+  trackNumber?: number;
 };
 
 /** A search result as far as localizing it goes; `id` is "itunes-<id>". */
@@ -40,11 +49,11 @@ function itunesIds(results: Named[]): number[] {
  *  per 150 ids (a lookup takes at least 200; this keeps the URL under ~2,000
  *  chars), so only a long list needs a second call; a failed batch just adds no
  *  rows. No lang override → names come back in the store's own language. */
-export async function lookupByIds<T = LookupRow>(
+export async function lookupByIds(
   store: string,
   ids: number[],
   params: Record<string, string> = {},
-): Promise<T[]> {
+): Promise<ITunesRow[]> {
   const batches: number[][] = [];
   for (let i = 0; i < ids.length; i += 150) batches.push(ids.slice(i, i + 150));
   const rows = await Promise.all(
@@ -58,7 +67,7 @@ export async function lookupByIds<T = LookupRow>(
         // Cache identical lookups for an hour (iTunes rate limit is ~20/min).
         const resp = await fetch(lookupUrl, { next: { revalidate: 3600 } });
         if (!resp.ok) return [];
-        return (JSON.parse(await resp.text()).results ?? []) as T[];
+        return (JSON.parse(await resp.text()).results ?? []) as ITunesRow[];
       } catch {
         return [];
       }
@@ -118,7 +127,7 @@ export async function localizeTracksInto<R extends Named>(
   const trackIds = itunesIds(results);
   if (fromStore === toStore || trackIds.length === 0) return results;
 
-  const byTrack = new Map<number, LookupRow>();
+  const byTrack = new Map<number, ITunesRow>();
   for (const x of await lookupByIds(toStore, trackIds)) {
     if (x.wrapperType === "track" && x.trackId != null)
       byTrack.set(x.trackId, x);
