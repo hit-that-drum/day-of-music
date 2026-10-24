@@ -108,6 +108,16 @@ function monthSegmentBounds(anchor: Date): { first: Date; last: Date } {
   };
 }
 
+// The overlay open over the board — one at a time: opening one replaces the
+// other. Day Detail holds its slot and the album it opened on (not a copy):
+// the album is read from the journal on every render, and a different album
+// later logged on that date won't reopen it. The Add flow always opens on a
+// day — an empty cell's, or the replaced entry's.
+type Overlay =
+  | { kind: "detail"; date: string; albumId: string }
+  | { kind: "add"; date: string; /** Saving replaces this day's entry. */ replaceTarget?: string }
+  | { kind: "share" | "monthShare" | "bestOf" | "bestOfMonth" | "more" };
+
 export function DayOfMusicApp({
   initialToday,
 }: {
@@ -144,34 +154,18 @@ export function DayOfMusicApp({
   // server's week.
   const [pickedAnchor, setAnchor] = useState<Date | null>(null);
   const anchor = pickedAnchor ?? today;
-  const [openAlbum, setOpenAlbum] = useState<Album | null>(null);
-  const [showAdd, setShowAdd] = useState(false);
-  // When set, the add-flow opens with this date preselected (empty-day click).
-  const [addDate, setAddDate] = useState<string | null>(null);
-  // When set, saving the add-flow replaces (removes) this album's entry.
-  const [replaceTarget, setReplaceTarget] = useState<string | null>(null);
-  const [showShare, setShowShare] = useState(false);
-  const [showMonthShare, setShowMonthShare] = useState(false);
-  const [showBestOf, setShowBestOf] = useState(false);
-  const [showBestOfMonth, setShowBestOfMonth] = useState(false);
+  const [overlay, setOverlay] = useState<Overlay | null>(null);
+  // Stable, for the modals' onClose (Modal re-registers its Esc listener on change).
+  const closeOverlay = useCallback(() => setOverlay(null), []);
+  // The Tweaks popover isn't a modal overlay: it sits beside the board.
   const [showTweaks, setShowTweaks] = useState(false);
-  // Phone "⋯ More" overflow sheet (language / account / legal).
-  const [showMore, setShowMore] = useState(false);
 
-  // Single place that dismisses every overlay + resets the transient add/replace
-  // state. Centralised so new overlays only have to be added here (and so the
-  // Esc handler can't drift out of sync with the individual onClose handlers).
-  const closeAll = useCallback(() => {
-    setOpenAlbum(null);
-    setShowAdd(false);
-    setShowShare(false);
-    setShowMonthShare(false);
-    setShowBestOf(false);
-    setShowBestOfMonth(false);
-    setShowTweaks(false);
-    setShowMore(false);
-    setReplaceTarget(null);
-  }, []);
+  // Day Detail's album, read live from the journal: an edit, an enrichment or
+  // a rolled-back write shows at once, and a slot emptied under it (another
+  // device, a refetch) closes it rather than showing a stale copy.
+  const slotAlbum = overlay?.kind === "detail" ? albumsByDate[overlay.date] : undefined;
+  const openAlbum =
+    overlay?.kind === "detail" && slotAlbum?.id === overlay.albumId ? slotAlbum : undefined;
 
   // Leave the browser's zone in a cookie so the next server render can start
   // from the listener's date instead of its own (no post-hydration correction).
@@ -239,22 +233,16 @@ export function DayOfMusicApp({
     });
   }, [today]);
 
-  // Keyboard nav: Esc closes modal; ←/→ change week when nothing is open.
+  // Keyboard: Esc closes the Tweaks popover (modals close themselves, see
+  // Modal); ←/→ step the board when nothing is open over it.
+  const overlayOpen = overlay !== null || showTweaks;
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (
-        openAlbum ||
-        showAdd ||
-        showShare ||
-        showMonthShare ||
-        showBestOf ||
-        showBestOfMonth ||
-        showTweaks ||
-        showMore
-      ) {
-        if (e.key === "Escape") closeAll();
+      if (showTweaks && e.key === "Escape") {
+        setShowTweaks(false);
         return;
       }
+      if (overlayOpen) return;
       // ←/→ step the week on the Week board and the month on the Month view.
       if (screen === "week") {
         if (e.key === "ArrowLeft") prevWeek();
@@ -266,12 +254,12 @@ export function DayOfMusicApp({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openAlbum, showAdd, showShare, showMonthShare, showBestOf, showBestOfMonth, showTweaks, showMore, screen, prevWeek, nextWeek, prevMonth, nextMonth, closeAll]);
+  }, [overlayOpen, showTweaks, screen, prevWeek, nextWeek, prevMonth, nextMonth]);
 
   const handleOpen = useCallback(
     (album: Album | JournalAlbum) => {
       if ("theme" in album) setActiveTheme(album.theme);
-      setOpenAlbum(album);
+      setOverlay({ kind: "detail", date: album.date, albumId: album.id });
     },
     [setActiveTheme],
   );
@@ -279,31 +267,14 @@ export function DayOfMusicApp({
   // Drag-and-drop reschedule (onMove={moveSlot}): dropping onto an empty day
   // moves the album there; dropping onto a filled day swaps the two days.
   // moveSlot is a stable ref, so it's passed straight through (its Promise
-  // result is ignored there). Day Detail's reschedule arrives via handleMove.
-
-  // A rating / note / info edit on the slot at `date`. Never a move: the patch
-  // can't carry a date (Day Detail reschedules through handleMove).
-  const handleUpdate = useCallback(
-    (date: string, patch: Omit<Partial<Album>, "date">) => {
-      updateSlot(date, patch);
-      setOpenAlbum((prev) => (prev && prev.date === date ? { ...prev, ...patch } : prev));
-    },
-    [updateSlot],
-  );
-
-  // Lazily-fetched album metadata (tracklist, release date) from iTunes Lookup.
-  const handleEnrich = useCallback(
-    (date: string, patch: Partial<Album>) => {
-      enrichSlot(date, patch);
-      setOpenAlbum((prev) => (prev && prev.date === date ? { ...prev, ...patch } : prev));
-    },
-    [enrichSlot],
-  );
+  // result is ignored there). Day Detail's reschedule arrives via handleMove;
+  // its edits and lazy enrichment go straight to updateSlot / enrichSlot, and
+  // the open detail follows the journal (see openAlbum).
 
   const handleRemove = useCallback(
     (date: string) => {
       removeSlot(date);
-      setOpenAlbum(null);
+      setOverlay(null);
       toast.success(t("toast.removed"));
     },
     [removeSlot, t],
@@ -321,13 +292,14 @@ export function DayOfMusicApp({
       // The slot can vanish under an open modal (removed on another device, or
       // a refetch dropped it). Nothing to stage → report it, don't celebrate.
       if (!albumsByDate[from]) {
-        setOpenAlbum(null);
+        setOverlay(null);
         toast.error(t("toast.moveFailed"));
         return;
       }
       const displaced = albumsByDate[to];
       const settled = moveSlot(from, to);
-      setOpenAlbum(null);
+      // Closed, not left open on `from`: a swap puts another album there.
+      setOverlay(null);
       if (screen === "week" || screen === "month") setAnchor(parseDate(to));
       const date = formatDisplayDate(to, country);
       toast.success(
@@ -345,18 +317,15 @@ export function DayOfMusicApp({
   // Replace: reopen the add-flow on the same day. Logging the new album at that
   // date overwrites the slot, so no separate removal is needed.
   const handleReplace = useCallback((album: Album) => {
-    setOpenAlbum(null);
-    setAddDate(album.date);
-    setReplaceTarget(album.date);
-    setShowAdd(true);
+    setOverlay({ kind: "add", date: album.date, replaceTarget: album.date });
   }, []);
 
   // Open the Add flow on a day (an empty board cell). Not memoized: none of
   // the boards it's passed to is a memo component.
-  const openAddFor = (date: string) => {
-    setAddDate(date);
-    setShowAdd(true);
-  };
+  const openAddFor = (date: string) => setOverlay({ kind: "add", date });
+
+  // Set while the Add flow is replacing an entry (opened from Day Detail).
+  const replaceTarget = overlay?.kind === "add" ? overlay.replaceTarget : undefined;
 
   const handleSave = useCallback(
     (entry: NewEntry) => {
@@ -365,7 +334,6 @@ export function DayOfMusicApp({
       logAlbum(entry.album, { dates: entry.dates, rating: entry.rating, note: entry.note });
       // If replacing and the original day wasn't among the chosen ones, clear it.
       if (replaceTarget && !entry.dates.includes(replaceTarget)) removeSlot(replaceTarget);
-      setReplaceTarget(null);
 
       const count = entry.dates.length;
       const rating = entry.rating || "—";
@@ -416,8 +384,8 @@ export function DayOfMusicApp({
           onScreen={setScreen}
           onTweaks={() => setShowTweaks((v) => !v)}
           tweaksOpen={showTweaks}
-          onMore={() => setShowMore(true)}
-          moreOpen={showMore}
+          onMore={() => setOverlay({ kind: "more" })}
+          moreOpen={overlay?.kind === "more"}
           account={account}
           showAuthLinks={isGuest}
         />
@@ -466,8 +434,8 @@ export function DayOfMusicApp({
               onNext={nextWeek}
               // Jump the week view to whatever date the user picks in the mini calendar.
               onJump={setAnchor}
-              onShare={() => setShowShare(true)}
-              onBestOf={() => setShowBestOf(true)}
+              onShare={() => setOverlay({ kind: "share" })}
+              onBestOf={() => setOverlay({ kind: "bestOf" })}
               onMove={moveSlot}
             />
           )}
@@ -481,8 +449,8 @@ export function DayOfMusicApp({
               onPrev={prevMonth}
               onNext={nextMonth}
               onJump={setAnchor}
-              onShare={() => setShowMonthShare(true)}
-              onBestOf={() => setShowBestOfMonth(true)}
+              onShare={() => setOverlay({ kind: "monthShare" })}
+              onBestOf={() => setOverlay({ kind: "bestOfMonth" })}
               onMove={moveSlot}
             />
           )}
@@ -502,61 +470,45 @@ export function DayOfMusicApp({
           key={`${openAlbum.id}:${openAlbum.date}`}
           album={openAlbum}
           today={today}
-          onClose={() => setOpenAlbum(null)}
-          onUpdate={handleUpdate}
+          onClose={closeOverlay}
+          onUpdate={updateSlot}
           onMove={handleMove}
-          onEnrich={handleEnrich}
+          onEnrich={enrichSlot}
           onRemove={handleRemove}
           onReplace={handleReplace}
         />
       )}
-      {showAdd && (
-        <AddFlow
-          onClose={() => {
-            setShowAdd(false);
-            setReplaceTarget(null);
-          }}
-          onSave={handleSave}
-          defaultWeekStart={weekStart}
-          // Clicked day wins; otherwise preselect today when it's in view.
-          defaultDate={
-            addDate ?? (days.some((d) => fmtDate(d) === todayKey) ? todayKey : undefined)
-          }
-        />
+      {overlay?.kind === "add" && (
+        <AddFlow onClose={closeOverlay} onSave={handleSave} initialDate={overlay.date} />
       )}
-      {showShare && (
+      {overlay?.kind === "share" && (
         <ShareCard
           weekStart={labelDate}
           days={days}
           splitByMonth={tweaks.weekSplit}
-          onClose={() => setShowShare(false)}
+          onClose={closeOverlay}
         />
       )}
-      {showMonthShare && (
-        <MonthShareCard
-          anchor={anchor}
-          onClose={() => setShowMonthShare(false)}
-        />
-      )}
-      {showBestOf && (
+      {overlay?.kind === "monthShare" && <MonthShareCard anchor={anchor} onClose={closeOverlay} />}
+      {overlay?.kind === "bestOf" && (
         <BestOfWeekModal
           days={days}
           labelDate={labelDate}
           splitByMonth={tweaks.weekSplit}
-          onClose={() => setShowBestOf(false)}
+          onClose={closeOverlay}
         />
       )}
-      {showBestOfMonth && (
+      {overlay?.kind === "bestOfMonth" && (
         <BestOfMonthModal
           anchor={anchor}
           splitByMonth={tweaks.weekSplit}
           today={today}
-          onClose={() => setShowBestOfMonth(false)}
+          onClose={closeOverlay}
         />
       )}
-      {showMore && (
+      {overlay?.kind === "more" && (
         <MoreSheet
-          onClose={() => setShowMore(false)}
+          onClose={closeOverlay}
           account={account}
           showAuthLinks={isGuest}
         />

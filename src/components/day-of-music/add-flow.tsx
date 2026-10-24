@@ -53,18 +53,15 @@ const EMPTY_MANUAL: ManualFields = { title: "", artist: "", genre: "", art: null
 type AddFlowProps = {
   onClose: () => void;
   onSave: (entry: NewEntry) => void;
-  /** Seeds the initial selected day when no `defaultDate` is given. The picker
-   *  then follows the selected day's week independently of this. */
-  defaultWeekStart: Date;
-  defaultDate?: string;
+  /** The day the flow opens on (YYYY-MM-DD), selected in the day picker. */
+  initialDate: string;
 };
 
-export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddFlowProps) {
+export function AddFlow({ onClose, onSave, initialDate }: AddFlowProps) {
   const t = useT();
   const names = useDateNames();
   const [step, setStep] = useState<Step>(1);
   const [picked, setPicked] = useState<Album | null>(null);
-  const initialDate = defaultDate ?? fmtDate(defaultWeekStart);
   // Days to log on. Multiple days can be selected so the same album is logged
   // across several dates at once.
   const [selectedDates, setSelectedDates] = useState<Set<string>>(
