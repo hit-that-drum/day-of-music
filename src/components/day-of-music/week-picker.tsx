@@ -14,7 +14,8 @@ import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { isPhoneViewport } from "@/lib/day-of-music/phone";
 import { IconButton } from "@/components/day-of-music/atoms";
-import { useCapturedEscape, useMonthWeeks } from "@/components/day-of-music/mini-calendar";
+import { useEscapeLayer } from "@/lib/day-of-music/escape-layers";
+import { useMonthWeeks } from "@/components/day-of-music/mini-calendar";
 
 export function WeekPicker({
   initialMonth,
@@ -51,8 +52,7 @@ export function WeekPicker({
     return () => prev?.focus();
   }, []);
 
-  // Close on Escape (capture + stopPropagation — see useCapturedEscape).
-  useCapturedEscape(onClose);
+  useEscapeLayer(onClose);
 
   const { weeks, monthIndex } = useMonthWeeks(cursor);
 

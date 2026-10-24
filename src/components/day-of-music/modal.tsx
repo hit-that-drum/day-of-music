@@ -13,13 +13,9 @@
 
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  type PointerEvent as ReactPointerEvent,
-  type ReactNode,
-} from "react";
+import { useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
+import { useEscapeLayer } from "@/lib/day-of-music/escape-layers";
 import { useT } from "@/lib/day-of-music/i18n";
 import { PHONE_QUERY, REDUCED_MOTION_QUERY } from "@/lib/day-of-music/phone";
 
@@ -79,13 +75,8 @@ export function Modal({
   // drag or settle can cancel it (a stale one would reset the transition).
   const settleRef = useRef<(() => void) | null>(null);
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  // Escape closes this modal unless something opened over it is still open.
+  useEscapeLayer(onClose);
 
   // Return the sheet to rest. Clearing the inline transform matters: a
   // transformed .dom-modal is the containing block for fixed descendants

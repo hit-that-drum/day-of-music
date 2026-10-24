@@ -6,6 +6,7 @@
 import { useEffect, useRef } from "react";
 
 import { DomSelectField } from "@/components/day-of-music/dom-select";
+import { useEscapeLayer } from "@/lib/day-of-music/escape-layers";
 import { useT } from "@/lib/day-of-music/i18n";
 import {
   AESTHETICS,
@@ -47,6 +48,8 @@ export function TweaksPanel({
     window.addEventListener("pointerdown", onPointerDown, true);
     return () => window.removeEventListener("pointerdown", onPointerDown, true);
   }, [open, onClose]);
+
+  useEscapeLayer(onClose, open);
 
   if (!open) return null;
 

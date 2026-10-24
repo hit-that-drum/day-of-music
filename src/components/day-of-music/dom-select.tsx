@@ -10,6 +10,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
+import { useEscapeLayer } from "@/lib/day-of-music/escape-layers";
 import { useT } from "@/lib/day-of-music/i18n";
 import { cn } from "@/lib/utils";
 
@@ -117,20 +118,21 @@ export function DomSelect({
     if (focusTrigger) triggerRef.current?.focus();
   }
 
+  // An open list is the innermost Escape layer: Escape closes just the list —
+  // inside the Tweaks panel too, which stays open.
+  useEscapeLayer(() => close(true), open);
+
   function commit(i: number, focusTrigger = false) {
     const o = filtered[i];
     if (o) onChange(o.value);
     close(focusTrigger);
   }
 
-  // Shared arrow/Enter/Escape navigation, used by both the trigger (non-search)
-  // and the search input. Space is intentionally left out so it can be typed.
+  // Shared arrow/Enter navigation, used by both the trigger (non-search) and
+  // the search input (Escape is the layer's, above). Space is intentionally
+  // left out so it can be typed.
   function navKeys(e: React.KeyboardEvent) {
     switch (e.key) {
-      case "Escape":
-        e.preventDefault();
-        close(true);
-        return true;
       case "ArrowDown":
         e.preventDefault();
         setActive((i) => Math.min(filtered.length - 1, i + 1));

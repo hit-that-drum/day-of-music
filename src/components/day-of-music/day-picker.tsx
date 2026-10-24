@@ -19,7 +19,8 @@ import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { Button, IconButton } from "@/components/day-of-music/atoms";
-import { useCapturedEscape, useMonthWeeks } from "@/components/day-of-music/mini-calendar";
+import { useEscapeLayer } from "@/lib/day-of-music/escape-layers";
+import { useMonthWeeks } from "@/components/day-of-music/mini-calendar";
 
 // SwapConfirm — "that day already has 〈X〉; swap?" row. Used in DayPicker's
 // footer (phones) and under Day Detail's native date input (desktop) so both
@@ -109,7 +110,8 @@ export function DayPicker({
       onClose();
     }
   }, [pendingSwap, onClose, focusDay]);
-  useCapturedEscape(onEscape);
+  // Over Day Detail: its Escape stays here (see escape-layers.ts).
+  useEscapeLayer(onEscape);
 
   const { weeks, monthIndex } = useMonthWeeks(cursor);
   const visibleKeys = useMemo(() => weeks.flat().map(fmtDate), [weeks]);

@@ -233,15 +233,11 @@ export function DayOfMusicApp({
     });
   }, [today]);
 
-  // Keyboard: Esc closes the Tweaks popover (modals close themselves, see
-  // Modal); ←/→ step the board when nothing is open over it.
+  // Keyboard: ←/→ step the board when nothing is open over it. (Escape is each
+  // overlay's own — see escape-layers.ts.)
   const overlayOpen = overlay !== null || showTweaks;
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (showTweaks && e.key === "Escape") {
-        setShowTweaks(false);
-        return;
-      }
       if (overlayOpen) return;
       // ←/→ step the week on the Week board and the month on the Month view.
       if (screen === "week") {
@@ -254,7 +250,7 @@ export function DayOfMusicApp({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [overlayOpen, showTweaks, screen, prevWeek, nextWeek, prevMonth, nextMonth]);
+  }, [overlayOpen, screen, prevWeek, nextWeek, prevMonth, nextMonth]);
 
   const handleOpen = useCallback(
     (album: Album | JournalAlbum) => {

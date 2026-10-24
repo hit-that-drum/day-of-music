@@ -29,6 +29,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import { useEscapeLayer } from "@/lib/day-of-music/escape-layers";
 import { useT } from "@/lib/day-of-music/i18n";
 import { PHONE_BREAKPOINT } from "@/lib/day-of-music/phone";
 import { POSTER_WIDTH } from "@/lib/day-of-music/poster-size";
@@ -99,19 +100,8 @@ export function PosterFit({ children }: { children: ReactNode }) {
     return () => observer.disconnect();
   }, [measure, expanded]);
 
-  useEffect(() => {
-    if (!expanded) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key !== "Escape") return;
-      // Capture phase + stopPropagation so Escape dismisses the zoom view
-      // first; the share Modal's own Escape handler listens on window in the
-      // bubble phase and would otherwise close the whole modal underneath.
-      e.stopPropagation();
-      setZoomed(false);
-    }
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, [expanded]);
+  // Escape closes the zoom view, not the share modal underneath it.
+  useEscapeLayer(() => setZoomed(false), expanded);
 
   const poster = (
     <div
