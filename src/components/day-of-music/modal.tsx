@@ -13,7 +13,13 @@
 
 "use client";
 
-import { useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 
 import { useEscapeLayer } from "@/lib/day-of-music/escape-layers";
 import { useT } from "@/lib/day-of-music/i18n";
@@ -77,6 +83,28 @@ export function Modal({
 
   // Escape closes this modal unless something opened over it is still open.
   useEscapeLayer(onClose);
+
+  // Focus enters the dialog when it opens and goes back to its opener when it
+  // closes; otherwise keyboard and screen-reader users stay on — or return to
+  // — whatever sits behind the scrim. The opener is read as the dialog first
+  // renders, before a field's focusUnlessPhone ref can move focus inside.
+  const [opener] = useState(() =>
+    typeof document === "undefined" ? null : (document.activeElement as HTMLElement | null),
+  );
+  useEffect(() => {
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+    // A field may already have it (focusUnlessPhone); otherwise the panel.
+    if (!sheet.contains(document.activeElement)) sheet.focus({ preventScroll: true });
+    return () => {
+      // Only when focus went down with this dialog: never take it from a
+      // dialog that opened in the same commit (Day Detail → Replace → Add).
+      const lost = !document.activeElement || document.activeElement === document.body;
+      if (opener?.isConnected && (lost || sheet.contains(document.activeElement))) {
+        opener.focus();
+      }
+    };
+  }, [opener]);
 
   // Return the sheet to rest. Clearing the inline transform matters: a
   // transformed .dom-modal is the containing block for fixed descendants

@@ -27,12 +27,10 @@ export function MoreSheet({
   const checkedRef = useRef<HTMLButtonElement>(null);
   const groupRef = useRef<HTMLDivElement>(null);
 
-  // Initial focus + return focus to the ⋯ trigger on close (ref read inside an
-  // effect — allowed by react-hooks/refs).
+  // Initial focus on the checked radio (ref read inside an effect — allowed by
+  // react-hooks/refs). Modal returns focus to the ⋯ trigger on close.
   useEffect(() => {
-    const prev = document.activeElement as HTMLElement | null;
     checkedRef.current?.focus();
-    return () => prev?.focus();
   }, []);
 
   // APG radiogroup keyboard contract: roving tabindex (only the checked radio

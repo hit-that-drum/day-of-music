@@ -1981,6 +1981,11 @@
   padding-top: 52px;
   animation: dom-rise 0.25s ease;
 }
+/* The panel takes focus on open when nothing inside does (modal.tsx). It's a
+   container, not a control, so no UA ring around the whole dialog. */
+.dom-modal:focus {
+  outline: none;
+}
 .dom-modal-close {
   position: absolute;
   top: 0;
@@ -5032,11 +5037,6 @@ button.dom-day-add:hover {
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     animation: dom-sheet-up 0.25s ease;
-  }
-  /* The sheet takes focus on open when its panel has no field to focus
-     (focusUnlessPhone, modal.tsx) — like the week-jump sheet, no UA ring. */
-  .dom-modal:focus {
-    outline: none;
   }
   /* Header band: sticky so the ✕ never scrolls away; touch-action:none so a
      drag that starts here can't turn into a scroll of the sheet. The handle is
