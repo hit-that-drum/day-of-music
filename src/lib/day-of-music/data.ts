@@ -105,6 +105,29 @@ function intlTagForCountry(country: string | undefined): string {
   }
 }
 
+// The Intl.Locale lookup and the DateTimeFormat constructor are the costly part
+// of formatting a date, and lists format one per row (the search view, every
+// album on each keystroke). A formatter depends only on (country, style), so
+// each is built once.
+const displayDateFormats = new Map<string, Intl.DateTimeFormat>();
+
+function displayDateFormat(
+  country: string | undefined,
+  style: "long" | "short",
+): Intl.DateTimeFormat {
+  const key = `${country ?? ""}:${style}`;
+  let format = displayDateFormats.get(key);
+  if (!format) {
+    format = new Intl.DateTimeFormat(intlTagForCountry(country), {
+      year: "numeric",
+      month: style === "long" ? "long" : "short",
+      day: "numeric",
+    });
+    displayDateFormats.set(key, format);
+  }
+  return format;
+}
+
 /** Format a single date — a Date or a "YYYY-MM-DD" / ISO string — in the
  *  listener's country notation, so every displayed date is consistent. `style`
  *  controls verbosity: "long" (default) full month name, "short" abbreviated.
@@ -119,11 +142,7 @@ export function formatDisplayDate(
   // Date-only: drop any time/zone so the displayed day can't shift across TZs.
   const d = typeof input === "string" ? parseDate(input.slice(0, 10)) : input;
   if (!d || Number.isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat(intlTagForCountry(country), {
-    year: "numeric",
-    month: style === "long" ? "long" : "short",
-    day: "numeric",
-  }).format(d);
+  return displayDateFormat(country, style).format(d);
 }
 
 export function addDays(d: Date, n: number): Date {
