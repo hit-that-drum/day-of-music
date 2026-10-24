@@ -5,7 +5,7 @@
 
 import type { User } from "@supabase/supabase-js";
 
-import type { BestOfMap } from "@/lib/day-of-music/best-of";
+import type { BestOfMap } from "@/lib/day-of-music/best-of-bracket";
 import { LOCALES, type LanguagePref } from "@/lib/day-of-music/i18n-core";
 import type { Theme } from "@/lib/day-of-music/themes";
 

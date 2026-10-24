@@ -6,11 +6,11 @@
 
 import { useMemo } from "react";
 
-import { MONTHS_LONG, fmtDate, weekOfMonth } from "@/lib/day-of-music/data";
+import { MONTHS_LONG, weekOfMonth } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useActiveThemeObject } from "@/lib/day-of-music/themes";
 import { useT } from "@/lib/day-of-music/i18n";
-import { bestOfKey, weekContenders } from "@/lib/day-of-music/best-of";
+import { bestOfKey, weekContenders, weekPeriodKey } from "@/lib/day-of-music/best-of-bracket";
 import { shareFileName } from "@/lib/day-of-music/save-card";
 import { BestOfModal } from "@/components/day-of-music/best-of-modal";
 
@@ -45,10 +45,7 @@ export function BestOfWeekModal({
   return (
     <BestOfModal
       contenders={contenders}
-      // Period key = the segment's first in-view day: the week's Monday when
-      // continuous, or the first in-month day when split — so the two segments
-      // of a month-straddling week are judged and persisted independently.
-      storeKey={bestOfKey("week", activeTheme.id, fmtDate(labelDate))}
+      storeKey={bestOfKey("week", activeTheme.id, weekPeriodKey(labelDate))}
       title={t("bow.title")}
       periodLabel={`${monthLabel} · Week ${weekNum}`}
       championKicker={t("bow.champion")}

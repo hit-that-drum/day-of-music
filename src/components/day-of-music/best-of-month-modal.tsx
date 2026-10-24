@@ -8,7 +8,8 @@
 import { MONTHS_LONG } from "@/lib/day-of-music/data";
 import { useActiveThemeObject } from "@/lib/day-of-music/themes";
 import { useT } from "@/lib/day-of-music/i18n";
-import { bestOfKey, monthKey, useBestOfMonthStatus } from "@/lib/day-of-music/best-of";
+import { useBestOfMonthStatus } from "@/lib/day-of-music/best-of";
+import { bestOfKey, monthKey } from "@/lib/day-of-music/best-of-bracket";
 import { shareFileName } from "@/lib/day-of-music/save-card";
 import { BestOfModal } from "@/components/day-of-music/best-of-modal";
 

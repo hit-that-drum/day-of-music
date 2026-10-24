@@ -1,6 +1,6 @@
 // best-of.ts — "Best of …" tournament: pick the best day of a period by playing
-// a single-elimination bracket. The bracket math is pure and generic so Month
-// (over weekly winners) and Year (over monthly winners) can reuse it later.
+// a single-elimination bracket (the pure bracket math, field and period keys
+// are in best-of-bracket.ts; this file is persistence and the status hooks).
 //
 // Results are persisted (latest overwrites) per (period, theme, periodKey) so a
 // Best of Month can be built on top of the weekly winners. Signed-in users keep
@@ -16,156 +16,32 @@
 
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { useAuth } from "@/lib/day-of-music/auth-provider";
+import { useAuth, type AuthResult } from "@/lib/day-of-music/auth-provider";
+import {
+  bestOfKey,
+  findSavedChampion,
+  monthKey,
+  monthLastDay,
+  monthWeekSegments,
+  segmentDays,
+  weekContenders,
+  weekPeriodKey,
+  type BestOfMap,
+  type BestOfMethod,
+  type BestOfResult,
+  type Contender,
+} from "@/lib/day-of-music/best-of-bracket";
 import { makeJsonStore, useStore } from "@/lib/day-of-music/local-store";
 import { getSupabaseBrowserClient, runQuery } from "@/lib/supabase/client";
-import { addDays, fmtDate, parseDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
+import { fmtDate, parseDate } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { resolveActiveTheme, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
 import { useT } from "@/lib/day-of-music/i18n";
-import { readUserMetadata } from "@/lib/day-of-music/user-metadata";
-
-export type BestOfMethod = "sequential" | "random";
-export type BestOfPeriod = "week" | "month" | "year";
-export type BestOfResult = {
-  /** YYYY-MM-DD of the winning day (resolved back to the live album via the
-   *  journal, so the stored winner always reflects the latest album at that day). */
-  winnerDate: string;
-  method: BestOfMethod;
-  /** ISO timestamp of when this result was decided (latest wins). */
-  decidedAt: string;
-};
-export type BestOfMap = Record<string, BestOfResult>;
-
-// ── Bracket math (pure, generic) ────────────────────────────────────────────
-
-export type Match<T> = { a: T; b: T };
-
-/** Smallest power of two ≥ n (n ≥ 1). */
-export function nextPow2(n: number): number {
-  let p = 1;
-  while (p < n) p *= 2;
-  return p;
-}
-
-/**
- * Round 1: pair the leading seeds into real matches; the trailing seeds get
- * byes (advance without playing). Byes land at the END so the last seed sits
- * out — e.g. in day order that's Sunday, matching 월vs화 / 수vs목 / 금vs토 / 일(부전승).
- * After this round the field is a power of two, so every later round is a clean
- * pairing with no byes (see pairWinners).
- */
-export function firstRound<T>(seeded: T[]): { matches: Match<T>[]; byes: T[] } {
-  const n = seeded.length;
-  if (n <= 1) return { matches: [], byes: [...seeded] };
-  const playing = 2 * n - nextPow2(n); // even, ≥ 2 for n ≥ 2
-  const matches: Match<T>[] = [];
-  for (let i = 0; i < playing; i += 2) matches.push({ a: seeded[i], b: seeded[i + 1] });
-  return { matches, byes: seeded.slice(playing) };
-}
-
-/** Pair an even-length list into matches (0,1),(2,3),… — used for every round
- *  after the first, where the field is already a power of two. */
-export function pairWinners<T>(list: T[]): Match<T>[] {
-  const matches: Match<T>[] = [];
-  for (let i = 0; i + 1 < list.length; i += 2) matches.push({ a: list[i], b: list[i + 1] });
-  return matches;
-}
-
-/** Fisher–Yates shuffle into a new array. Math.random is fine client-side. */
-export function shuffle<T>(items: T[]): T[] {
-  const a = [...items];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-// ── The contender field ─────────────────────────────────────────────────────
-
-export type Contender = { date: string; album: Album };
-
-/**
- * The days this segment judges. Normally the whole Mon–Sun week; in
- * split-by-month mode only the days in labelDate's month — e.g. a week whose
- * July part starts Wednesday contends Wed→Sun, dropping the June Mon/Tue —
- * mirroring which cells the grid keeps active.
- */
-export function segmentDays(days: Date[], labelDate: Date, splitByMonth: boolean): Date[] {
-  if (!splitByMonth) return days;
-  const month = labelDate.getMonth();
-  const year = labelDate.getFullYear();
-  return days.filter((d) => d.getMonth() === month && d.getFullYear() === year);
-}
-
-/**
- * The tournament field for one week segment: its filled days, in day order.
- * Shared by the modal and the button's status so the two can never disagree
- * about who is in the running.
- */
-export function weekContenders(
-  days: Date[],
-  albumsByDate: Record<string, Album>,
-  labelDate: Date,
-  splitByMonth: boolean,
-): Contender[] {
-  return segmentDays(days, labelDate, splitByMonth)
-    .map((d) => ({ date: fmtDate(d), album: albumsByDate[fmtDate(d)] }))
-    .filter((c): c is Contender => Boolean(c.album));
-}
-
-// ── Period keys ─────────────────────────────────────────────────────────────
-
-/** Canonical week id = the week's Monday (YYYY-MM-DD). */
-export function weekKey(weekStart: Date): string {
-  return fmtDate(startOfWeek(weekStart));
-}
-
-/** Canonical month id = the month's 1st (YYYY-MM-DD). */
-export function monthKey(anchor: Date): string {
-  return fmtDate(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
-}
-
-/** Last calendar day of the anchor's month. */
-export function monthLastDay(anchor: Date): Date {
-  return new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
-}
-
-/**
- * Every week segment that touches the anchor's month, each carrying the period
- * key its Best of Week is stored under — the same key the weekly board writes,
- * so the month can look up results the user already decided there.
- *
- * A month-straddling week behaves differently per mode, exactly as the board
- * does: split mode gives each month its own segment (two keys, judged
- * separately), while continuous mode has one shared week keyed by its Monday —
- * which is why the same week can appear in both neighbouring months here. Its
- * champion still counts for only one of them (see useBestOfMonthStatus).
- */
-export function monthWeekSegments(
-  anchor: Date,
-  splitByMonth: boolean,
-): { key: string; days: Date[]; labelDate: Date }[] {
-  const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-  const last = monthLastDay(anchor);
-  const segments: { key: string; days: Date[]; labelDate: Date }[] = [];
-  for (let ws = startOfWeek(first); ws <= last; ws = addDays(ws, 7)) {
-    const days = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
-    const labelDate = segmentDays(days, first, splitByMonth)[0] ?? ws;
-    segments.push({ key: fmtDate(labelDate), days, labelDate });
-  }
-  return segments;
-}
-
-/** Storage key for one result: e.g. "week:daily:2026-07-27". */
-export function bestOfKey(period: BestOfPeriod, theme: string, periodKey: string): string {
-  return `${period}:${theme}:${periodKey}`;
-}
+import { readUserMetadata, type UserMetadata } from "@/lib/day-of-music/user-metadata";
 
 // ── Persistence (guest localStorage / signed-in public.best_of) ──────────────
 
@@ -192,6 +68,43 @@ function toRow(userId: string, key: string, r: BestOfResult): BestOfRow & { user
   return { user_id: userId, key, winner_date: r.winnerDate, method: r.method, decided_at: r.decidedAt };
 }
 
+// Signed in, before the table has loaded: one stable empty map.
+const NO_RESULTS: BestOfMap = {};
+
+// Accounts whose user_metadata.bestOf move has started this page load. Module-
+// wide because several components use useBestOf at once (the board's buttons
+// and an open modal), and each would otherwise start the same move.
+const migratingUsers = new Set<string>();
+
+/** Move anything still in user_metadata.bestOf into the table, then clear the
+ *  key so the account's access token shrinks back to a normal size — which is
+ *  the whole point of the migration, and the only way an already-bloated
+ *  account recovers without being touched by hand. Rejects if either step
+ *  fails, leaving the metadata in place to retry. */
+async function migrateLegacyBestOf(
+  userId: string,
+  legacy: BestOfMap,
+  remote: BestOfMap,
+  updateUserMetadata: (patch: Partial<UserMetadata>) => Promise<AuthResult>,
+): Promise<void> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return;
+  // Table rows win over the legacy copy, so a result decided since the move
+  // isn't rolled back by a stale token still carrying the old map.
+  const rows = Object.entries(legacy)
+    .filter(([key]) => !remote[key])
+    .map(([key, r]) => toRow(userId, key, r));
+  if (rows.length) {
+    await runQuery(
+      "best_of migration upsert",
+      supabase.from("best_of").upsert(rows, { onConflict: "user_id,key" }),
+    );
+  }
+  // Only drop the metadata once the rows are safely persisted.
+  const { error } = await updateUserMetadata({ bestOf: null });
+  if (error) throw new Error(error);
+}
+
 async function fetchBestOf(userId: string | null): Promise<BestOfMap> {
   const supabase = getSupabaseBrowserClient();
   if (!supabase || !userId) return {};
@@ -204,7 +117,8 @@ async function fetchBestOf(userId: string | null): Promise<BestOfMap> {
 
 /** Read/write persisted Best-of results. The map is loaded once and read
  *  synchronously, so callers keep the same shape they had when this was backed
- *  by user_metadata — only the storage underneath changed. */
+ *  by user_metadata — only the storage underneath changed. `get` changes only
+ *  with the results and `set` only on sign-in/out, so both can be effect deps. */
 export function useBestOf(): {
   get: (key: string) => BestOfResult | undefined;
   set: (key: string, result: BestOfResult) => void;
@@ -244,58 +158,39 @@ export function useBestOf(): {
     onSettled: () => void queryClient.invalidateQueries({ queryKey }),
   });
 
-  // One-time move of anything still in user_metadata.bestOf. Copy the results
-  // into the table, then clear the key so the account's access token shrinks
-  // back to a normal size — which is the whole point of the migration, and the
-  // only way an already-bloated account recovers without being touched by hand.
-  const migrated = useRef(false);
+  // A destructured mutate is stable across renders; the mutation object isn't.
+  const { mutate } = upsert;
+
   const remote = query.data;
+  // One-time move of anything still in user_metadata.bestOf (see
+  // migrateLegacyBestOf), once the table's own rows have loaded.
   useEffect(() => {
-    if (!signedIn || !userId || migrated.current || !remote) return;
-    const legacy = (user && readUserMetadata(user).bestOf) ?? null;
+    if (!signedIn || !userId || !user || !remote || migratingUsers.has(userId)) return;
+    const legacy = readUserMetadata(user).bestOf;
     if (!legacy || !Object.keys(legacy).length) return;
-    migrated.current = true;
-
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
-    // Table rows win over the legacy copy, so a result decided since the move
-    // isn't rolled back by a stale token still carrying the old map.
-    const rows = Object.entries(legacy)
-      .filter(([key]) => !remote[key])
-      .map(([key, r]) => toRow(userId, key, r));
-
-    void (async () => {
-      try {
-        if (rows.length) {
-          await runQuery(
-            "best_of migration upsert",
-            supabase.from("best_of").upsert(rows, { onConflict: "user_id,key" }),
-          );
-        }
-        // Only drop the metadata once the rows are safely persisted.
-        const { error } = await updateUserMetadata({ bestOf: null });
-        if (error) throw new Error(error);
-        void queryClient.invalidateQueries({ queryKey });
-      } catch (e) {
-        // Leave the metadata in place and retry on the next load: a failed
-        // move must not lose results.
-        migrated.current = false;
+    migratingUsers.add(userId);
+    migrateLegacyBestOf(userId, legacy, remote, updateUserMetadata).then(
+      () => void queryClient.invalidateQueries({ queryKey }),
+      (e: unknown) => {
+        // Retry on the next load: a failed move must not lose results.
+        migratingUsers.delete(userId);
         console.error("best_of: migration from user_metadata failed", e);
-      }
-    })();
+      },
+    );
   }, [signedIn, userId, remote, user, updateUserMetadata, queryClient, queryKey]);
 
-  if (signedIn) {
-    const map = remote ?? {};
-    return {
-      get: (key) => map[key],
-      set: (key, result) => upsert.mutate({ key, result }),
-    };
-  }
-  return {
-    get: (key) => local[key],
-    set: (key, result) => store.set({ ...local, [key]: result }),
-  };
+  const results = signedIn ? (remote ?? NO_RESULTS) : local;
+  const get = useCallback((key: string) => results[key], [results]);
+  const set = useCallback(
+    (key: string, result: BestOfResult) => {
+      if (signedIn) mutate({ key, result });
+      // From the store itself, not this render's snapshot, so two writes in a
+      // row both land.
+      else store.set({ ...store.getSnapshot(), [key]: result });
+    },
+    [signedIn, mutate],
+  );
+  return useMemo(() => ({ get, set }), [get, set]);
 }
 
 // ── Status (for the entry button) ───────────────────────────────────────────
@@ -338,10 +233,11 @@ export function useBestOfWeekStatus(
   const contenders = weekContenders(days, albumsByDate, labelDate, splitByMonth);
 
   const theme = resolveActiveTheme(themes, activeTheme);
-  const saved = bestOf.get(bestOfKey("week", theme, fmtDate(labelDate)));
-  if (saved && contenders.some((c) => c.date === saved.winnerDate)) {
-    return { status: "done", winnerDate: saved.winnerDate, lastDay };
-  }
+  const champion = findSavedChampion(
+    bestOf.get(bestOfKey("week", theme, weekPeriodKey(labelDate))),
+    contenders,
+  );
+  if (champion) return { status: "done", winnerDate: champion.date, lastDay };
 
   // Open from the segment's last day onward — Sunday for a whole week, or the
   // last in-month day of a split segment. Compared as YYYY-MM-DD so the day
@@ -402,8 +298,7 @@ export function useBestOfMonthStatus(
   for (const seg of monthWeekSegments(anchor, splitByMonth)) {
     const field = weekContenders(seg.days, albumsByDate, seg.labelDate, splitByMonth);
     if (field.length === 0) continue; // nothing was logged that week — no champion owed
-    const saved = bestOf.get(bestOfKey("week", theme, seg.key));
-    const champion = saved && field.find((c) => c.date === saved.winnerDate);
+    const champion = findSavedChampion(bestOf.get(bestOfKey("week", theme, seg.key)), field);
     if (!champion) {
       pendingWeeks += 1;
       continue;
@@ -412,9 +307,9 @@ export function useBestOfMonthStatus(
     if (d.getMonth() === month && d.getFullYear() === year) contenders.push(champion);
   }
 
-  const saved = bestOf.get(bestOfKey("month", theme, monthKey(anchor)));
-  if (saved && contenders.some((c) => c.date === saved.winnerDate)) {
-    return { status: "done", contenders, winnerDate: saved.winnerDate, pendingWeeks, lastDay };
+  const champion = findSavedChampion(bestOf.get(bestOfKey("month", theme, monthKey(anchor))), contenders);
+  if (champion) {
+    return { status: "done", contenders, winnerDate: champion.date, pendingWeeks, lastDay };
   }
   if (fmtDate(lastDay) > fmtDate(today)) {
     return { status: "locked", contenders, pendingWeeks, lastDay };

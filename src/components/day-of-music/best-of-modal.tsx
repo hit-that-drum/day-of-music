@@ -17,33 +17,26 @@ import { DOW, DOW_KO, parseDate } from "@/lib/day-of-music/data";
 import { findTheme, formatThemeLabel, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
 import { displayHandle, useProfile } from "@/lib/day-of-music/profile";
 import { useT } from "@/lib/day-of-music/i18n";
+import { useBestOf } from "@/lib/day-of-music/best-of";
 import {
-  firstRound,
-  pairWinners,
+  advance,
+  createTourney,
+  findSavedChampion,
+  roundStage,
   shuffle,
-  useBestOf,
   type BestOfMethod,
   type Contender,
-  type Match,
-} from "@/lib/day-of-music/best-of";
+  type Tourney,
+} from "@/lib/day-of-music/best-of-bracket";
 import { saveCardAsImage } from "@/lib/day-of-music/save-card";
 import { Button, Stars } from "@/components/day-of-music/atoms";
 import { Cover } from "@/components/day-of-music/cover";
 import { Modal } from "@/components/day-of-music/modal";
 
-type Tourney = {
-  round: number;
-  matches: Match<Contender>[];
-  /** Byes to append after this round's winners (round 1 only). */
-  byes: Contender[];
-  mi: number; // current match index within `matches`
-  winners: Contender[]; // winners chosen so far this round
-};
-
 type State =
   | { phase: "empty" }
   | { phase: "options" }
-  | { phase: "play"; method: BestOfMethod; tour: Tourney }
+  | { phase: "play"; method: BestOfMethod; tour: Tourney<Contender> }
   | { phase: "champion"; champion: Contender; method: BestOfMethod | null; saved: boolean };
 
 export function BestOfModal({
@@ -88,7 +81,7 @@ export function BestOfModal({
   // a saved result → show it; 0 contenders → empty; 1 → auto-champion; else pick.
   const [state, setState] = useState<State>(() => {
     const saved = bestOf.get(storeKey);
-    const savedWinner = saved && contenders.find((c) => c.date === saved.winnerDate);
+    const savedWinner = findSavedChampion(saved, contenders);
     if (saved && savedWinner) {
       return { phase: "champion", champion: savedWinner, method: saved.method, saved: true };
     }
@@ -99,8 +92,9 @@ export function BestOfModal({
     return { phase: "options" };
   });
 
-  // Persist a freshly-decided champion (skips the already-saved case). Covers
-  // the N=1 auto-champion (mount) and, via `state`, guards against re-writes.
+  // Persist the N=1 auto-champion decided at mount (a bracket's champion is
+  // saved where it's picked). The ref keeps it to one write — StrictMode's
+  // second run included — until a redo starts a new tournament.
   const persistedRef = useRef(false);
   useEffect(() => {
     if (state.phase !== "champion" || state.saved || persistedRef.current) return;
@@ -110,45 +104,27 @@ export function BestOfModal({
       method: state.method ?? "sequential",
       decidedAt: new Date().toISOString(),
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.phase]);
+  }, [state, storeKey, bestOf]);
 
   function start(method: BestOfMethod) {
     const seeded = method === "random" ? shuffle(contenders) : contenders;
-    const { matches, byes } = firstRound(seeded);
-    setState({ phase: "play", method, tour: { round: 1, matches, byes, mi: 0, winners: [] } });
+    setState({ phase: "play", method, tour: createTourney(seeded) });
   }
 
   function pick(winner: Contender) {
     if (state.phase !== "play") return;
-    const { round, matches, byes, mi, winners } = state.tour;
-    const nextWinners = [...winners, winner];
-
-    // More matches left in this round → advance to the next match.
-    if (mi + 1 < matches.length) {
-      setState({ ...state, tour: { ...state.tour, mi: mi + 1, winners: nextWinners } });
+    const next = advance(state.tour, winner);
+    if (next.kind === "next") {
+      setState({ ...state, tour: next.tour });
       return;
     }
-
-    // Round complete: winners then byes advance (byes trail, so the last seed
-    // meets the last winner).
-    const advancing = [...nextWinners, ...byes];
-    if (advancing.length === 1) {
-      const champ = advancing[0];
-      persistedRef.current = true;
-      bestOf.set(storeKey, {
-        winnerDate: champ.date,
-        method: state.method,
-        decidedAt: new Date().toISOString(),
-      });
-      setState({ phase: "champion", champion: champ, method: state.method, saved: true });
-      return;
-    }
-    setState({
-      phase: "play",
+    persistedRef.current = true;
+    bestOf.set(storeKey, {
+      winnerDate: next.champion.date,
       method: state.method,
-      tour: { round: round + 1, matches: pairWinners(advancing), byes: [], mi: 0, winners: [] },
+      decidedAt: new Date().toISOString(),
     });
+    setState({ phase: "champion", champion: next.champion, method: state.method, saved: true });
   }
 
   function redo() {
@@ -163,13 +139,12 @@ export function BestOfModal({
     else toast.error(t("share.imageFailed"));
   }
 
-  // Name the round by how many contenders enter it (byes included), so a round
-  // with a bye is labelled by its true stage — e.g. 1 match + 1 bye = 3 entrants
-  // is a semifinal, not a "final".
-  const roundName = (tour: Tourney): string => {
-    const entrants = tour.matches.length * 2 + tour.byes.length;
-    if (entrants <= 2) return t("bow.final");
-    if (entrants <= 4) return t("bow.semifinal");
+  // Labelled by its true stage (see roundStage): a round with a bye isn't
+  // named by its match count.
+  const roundName = (tour: Tourney<Contender>): string => {
+    const stage = roundStage(tour);
+    if (stage === "final") return t("bow.final");
+    if (stage === "semifinal") return t("bow.semifinal");
     return t("bow.round", { n: tour.round });
   };
 
