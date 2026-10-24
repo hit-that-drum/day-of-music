@@ -24,7 +24,8 @@ import {
   withTimeout,
 } from "@/lib/supabase/client";
 
-type AuthResult = { error: string | null };
+export type AuthResult = { error: string | null };
+export type OAuthProvider = "google" | "kakao";
 
 type AuthContextValue = {
   configured: boolean;
@@ -33,15 +34,16 @@ type AuthContextValue = {
   accessToken: string | null;
   signUpWithPassword: (email: string, password: string) => Promise<AuthResult>;
   signInWithPassword: (email: string, password: string) => Promise<AuthResult>;
-  signInWithGoogle: () => Promise<void>;
-  signInWithKakao: () => Promise<void>;
+  /** Leaves for the provider's sign-in page; resolves (with the error) only
+   *  when that redirect couldn't start. */
+  signInWithOAuth: (provider: OAuthProvider) => Promise<AuthResult>;
   signOut: () => Promise<void>;
   /** Set/change the signed-in user's password (no re-auth; session-based). */
   updatePassword: (password: string) => Promise<AuthResult>;
   /** Permanently delete the account + its data (server route, service role). */
   deleteAccount: () => Promise<AuthResult>;
   /** Merge keys into the account's user_metadata so profile prefs sync. */
-  updateUserMetadata: (patch: Record<string, unknown>) => Promise<void>;
+  updateUserMetadata: (patch: Record<string, unknown>) => Promise<AuthResult>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -115,26 +117,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null };
   }, []);
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithOAuth = useCallback(async (provider: OAuthProvider) => {
     const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
-    // Google redirects back to /auth/callback, which exchanges the PKCE code
-    // for a session before sending the user on to /week.
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
+    if (!supabase) return { error: "Supabase is not configured." };
+    // Google and Kakao both redirect back to /auth/callback, which exchanges
+    // the PKCE code for a session before sending the user on to /week.
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-  }, []);
-
-  const signInWithKakao = useCallback(async () => {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
-    // Same flow as Google — Kakao redirects back to /auth/callback, which
-    // exchanges the PKCE code for a session before sending the user to /week.
-    await supabase.auth.signInWithOAuth({
-      provider: "kakao",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
+    return { error: error?.message ?? null };
   }, []);
 
   const signOut = useCallback(async () => {
@@ -279,11 +271,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateUserMetadata = useCallback(async (patch: Record<string, unknown>) => {
     const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
+    if (!supabase) return { error: "Supabase is not configured." };
     // GoTrue merges these keys into user_metadata.
     const { data, error } = await supabase.auth.updateUser({ data: patch });
+    if (error) return { error: error.message };
     // Reflect the new metadata immediately (onAuthStateChange also fires).
-    if (!error && data.user) setSession((s) => (s ? { ...s, user: data.user } : s));
+    if (data.user) setSession((s) => (s ? { ...s, user: data.user } : s));
+    return { error: null };
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -294,8 +288,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       accessToken: session?.access_token ?? null,
       signUpWithPassword,
       signInWithPassword,
-      signInWithGoogle,
-      signInWithKakao,
+      signInWithOAuth,
       signOut,
       updatePassword,
       deleteAccount,
@@ -307,8 +300,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       signUpWithPassword,
       signInWithPassword,
-      signInWithGoogle,
-      signInWithKakao,
+      signInWithOAuth,
       signOut,
       updatePassword,
       deleteAccount,

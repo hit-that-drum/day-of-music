@@ -7,7 +7,7 @@ import { Fragment, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { useAuth } from "@/lib/day-of-music/auth-provider";
+import { useAuth, type OAuthProvider } from "@/lib/day-of-music/auth-provider";
 import { BrandMark, Button } from "@/components/day-of-music/atoms";
 import { passwordIssues } from "@/lib/day-of-music/password";
 import { PasswordRules } from "@/components/day-of-music/password-rules";
@@ -37,13 +37,7 @@ function renderWithLinks(
 
 export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
-  const {
-    configured,
-    signInWithPassword,
-    signUpWithPassword,
-    signInWithGoogle,
-    signInWithKakao,
-  } = useAuth();
+  const { configured, signInWithPassword, signUpWithPassword, signInWithOAuth } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "busy" | "error" | "sent">(
@@ -95,6 +89,16 @@ export function AuthForm({ mode }: { mode: Mode }) {
       return;
     }
     router.push("/week");
+  }
+
+  // On success the browser is already leaving for the provider; only a redirect
+  // that couldn't start comes back here.
+  async function handleOAuth(provider: OAuthProvider) {
+    const { error } = await signInWithOAuth(provider);
+    if (error) {
+      setStatus("error");
+      setMessage(error);
+    }
   }
 
   return (
@@ -152,7 +156,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <Button
             className="dom-btn-with-icon"
             variant="ghost"
-            onClick={signInWithGoogle}
+            onClick={() => void handleOAuth("google")}
             disabled={!configured}
           >
             <GoogleIcon />
@@ -161,7 +165,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <Button
             className="dom-btn-with-icon"
             variant="ghost"
-            onClick={signInWithKakao}
+            onClick={() => void handleOAuth("kakao")}
             disabled={!configured}
           >
             <KakaoIcon />

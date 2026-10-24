@@ -12,7 +12,7 @@ import jaLocale from "i18n-iso-countries/langs/ja.json";
 import zhLocale from "i18n-iso-countries/langs/zh.json";
 import esLocale from "i18n-iso-countries/langs/es.json";
 
-import { useAuth } from "@/lib/day-of-music/auth-provider";
+import { useAuth, type AuthResult } from "@/lib/day-of-music/auth-provider";
 import { makeStringStore, useStore } from "@/lib/day-of-music/local-store";
 import type { LanguagePref, Locale } from "@/lib/day-of-music/i18n";
 
@@ -141,7 +141,9 @@ export function useProfile(): {
   username: string;
   country: string;
   language: LanguagePref;
-  save: (patch: ProfilePatch) => void;
+  /** Resolves with the error when a synced save was rejected (local saves
+   *  can't fail). */
+  save: (patch: ProfilePatch) => Promise<AuthResult>;
   synced: boolean;
 } {
   const { configured, user, updateUserMetadata } = useAuth();
@@ -156,7 +158,7 @@ export function useProfile(): {
       // No saved country yet → fall back to the locale's storefront, not US.
       country: (meta.country as string | undefined) ?? detectStorefront(),
       language: (meta.language as LanguagePref | undefined) ?? DEFAULT_LANGUAGE,
-      save: (patch) => void updateUserMetadata(patch),
+      save: (patch) => updateUserMetadata(patch),
       synced: true,
     };
   }
@@ -164,10 +166,11 @@ export function useProfile(): {
     username: localUsername,
     country: localCountry,
     language: localLanguage as LanguagePref,
-    save: (patch) => {
+    save: async (patch) => {
       if (patch.username !== undefined) usernameStore.set(patch.username);
       if (patch.country !== undefined) countryStore.set(patch.country);
       if (patch.language !== undefined) languageStore.set(patch.language);
+      return { error: null };
     },
     synced: false,
   };

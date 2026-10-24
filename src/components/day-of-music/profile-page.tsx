@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
-import { useAuth } from "@/lib/day-of-music/auth-provider";
+import { useAuth, type AuthResult } from "@/lib/day-of-music/auth-provider";
 import { Button, IconButton } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
 import { DomSelectField } from "@/components/day-of-music/dom-select";
@@ -293,11 +293,18 @@ function SettingsForm({
   initialName: string;
   initialCountry: string;
   synced: boolean;
-  onSave: (patch: ProfilePatch) => void;
+  onSave: (patch: ProfilePatch) => Promise<AuthResult>;
 }) {
   const [name, setName] = useState(initialName);
   const [country, setCountry] = useState(initialCountry);
   const t = useT();
+
+  // A save that lands re-keys this form with the new values; a rejected one
+  // leaves the edits in place to try again.
+  async function save() {
+    const { error } = await onSave({ username: name.trim(), country });
+    if (error) toast.error(t("toast.saveFailed"), { description: error });
+  }
   const { locale } = useLanguage();
   // Country names + collation follow the current UI language. { code, label } →
   // { value, label } for DomSelectField; rebuilt only when the locale changes.
@@ -336,7 +343,7 @@ function SettingsForm({
         />
         <Button
           disabled={!dirty}
-          onClick={() => onSave({ username: name.trim(), country })}
+          onClick={() => void save()}
         >
           {t("profile.save")}
         </Button>
@@ -356,10 +363,16 @@ function ThemeManager({
 }: {
   initial: Theme[];
   synced: boolean;
-  onSave: (themes: Theme[]) => void;
+  onSave: (themes: Theme[]) => Promise<AuthResult>;
 }) {
   const [list, setList] = useState<Theme[]>(initial);
   const t = useT();
+
+  // As in SettingsForm: a rejected save keeps the edited list.
+  async function save() {
+    const { error } = await onSave(list);
+    if (error) toast.error(t("toast.saveFailed"), { description: error });
+  }
   // `initial` is fixed for a given mount (the parent re-keys on theme-id change),
   // so memoize against `list` to avoid stringifying both lists every render.
   const dirty = useMemo(
@@ -428,7 +441,7 @@ function ThemeManager({
           <Plus size={16} strokeWidth={2} aria-hidden="true" />
           {t("profile.themes.add")}
         </Button>
-        <Button disabled={!dirty} onClick={() => onSave(list)}>
+        <Button disabled={!dirty} onClick={() => void save()}>
           {t("profile.themes.save")}
         </Button>
       </div>

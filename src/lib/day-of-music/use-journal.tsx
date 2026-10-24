@@ -366,8 +366,10 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       if (!configured) writeLocalEntries(next.entries);
       return { previous };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err, vars, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
+      // As in upsert: moveSlot (optimistic:false) owns its own failure toast.
+      if (vars.optimistic !== false) toast.error(t("toast.removeFailed"), { description: err.message });
     },
     // Same gate as upsert.onSettled: moveSlot invalidates once, at the end.
     onSettled: (_data, _err, vars) => {

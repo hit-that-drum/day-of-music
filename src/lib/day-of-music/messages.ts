@@ -805,6 +805,8 @@ export const MESSAGES = {
   "toast.loggedDateDesc": { en: "{date} · {rating}★", ko: "{date} · {rating}★", ja: "{date} · {rating}★", zh: "{date} · {rating}★", es: "{date} · {rating}★" },
   "toast.loadFailed": { en: "Couldn't load your journal: {reason}", ko: "기록을 불러오지 못했어요: {reason}", ja: "記録を読み込めませんでした: {reason}", zh: "无法加载记录：{reason}", es: "No se pudo cargar tu diario: {reason}" },
   "toast.saveFailed": { en: "Couldn't save", ko: "저장하지 못했어요", ja: "保存できませんでした", zh: "保存失败", es: "No se pudo guardar" },
+  // The removal is rolled back, so the entry is on the board again.
+  "toast.removeFailed": { en: "Couldn't remove it — it's back on the board", ko: "삭제하지 못했어요 — 보드에 다시 표시했어요", ja: "削除できませんでした — ボードに戻しました", zh: "无法移除——已恢复到看板上", es: "No se pudo quitar: vuelve a estar en el tablero" },
 
   // ── Toasts (move / swap from Day Detail) ───────────────────────────────
   "toast.moved": { en: "Moved to {date}", ko: "{date}로 옮겼어요", ja: "{date}に移動しました", zh: "已移到 {date}", es: "Movido al {date}" },

@@ -18,6 +18,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { makeJsonStore, useStore } from "@/lib/day-of-music/local-store";
@@ -25,6 +26,7 @@ import { getSupabaseBrowserClient, runQuery } from "@/lib/supabase/client";
 import { addDays, fmtDate, parseDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { resolveActiveTheme, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
+import { useT } from "@/lib/day-of-music/i18n";
 
 export type BestOfMethod = "sequential" | "random";
 export type BestOfPeriod = "week" | "month" | "year";
@@ -207,6 +209,7 @@ export function useBestOf(): {
   set: (key: string, result: BestOfResult) => void;
 } {
   const { configured, user, updateUserMetadata } = useAuth();
+  const t = useT();
   const userId = user?.id ?? null;
   const signedIn = configured && Boolean(user);
   const local = useStore(store);
@@ -233,8 +236,9 @@ export function useBestOf(): {
       queryClient.setQueryData<BestOfMap>(queryKey, { ...(previous ?? {}), [key]: result });
       return { previous };
     },
-    onError: (_e, _vars, ctx) => {
+    onError: (err, _vars, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
+      toast.error(t("toast.saveFailed"), { description: err.message });
     },
     onSettled: () => void queryClient.invalidateQueries({ queryKey }),
   });
@@ -268,7 +272,8 @@ export function useBestOf(): {
           );
         }
         // Only drop the metadata once the rows are safely persisted.
-        await updateUserMetadata({ bestOf: null });
+        const { error } = await updateUserMetadata({ bestOf: null });
+        if (error) throw new Error(error);
         void queryClient.invalidateQueries({ queryKey });
       } catch (e) {
         // Leave the metadata in place and retry on the next load: a failed

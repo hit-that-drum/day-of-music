@@ -6,7 +6,7 @@
 "use client";
 
 
-import { useAuth } from "@/lib/day-of-music/auth-provider";
+import { useAuth, type AuthResult } from "@/lib/day-of-music/auth-provider";
 import { makeJsonStore, makeStringStore, useStore } from "@/lib/day-of-music/local-store";
 
 export type Theme = { id: string; name: string; emoji: string };
@@ -45,10 +45,11 @@ export function formatThemeLabel(theme: Theme): string {
 const activeStore = makeStringStore("dom.activeTheme.v1", DEFAULT_THEME_ID);
 const localThemesStore = makeJsonStore<Theme[]>("dom.themes.v1", DEFAULT_THEMES);
 
-/** Theme definitions + a single save(). Synced to the account when signed in. */
+/** Theme definitions + a single save(). Synced to the account when signed in;
+ *  a rejected sync resolves with its error. */
 export function useThemes(): {
   themes: Theme[];
-  saveThemes: (themes: Theme[]) => void;
+  saveThemes: (themes: Theme[]) => Promise<AuthResult>;
   synced: boolean;
 } {
   const { configured, user, updateUserMetadata } = useAuth();
@@ -57,11 +58,14 @@ export function useThemes(): {
   if (configured && user) {
     const raw = user.user_metadata?.themes;
     const themes = Array.isArray(raw) && raw.length ? (raw as Theme[]) : DEFAULT_THEMES;
-    return { themes, saveThemes: (t) => void updateUserMetadata({ themes: t }), synced: true };
+    return { themes, saveThemes: (t) => updateUserMetadata({ themes: t }), synced: true };
   }
   return {
     themes: localThemes.length ? localThemes : DEFAULT_THEMES,
-    saveThemes: localThemesStore.set,
+    saveThemes: async (t) => {
+      localThemesStore.set(t);
+      return { error: null };
+    },
     synced: false,
   };
 }

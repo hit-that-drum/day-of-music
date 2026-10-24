@@ -11,6 +11,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { toast } from "sonner";
 
 import { useProfile } from "@/lib/day-of-music/profile";
 import { MESSAGES, type MessageKey } from "@/lib/day-of-music/messages";
@@ -83,7 +84,13 @@ export function useLanguage(): {
   return {
     locale,
     pref,
-    setLanguage: (next) => save({ language: next }),
+    // Every language switch (header, More sheet) goes through here, so a
+    // rejected sync is reported here once, in the language still showing.
+    setLanguage: (next) => {
+      void save({ language: next }).then(({ error }) => {
+        if (error) toast.error(translate(locale, "toast.saveFailed"), { description: error });
+      });
+    },
     synced,
   };
 }
