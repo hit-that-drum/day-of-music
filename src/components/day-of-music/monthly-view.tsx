@@ -5,7 +5,6 @@
 import { useRef, useState } from "react";
 import dayjs from "dayjs";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { toast } from "sonner";
 
 import {
   addDays,
@@ -19,6 +18,7 @@ import { useBestOfMonthStatus } from "@/lib/day-of-music/best-of";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { useNavSlide, useSwipeNav } from "@/lib/day-of-music/use-swipe-nav";
 import { Button, IconButton } from "@/components/day-of-music/atoms";
+import { BestOfButton } from "@/components/day-of-music/best-of-button";
 import { Cover } from "@/components/day-of-music/cover";
 
 export function MonthlyView({
@@ -131,21 +131,13 @@ export function MonthlyView({
                 {t("month.thisMonth").toUpperCase()}
               </Button>
             )}
-            <Button
-              variant="ghost"
-              onClick={bestOfBlocked ? () => toast(bestOfHint) : onBestOf}
-              data-bestof={bestOf.status}
-              title={bestOfHint}
-              aria-disabled={bestOfBlocked || undefined}
-              aria-label={bestOfHint && `${t("bom.button")} — ${bestOfHint}`}
-            >
-              {bestOf.status === "done" && (
-                <span className="dom-bestof-trophy" aria-hidden="true">
-                  🏆
-                </span>
-              )}
-              {t("bom.button")}
-            </Button>
+            <BestOfButton
+              status={bestOf.status}
+              hint={bestOfHint}
+              blocked={bestOfBlocked}
+              label={t("bom.button")}
+              onOpen={onBestOf}
+            />
             <Button onClick={onShare}>{t("month.shareMonth").toUpperCase()}</Button>
           </div>
           <div className="dom-month-arrows">

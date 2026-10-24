@@ -4,7 +4,6 @@
 
 import { useCallback, useRef, useState, type DragEvent } from "react";
 import { ArrowLeft, ArrowRight, CalendarSearch } from "lucide-react";
-import { toast } from "sonner";
 
 import {
   fmtDate,
@@ -17,6 +16,7 @@ import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useBestOfWeekStatus, type BestOfStatus } from "@/lib/day-of-music/best-of";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { useNavSlide, useSwipeNav } from "@/lib/day-of-music/use-swipe-nav";
+import { BestOfButton } from "@/components/day-of-music/best-of-button";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button, IconButton, MetaLine } from "@/components/day-of-music/atoms";
 import { WeekPicker } from "@/components/day-of-music/week-picker";
@@ -198,21 +198,13 @@ function BoardActions({ bestOfStatus, bestOfHint, locked, onBestOf, onShare }: B
   const t = useT();
   return (
     <div className="dom-board-actions">
-      <Button
-        variant="ghost"
-        onClick={locked ? () => toast(bestOfHint) : onBestOf}
-        data-bestof={bestOfStatus}
-        title={bestOfHint}
-        aria-disabled={locked || undefined}
-        aria-label={bestOfHint && `${t("bow.button")} — ${bestOfHint}`}
-      >
-        {bestOfStatus === "done" && (
-          <span className="dom-bestof-trophy" aria-hidden="true">
-            🏆
-          </span>
-        )}
-        {t("bow.button")}
-      </Button>
+      <BestOfButton
+        status={bestOfStatus}
+        hint={bestOfHint}
+        blocked={locked}
+        label={t("bow.button")}
+        onOpen={onBestOf}
+      />
       <Button onClick={onShare}>{t("week.shareWeek").toUpperCase()}</Button>
     </div>
   );
