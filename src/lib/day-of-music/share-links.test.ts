@@ -2,10 +2,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { COVER_STYLES, type Album } from "@/lib/day-of-music/data";
 import { AESTHETIC_KEYS, TYPE_KEYS } from "@/lib/day-of-music/theme";
-import { createGuestWeekLink, sanitizeAlbum } from "@/lib/day-of-music/share-links";
+import {
+  buildMonthSharePayload,
+  buildWeekSharePayload,
+  createGuestWeekLink,
+  sanitizeAlbum,
+} from "@/lib/day-of-music/share-links";
 import {
   decodeGuestShareParam,
   isShareableArtwork,
+  monthSharePayloadSchema,
   sharePayloadSchema,
   weekSharePayloadSchema,
   type SharedAlbum,
@@ -226,3 +232,59 @@ const GOLDEN_GUEST_PARAM = [
   "nvh_Hkw_rHAxaWFnn4NH-kNTBUOqgl_ru8uJYr8IhIHzy6uXyWMDpEHDaA17cvjoWEA0BUQ9",
   "4e744FjAdAqZPgOXh__qeOVOtcS4nqnG2BY8_xHRPsXHmRhMf-_1f",
 ].join("");
+
+describe("buildWeekSharePayload / buildMonthSharePayload", () => {
+  // Mon 2026-06-29 … Sun 2026-07-05: a week split between June and July.
+  const days = Array.from({ length: 7 }, (_, i) => new Date(2026, 5, 29 + i));
+  const albumsByDate = {
+    "2026-06-30": album({ id: "itunes-jun", date: "2026-06-30", genre: "Jazz", rating: 2 }),
+    "2026-07-02": album({ id: "itunes-jul", date: "2026-07-02", rating: 4 }),
+  };
+  const owner = { username: "listener", themeLabel: "🎧 Daily" };
+
+  it("blanks the other month's days when split, and counts only the labelled month", () => {
+    const payload = buildWeekSharePayload({
+      days,
+      labelDate: new Date(2026, 6, 1),
+      splitByMonth: true,
+      albumsByDate,
+      ...owner,
+    });
+    expect(payload.title).toBe("July · Week 1");
+    expect(payload.cells.map((c) => c.outOfMonth)).toEqual([true, true, false, false, false, false, false]);
+    expect(payload.cells[1].album).toBeUndefined();
+    expect(payload.cells[3].album?.id).toBe("itunes-jul");
+    expect(payload.stats).toEqual({ count: 1, genres: 1, avg: "4.0" });
+    expect(weekSharePayloadSchema.safeParse(payload).success).toBe(true);
+  });
+
+  it("keeps the whole week when continuous, without the private fields", () => {
+    const payload = buildWeekSharePayload({
+      days,
+      labelDate: days[0],
+      splitByMonth: false,
+      albumsByDate,
+      ...owner,
+    });
+    expect(payload.title).toBe("June · Week 5");
+    expect(payload.cells.filter((c) => c.album).map((c) => c.album?.id)).toEqual(["itunes-jun", "itunes-jul"]);
+    expect(payload.cells[1].album).not.toHaveProperty("note");
+  });
+
+  it("lays the month out as the board does, with only that month's stats", () => {
+    const payload = buildMonthSharePayload({
+      anchor: new Date(2026, 6, 15),
+      albums: Object.values(albumsByDate),
+      albumsByDate,
+      ...owner,
+    });
+    expect(payload.title).toBe("July · 2026");
+    expect(payload.numWeeks).toBe(5);
+    expect(payload.cells).toHaveLength(35);
+    // The June 30 cell is outside July: no album, even though one is logged there.
+    expect(payload.cells[1]).toEqual({ dayNum: 30, inMonth: false, album: undefined });
+    expect(payload.cells.filter((c) => c.album).map((c) => c.album?.id)).toEqual(["itunes-jul"]);
+    expect(payload.stats.count).toBe(1);
+    expect(monthSharePayloadSchema.safeParse(payload).success).toBe(true);
+  });
+});

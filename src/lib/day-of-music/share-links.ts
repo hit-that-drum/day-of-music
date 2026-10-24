@@ -9,15 +9,24 @@
 // uploaded themselves have no address to link to, so the picture travels in
 // the payload (share-artwork.ts shrinks it to fit the transport).
 
-import type { Album } from "@/lib/day-of-music/data";
+import {
+  DOW,
+  MONTHS_LONG,
+  fmtDate,
+  isSameMonth,
+  monthGrid,
+  weekOfMonth,
+  type Album,
+} from "@/lib/day-of-music/data";
 import type { JournalAlbum } from "@/lib/day-of-music/journal";
-import type { AlbumStats } from "@/lib/day-of-music/album-stats";
+import { periodSummary, type AlbumStats } from "@/lib/day-of-music/album-stats";
 import {
   base64url,
   encodeGuestParam,
   shareThemeSchema,
   type SharedAlbum,
   type SharePayload,
+  type MonthSharePayload,
   type ShareTheme,
   type StatsSharePayload,
   type WeekSharePayload,
@@ -55,6 +64,76 @@ export function sanitizeAlbum(a: Album | JournalAlbum): SharedAlbum {
     ...(a.albumTitle ? { albumTitle: a.albumTitle } : {}),
     rating: a.rating,
     ...("theme" in a && a.theme ? { theme: a.theme } : {}),
+  };
+}
+
+// The poster titles stay English on purpose: a link is a frozen snapshot, read
+// in whatever language its viewer has (see share-posters.tsx).
+
+/** The week poster: one cell per day of the Mon–Sun strip — an album, a blank
+ *  day, or (split by month) a day outside the labelled month — and footer
+ *  stats over the albums shown. `username` is the @handle. */
+export function buildWeekSharePayload(args: {
+  days: Date[];
+  /** The week's label day: its month and week number title the poster. */
+  labelDate: Date;
+  splitByMonth: boolean;
+  albumsByDate: Record<string, Album>;
+  username: string;
+  themeLabel: string;
+}): WeekSharePayload {
+  const { labelDate, splitByMonth, albumsByDate } = args;
+  const cells = args.days.slice(0, 7).map((d) => {
+    const outOfMonth = splitByMonth && !isSameMonth(d, labelDate);
+    // Out-of-month days never carry an album.
+    const album = outOfMonth ? undefined : albumsByDate[fmtDate(d)];
+    return {
+      date: fmtDate(d),
+      dayNum: d.getDate(),
+      dow: DOW[d.getDay()],
+      outOfMonth,
+      album: album ? sanitizeAlbum(album) : undefined,
+    };
+  });
+  return {
+    v: 1,
+    kind: "week",
+    title: `${MONTHS_LONG[labelDate.getMonth()]} · Week ${weekOfMonth(labelDate)}`,
+    username: args.username,
+    themeLabel: args.themeLabel,
+    theme: readShareTheme(),
+    cells,
+    // Footer stats only count albums that belong to the labelled month.
+    stats: periodSummary(cells.flatMap((c) => (c.album ? [c.album] : []))),
+  };
+}
+
+/** The month poster: the month grid (as the monthly board lays it out) with
+ *  each in-month day's album, and the month's stats. `username` is the @handle. */
+export function buildMonthSharePayload(args: {
+  anchor: Date;
+  albums: Album[];
+  albumsByDate: Record<string, Album>;
+  username: string;
+  themeLabel: string;
+}): MonthSharePayload {
+  const { anchor, albumsByDate } = args;
+  const { days, numWeeks } = monthGrid(anchor);
+  const cells = days.map((d) => {
+    const inMonth = d.getMonth() === anchor.getMonth();
+    const album = inMonth ? albumsByDate[fmtDate(d)] : undefined;
+    return { dayNum: d.getDate(), inMonth, album: album ? sanitizeAlbum(album) : undefined };
+  });
+  return {
+    v: 1,
+    kind: "month",
+    title: `${MONTHS_LONG[anchor.getMonth()]} · ${anchor.getFullYear()}`,
+    username: args.username,
+    themeLabel: args.themeLabel,
+    theme: readShareTheme(),
+    numWeeks,
+    cells,
+    stats: periodSummary(args.albums.filter((a) => isSameMonth(a.date, anchor))),
   };
 }
 

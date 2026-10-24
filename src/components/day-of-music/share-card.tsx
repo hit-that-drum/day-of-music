@@ -8,20 +8,12 @@
 
 import { useMemo, useRef } from "react";
 
-import {
-  DOW,
-  MONTHS_LONG,
-  fmtDate,
-  isSameMonth,
-  weekOfMonth,
-} from "@/lib/day-of-music/data";
-import { periodSummary } from "@/lib/day-of-music/album-stats";
+import { MONTHS_LONG, weekOfMonth } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { displayHandle, useProfile } from "@/lib/day-of-music/profile";
 import { formatThemeLabel, useActiveThemeObject } from "@/lib/day-of-music/themes";
 import { saveCardAsImage, shareFileName } from "@/lib/day-of-music/save-card";
-import { readShareTheme, sanitizeAlbum } from "@/lib/day-of-music/share-links";
-import type { WeekSharePayload } from "@/lib/day-of-music/share-payload";
+import { buildWeekSharePayload } from "@/lib/day-of-music/share-links";
 import { WeekPoster } from "@/components/day-of-music/share-posters";
 import { PosterFit } from "@/components/day-of-music/poster-fit";
 import { ShareActions } from "@/components/day-of-music/share-actions";
@@ -51,46 +43,19 @@ export function ShareCard({
   const monthLabel = MONTHS_LONG[weekStart.getMonth()];
   const weekNum = weekOfMonth(weekStart);
 
-  const payload = useMemo<WeekSharePayload>(() => {
-    const isOutOfMonth = (d: Date) => splitByMonth && !isSameMonth(d, weekStart);
-
-    // One entry per visible day, mirroring the weekly grid (album, blank, or
-    // out-of-month). Out-of-month days never carry an album.
-    const cells = days.slice(0, 7).map((d) => {
-      const outOfMonth = isOutOfMonth(d);
-      const album = outOfMonth ? undefined : albumsByDate[fmtDate(d)];
-      return {
-        date: fmtDate(d),
-        dayNum: d.getDate(),
-        dow: DOW[d.getDay()],
-        outOfMonth,
-        album: album ? sanitizeAlbum(album) : undefined,
-      };
-    });
-
-    // Footer stats only count albums that belong to the labelled month.
-    const week = cells.flatMap((c) => (c.album ? [c.album] : []));
-
-    return {
-      v: 1,
-      kind: "week",
-      title: `${monthLabel} · Week ${weekNum}`,
-      username: displayHandle(username),
-      themeLabel,
-      theme: readShareTheme(),
-      cells,
-      stats: periodSummary(week),
-    };
-  }, [
-    days,
-    splitByMonth,
-    weekStart,
-    albumsByDate,
-    monthLabel,
-    weekNum,
-    username,
-    themeLabel,
-  ]);
+  // One cell per visible day, mirroring the weekly grid (see buildWeekSharePayload).
+  const payload = useMemo(
+    () =>
+      buildWeekSharePayload({
+        days,
+        labelDate: weekStart,
+        splitByMonth,
+        albumsByDate,
+        username: displayHandle(username),
+        themeLabel,
+      }),
+    [days, weekStart, splitByMonth, albumsByDate, username, themeLabel],
+  );
 
   async function handleSaveImage() {
     if (!cardRef.current) return false;

@@ -8,14 +8,12 @@
 
 import { useMemo, useRef } from "react";
 
-import { MONTHS_LONG, fmtDate, isSameMonth, monthGrid } from "@/lib/day-of-music/data";
-import { periodSummary } from "@/lib/day-of-music/album-stats";
+import { MONTHS_LONG } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { displayHandle, useProfile } from "@/lib/day-of-music/profile";
 import { formatThemeLabel, useActiveThemeObject } from "@/lib/day-of-music/themes";
 import { saveCardAsImage, shareFileName } from "@/lib/day-of-music/save-card";
-import { readShareTheme, sanitizeAlbum } from "@/lib/day-of-music/share-links";
-import type { MonthSharePayload } from "@/lib/day-of-music/share-payload";
+import { buildMonthSharePayload } from "@/lib/day-of-music/share-links";
 import { MonthPoster } from "@/components/day-of-music/share-posters";
 import { PosterFit } from "@/components/day-of-music/poster-fit";
 import { ShareActions } from "@/components/day-of-music/share-actions";
@@ -39,32 +37,17 @@ export function MonthShareCard({
   const month = anchor.getMonth();
   const monthLabel = MONTHS_LONG[month];
 
-  const payload = useMemo<MonthSharePayload>(() => {
-    const { days, numWeeks } = monthGrid(anchor);
-
-    const cells = days.map((d) => {
-      const inMonth = d.getMonth() === month;
-      const album = inMonth ? albumsByDate[fmtDate(d)] : undefined;
-      return {
-        dayNum: d.getDate(),
-        inMonth,
-        album: album ? sanitizeAlbum(album) : undefined,
-      };
-    });
-
-    const monthAlbums = albums.filter((a) => isSameMonth(a.date, anchor));
-    return {
-      v: 1,
-      kind: "month",
-      title: `${monthLabel} · ${year}`,
-      username: displayHandle(username),
-      themeLabel,
-      theme: readShareTheme(),
-      numWeeks,
-      cells,
-      stats: periodSummary(monthAlbums),
-    };
-  }, [anchor, month, year, monthLabel, albums, albumsByDate, username, themeLabel]);
+  const payload = useMemo(
+    () =>
+      buildMonthSharePayload({
+        anchor,
+        albums,
+        albumsByDate,
+        username: displayHandle(username),
+        themeLabel,
+      }),
+    [anchor, albums, albumsByDate, username, themeLabel],
+  );
 
   async function handleSaveImage() {
     if (!cardRef.current) return false;
