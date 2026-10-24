@@ -14,7 +14,6 @@ import {
   useEffectEvent,
   useMemo,
   useRef,
-  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -172,6 +171,9 @@ async function fetchJournal(userId: string | null): Promise<JournalResponse> {
   };
 }
 
+// The album metadata pool in local mode (no Supabase), saved alongside the
+// entries. Signed-in devices also kept one here before metadata synced to the
+// journal rows; it is now only read, once, to backfill those rows.
 function readCustomAlbums(): Album[] {
   if (typeof window === "undefined") return [];
   try {
@@ -189,40 +191,6 @@ function writeCustomAlbums(albums: Album[]): void {
   } catch {
     /* ignore quota / privacy-mode errors */
   }
-}
-
-// Tiny external store for user-added albums (from music search).
-// Two buckets: a localStorage-backed one (signed-in / unconfigured shared mode)
-// and an in-memory one for guests, which resets when the page is left.
-// The server snapshot is empty, so hydration stays consistent and React
-// re-renders with local data after mount.
-const EMPTY_ALBUMS: Album[] = [];
-let customAlbumsCache: Album[] | null = null;
-let guestAlbums: Album[] = EMPTY_ALBUMS;
-const customAlbumsListeners = new Set<() => void>();
-
-function getCustomAlbums(): Album[] {
-  if (customAlbumsCache === null) customAlbumsCache = readCustomAlbums();
-  return customAlbumsCache;
-}
-
-function getGuestAlbums(): Album[] {
-  return guestAlbums;
-}
-
-function subscribeCustomAlbums(listener: () => void): () => void {
-  customAlbumsListeners.add(listener);
-  return () => customAlbumsListeners.delete(listener);
-}
-
-function upsertCustomAlbum(album: Album, persist: boolean): void {
-  if (persist) {
-    customAlbumsCache = [...getCustomAlbums().filter((a) => a.id !== album.id), album];
-    writeCustomAlbums(customAlbumsCache);
-  } else {
-    guestAlbums = [...guestAlbums.filter((a) => a.id !== album.id), album];
-  }
-  for (const listener of customAlbumsListeners) listener();
 }
 
 // Tail of the pending-move chain (see moveSlot): each move waits for the one
@@ -275,25 +243,14 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     notifyLoadFailed(queryError);
   }, [queryError]);
 
-  // User-added albums (from music search). Guests get the in-memory bucket;
-  // signed-in users get a localStorage cache for instant optimistic renders.
-  const storeAlbums = useSyncExternalStore(
-    subscribeCustomAlbums,
-    guest ? getGuestAlbums : getCustomAlbums,
-    () => EMPTY_ALBUMS,
-  );
-
   const queryData = query.data;
-  // Album metadata pool, keyed by album id (theme/date independent). Synced
-  // Supabase blobs are the cross-device source of truth; the local store
-  // overlays them so an album just added here shows before the refetch lands.
+  // Album metadata pool, keyed by album id (theme/date independent): the
+  // cache's own album list — the synced Supabase blobs when signed in (the
+  // cross-device source of truth), localStorage in local mode, this session's
+  // albums for guests. Every metadata change goes through the upsert below,
+  // whose optimistic update writes it here, so a new album shows at once.
   const dbAlbums = queryData?.albums;
-  const poolById = useMemo(() => {
-    const byId = new Map<string, Album>();
-    for (const a of dbAlbums ?? []) byId.set(a.id, a);
-    for (const a of storeAlbums) byId.set(a.id, a);
-    return byId;
-  }, [dbAlbums, storeAlbums]);
+  const poolById = useMemo(() => new Map((dbAlbums ?? []).map((a) => [a.id, a])), [dbAlbums]);
 
   // The board is built directly from the active theme's entries, keyed by date
   // (one album per day per theme). The same album can fill multiple days. This
@@ -360,7 +317,10 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       const next = applyUpsert(previous ?? { entries: [], albums: [] }, album, lane);
       queryClient.setQueryData<JournalResponse>(queryKey, next);
       // localStorage write-through only in unconfigured (no-Supabase) mode.
-      if (!configured) writeLocalEntries(next.entries);
+      if (!configured) {
+        writeLocalEntries(next.entries);
+        writeCustomAlbums(next.albums);
+      }
       return { previous };
     },
     onError: (err, vars, ctx) => {
@@ -420,10 +380,9 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   // Log / replace the album in the (active theme, date) slot.
   const logAlbum = useCallback<JournalContextValue["logAlbum"]>(
     (album, { date, rating, note }) => {
-      upsertCustomAlbum(album, !guest); // metadata pool, for instant render
       upsertMutate({ album: { ...album, date, rating, note }, theme });
     },
-    [upsertMutate, guest, theme],
+    [upsertMutate, theme],
   );
 
   // Update the slot at a date (keeps the same album id + slot date).
@@ -432,14 +391,10 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       const base = albumsByDate[date];
       if (!base) return;
       const merged = { ...base, ...patch, date };
-      const metadataChanged = Object.keys(patch).some(
-        (key) => !["date", "note", "rating"].includes(key),
-      );
-      if (metadataChanged) upsertCustomAlbum(merged, !guest);
       // Re-persist the whole album so its metadata blob isn't dropped.
       upsertMutate({ album: merged, theme });
     },
-    [albumsByDate, guest, upsertMutate, theme],
+    [albumsByDate, upsertMutate, theme],
   );
 
   // Move (or swap) the album between two dates within the active theme. A move
@@ -458,7 +413,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   // move's delete of B racing the first's upsert onto B). Each move's writes
   // therefore wait for the previous move's to settle, and a rollback restores
   // only the two slots that move touched — never a later move's staging. The
-  // tail lives at module level (like the custom-album stores above): there is
+  // tail lives at module level: there is
   // one JournalProvider per app, and the compiler lint rejects a ref or a
   // useState holder mutated from a callback that is handed out via context.
   const moveSlot = useCallback<JournalContextValue["moveSlot"]>(
@@ -532,12 +487,11 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       // Only user-added (itunes) albums need lazy enrichment.
       if (!base || !base.id.startsWith("itunes-")) return;
       const merged = { ...base, ...patch };
-      // Refresh the metadata pool (so every day using this album re-renders),
-      // and re-persist this slot's row so it syncs.
-      upsertCustomAlbum(merged, !guest);
-      if (!guest) upsertMutate({ album: merged, theme });
+      // Re-saving the slot refreshes the album in the metadata pool (so every
+      // day showing it re-renders) and, when signed in, syncs the row.
+      upsertMutate({ album: merged, theme });
     },
-    [albumsByDate, guest, upsertMutate, theme],
+    [albumsByDate, upsertMutate, theme],
   );
 
   const removeSlot = useCallback<JournalContextValue["removeSlot"]>(
@@ -552,10 +506,13 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   // refetch includes it and it drops out of `missing`. The ref stops us from
   // re-firing the same id while its upsert is in flight.
   const backfilledRef = useRef<Set<string>>(new Set());
+  // This device's pre-sync album copies, read from localStorage once.
+  const legacyAlbumsRef = useRef<Map<string, Album> | null>(null);
   useEffect(() => {
     if (guest || !configured || !user || !queryData) return;
     const synced = new Set(queryData.albums.map((a) => a.id));
-    const local = new Map(storeAlbums.map((a) => [a.id, a]));
+    legacyAlbumsRef.current ??= new Map(readCustomAlbums().map((a) => [a.id, a]));
+    const local = legacyAlbumsRef.current;
     const missing = queryData.entries.filter(
       (e) =>
         !synced.has(e.albumId) &&
@@ -568,7 +525,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       backfilledRef.current.add(e.albumId);
       upsertMutate({ album: mergeEntry(meta, e), theme: e.theme });
     }
-  }, [guest, configured, user, queryData, storeAlbums, upsertMutate]);
+  }, [guest, configured, user, queryData, upsertMutate]);
 
   // Recover album metadata that's missing on this device entirely — older rows
   // whose `album` blob is null AND whose blob isn't in this device's
@@ -603,11 +560,10 @@ export function JournalProvider({ children }: { children: ReactNode }) {
         const album = mergeEntry(albumFromDetail(detail), e);
         // Show it on this device now, and persist the blob (in the entry's own
         // theme) so it syncs.
-        upsertCustomAlbum(album, !guest);
-        if (!guest) upsertMutate({ album, theme: e.theme });
+        upsertMutate({ album, theme: e.theme });
       });
     }
-  }, [queryData, poolById, guest, upsertMutate]);
+  }, [queryData, poolById, upsertMutate]);
 
   const value = useMemo<JournalContextValue>(
     () => ({
