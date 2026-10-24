@@ -120,7 +120,7 @@ export function ShareActions({
       {confirmOpen && (
         <Modal
           labelledBy={confirmTitleId}
-          className="dom-public-link-modal-wrap"
+          width={500}
           onClose={() => {
             if (!busy) setConfirmOpen(false);
           }}

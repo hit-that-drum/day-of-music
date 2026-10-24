@@ -17,6 +17,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
@@ -73,11 +74,16 @@ export function Modal({
   labelledBy,
   onClose,
   className,
+  width,
   children,
 }: ModalName & {
   onClose: () => void;
   /** Extra class(es) on the panel wrapper, for modal-specific layout. */
   className?: string;
+  /** Max width in px when narrower than the shared default (--dom-modal-w on
+   *  .dom-scrim) — so the ✕, which floats over the panel's right edge, lines
+   *  up with a small dialog too. */
+  width?: number;
   children: ReactNode;
 }) {
   const t = useT();
@@ -246,6 +252,7 @@ export function Modal({
         aria-modal="true"
         aria-label={label}
         aria-labelledby={labelledBy}
+        style={width ? ({ "--dom-modal-w": `${width}px` } as CSSProperties) : undefined}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={onPanelKeyDown}

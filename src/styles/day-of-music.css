@@ -2881,9 +2881,6 @@
 
 /* Public-link disclosure shown before a link is created. This is deliberately
    a separate confirmation step so public access is an informed user action. */
-.dom-public-link-modal-wrap {
-  --dom-modal-w: 500px;
-}
 .dom-public-link-modal {
   width: 100%;
   padding: 28px 26px;
@@ -3034,12 +3031,9 @@
   border: 0;
 }
 
-/* Delete-account confirm dialog. Narrows the shared modal wrapper (so the ✕
-   lines up with this panel, not the wide default) and supplies its own panel
-   chrome — .dom-modal itself is just the transparent wrapper. */
-.dom-danger-modal-wrap {
-  --dom-modal-w: 420px;
-}
+/* Delete-account confirm dialog (a 420px Modal, so the ✕ lines up with this
+   panel). It supplies its own panel chrome — .dom-modal itself is just the
+   transparent wrapper. */
 .dom-danger-modal {
   background-color: var(--panel);
   border: 1px solid var(--line);
@@ -3065,9 +3059,6 @@
 
 /* Profile → shared-link manager. The list is capped to the database limit, and
    scrolls inside the panel so its controls remain reachable on small screens. */
-.dom-share-manager-wrap {
-  --dom-modal-w: 760px;
-}
 .dom-share-manager {
   width: 100%;
   max-height: min(720px, calc(100vh - var(--dom-modal-chrome)));
@@ -4172,10 +4163,7 @@ button.dom-day-add:hover {
 
 /* ── Best of Week (tournament modal) ───────────────────────────────────────
    Opened from the week header (SHARE WEEK's neighbour). Renders inside the
-   shared Modal chrome; .dom-bow-inner is the panel surface. */
-.dom-bow {
-  --dom-modal-w: 760px;
-}
+   shared Modal chrome (760px); .dom-bow-inner is the panel surface. */
 .dom-bow-inner {
   background-color: var(--panel);
   border: 1px solid var(--line);

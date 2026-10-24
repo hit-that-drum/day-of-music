@@ -168,7 +168,7 @@ function SharedLinksModal({ userId, onClose }: { userId: string; onClose: () => 
   return (
     <Modal
       labelledBy={titleId}
-      className="dom-share-manager-wrap"
+      width={760}
       onClose={() => {
         if (!deletingId) onClose();
       }}

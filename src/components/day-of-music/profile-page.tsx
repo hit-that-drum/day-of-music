@@ -225,7 +225,7 @@ function AccountActions({
       {confirmOpen && (
         <Modal
           labelledBy={deleteTitleId}
-          className="dom-danger-modal-wrap"
+          width={420}
           onClose={() => {
             if (!delBusy) setConfirmOpen(false);
           }}
