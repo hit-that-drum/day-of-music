@@ -62,6 +62,128 @@ function buildTrackItems(r: ITunesRow[], coll: ITunesRow): TrackItem[] {
 
 const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
+// Find an edition of an album (by name + artist) that actually has tracks.
+// Used when the requested id resolves to a songless collection.
+// NOTE: worst case this is sequential I/O — up to (storefronts × 3 candidate)
+// lookups, i.e. ~15 round-trips — but it only runs on the rare songless-
+// collection fallback and short-circuits on the first edition with tracks, so
+// it's left serial for now. Parallelize per-store if it becomes a latency hot
+// spot.
+async function findAlbumWithTracks(
+  storefronts: string[],
+  artist: string,
+  name: string,
+): Promise<{ collection: ITunesRow; trackItems: TrackItem[] } | null> {
+  if (!artist || !name) return null;
+  for (const store of storefronts) {
+    const albums = await itunesFetch("search", {
+      term: `${artist} ${name}`,
+      entity: "album",
+      limit: "15",
+      country: store,
+      lang: "en_us",
+    });
+    if (!albums) continue;
+    // Same album name (normalized), fullest tracklist first.
+    const candidates = albums
+      .filter((a) => a.collectionId != null && normalize(a.collectionName ?? "") === normalize(name))
+      .sort((a, b) => (b.trackCount ?? 0) - (a.trackCount ?? 0))
+      .slice(0, 3);
+    for (const c of candidates) {
+      const r = await lookupIn(store, String(c.collectionId));
+      if (!r) continue;
+      const coll = r.find((x) => x.wrapperType === "collection");
+      if (!coll) continue;
+      const items = buildTrackItems(r, coll);
+      if (items.length > 0) return { collection: coll, trackItems: items };
+    }
+  }
+  return null;
+}
+
+/** The album as the storefronts answered it. */
+type ResolvedCollection = {
+  /** The edition the tracklist comes from. */
+  collection: ITunesRow;
+  trackItems: TrackItem[];
+  /** The album as the first store that has it lists it — the listener's own,
+   *  as the storefront list is country-first. Title/artist are shown from
+   *  here even when the tracklist had to come from a fallback store, so a KR
+   *  listener sees "방탄소년단", not the "BTS" of whichever store had the songs. */
+  preferred: ITunesRow;
+  preferredStore: string;
+  /** The store the tracklist came from; undefined when none had songs. Not
+   *  the listener's store → the titles are in a fallback language. */
+  trackStore: string | undefined;
+};
+
+// Prefer a storefront that returns the album AND usable tracks. Some stores
+// list an album (trackCount > 0) without individually-available songs, so if
+// a store yields no tracks we keep trying the other storefronts; only fall
+// back to a collection-only result (the first store's) if none have tracks.
+async function resolveCollection(
+  storefronts: string[],
+  collectionId: string,
+): Promise<ResolvedCollection | null> {
+  let first: { collection: ITunesRow; store: string } | undefined;
+  for (const store of storefronts) {
+    const r = await lookupIn(store, collectionId);
+    if (r === null) continue;
+    const coll = r.find((x) => x.wrapperType === "collection");
+    if (!coll) continue;
+    first ??= { collection: coll, store };
+    const items = buildTrackItems(r, coll);
+    if (items.length > 0) {
+      return {
+        collection: coll,
+        trackItems: items,
+        preferred: first.collection,
+        preferredStore: first.store,
+        trackStore: store,
+      };
+    }
+  }
+  if (!first) return null;
+  return {
+    collection: first.collection,
+    trackItems: [],
+    preferred: first.collection,
+    preferredStore: first.store,
+    trackStore: undefined,
+  };
+}
+
+// A tracklist from a *fallback* store is in that store's language — a KR
+// listener got the US store's "Highway". Re-localize it into the listener's
+// store by looking the songs up by TRACK id there (see itunes-lookup.ts for
+// why that works when the album lookup doesn't), keeping the order; a song
+// that store doesn't carry keeps its fallback title, so the list never shrinks.
+// The same rows carry the album's localized name for the title.
+async function relocalizeTracks(
+  store: string,
+  collection: ITunesRow,
+  trackItems: TrackItem[],
+): Promise<{ trackItems: TrackItem[]; localizedTitle: string | undefined }> {
+  const rows = new Map<number, ITunesRow>();
+  const found = await lookupByIds(
+    store,
+    trackItems.map((t) => t.trackId),
+  );
+  for (const x of found) {
+    if (x.wrapperType === "track" && x.trackId != null) rows.set(x.trackId, x);
+  }
+  return {
+    trackItems: trackItems.map((t) => {
+      const row = rows.get(t.trackId);
+      const name = row?.trackCensoredName ?? row?.trackName;
+      return row && name ? { ...t, name, artist: row.artistName ?? t.artist } : t;
+    }),
+    localizedTitle: [...rows.values()].find(
+      (x) => x.collectionId === collection.collectionId && x.collectionName,
+    )?.collectionName,
+  };
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const parsed = lookupParamsSchema.safeParse(
@@ -84,96 +206,19 @@ export async function GET(request: Request) {
   // first, then common fallbacks, and use the first that has the album.
   const storefronts = storefrontsFor(country);
 
-  // Find an edition of an album (by name + artist) that actually has tracks.
-  // Used when the requested id resolves to a songless collection.
-  // NOTE: worst case this is sequential I/O — up to (storefronts × 3 candidate)
-  // lookups, i.e. ~15 round-trips — but it only runs on the rare songless-
-  // collection fallback and short-circuits on the first edition with tracks, so
-  // it's left serial for now. Parallelize per-store if it becomes a latency hot
-  // spot.
-  async function findAlbumWithTracks(
-    artist: string,
-    name: string,
-  ): Promise<{ collection: ITunesRow; trackItems: TrackItem[] } | null> {
-    if (!artist || !name) return null;
-    for (const store of storefronts) {
-      const albums = await itunesFetch("search", {
-        term: `${artist} ${name}`,
-        entity: "album",
-        limit: "15",
-        country: store,
-        lang: "en_us",
-      });
-      if (!albums) continue;
-      // Same album name (normalized), fullest tracklist first.
-      const candidates = albums
-        .filter((a) => a.collectionId != null && normalize(a.collectionName ?? "") === normalize(name))
-        .sort((a, b) => (b.trackCount ?? 0) - (a.trackCount ?? 0))
-        .slice(0, 3);
-      for (const c of candidates) {
-        const r = await lookupIn(store, String(c.collectionId));
-        if (!r) continue;
-        const coll = r.find((x) => x.wrapperType === "collection");
-        if (!coll) continue;
-        const items = buildTrackItems(r, coll);
-        if (items.length > 0) return { collection: coll, trackItems: items };
-      }
-    }
-    return null;
-  }
-
-  // Prefer a storefront that returns the album AND usable tracks. Some stores
-  // list an album (trackCount > 0) without individually-available songs, so if
-  // a store yields no tracks we keep trying the other storefronts; only fall
-  // back to a collection-only result if none of them have tracks.
-  let collection: ITunesRow | undefined;
-  let trackItems: TrackItem[] = [];
-  let fallbackCollection: ITunesRow | undefined;
-  let fallbackTrackItems: TrackItem[] = [];
-  // The album's metadata in the listener's own storefront (the first entry, as
-  // the list is country-first). We display title/artist from here even when the
-  // tracklist had to come from a fallback store — so a KR listener sees
-  // "방탄소년단", not the "BTS" of whichever store happened to carry the songs.
-  let preferredCollection: ITunesRow | undefined;
-  let preferredStore: string | undefined;
-  // Which storefront the chosen tracklist came from — if it's not the listener's
-  // own store, the track titles are in a fallback language and we try to recover.
-  let trackStore: string | undefined;
-  for (const store of storefronts) {
-    const r = await lookupIn(store, collectionId);
-    if (r === null) continue;
-    const coll = r.find((x) => x.wrapperType === "collection");
-    if (!coll) continue;
-    if (!preferredCollection) {
-      preferredCollection = coll;
-      preferredStore = store;
-    }
-    const items = buildTrackItems(r, coll);
-    if (items.length > 0) {
-      collection = coll;
-      trackItems = items;
-      trackStore = store;
-      break;
-    }
-    if (!fallbackCollection) {
-      fallbackCollection = coll;
-      fallbackTrackItems = items;
-    }
-  }
-  if (!collection && fallbackCollection) {
-    collection = fallbackCollection;
-    trackItems = fallbackTrackItems;
-  }
-
-  if (!collection) {
+  const resolved = await resolveCollection(storefronts, collectionId);
+  if (!resolved) {
     return Response.json({ error: "Album not found." }, { status: 404 });
   }
+  const { preferred, preferredStore } = resolved;
+  let { collection, trackItems, trackStore } = resolved;
 
   // Some editions (regional masters, "single" variants) resolve to a collection
   // with no individually-available songs. If we got the album but no tracks,
   // find another edition with the same name + artist that does have tracks.
   if (trackItems.length === 0) {
     const alt = await findAlbumWithTracks(
+      storefronts,
       collection.artistName ?? "",
       collection.collectionName ?? "",
     );
@@ -186,34 +231,11 @@ export async function GET(request: Request) {
 
   // Title/artist from the listener's storefront when we found the album there;
   // the tracklist may still come from a fallback store.
-  const display = preferredCollection ?? collection;
-  const displayArtist = display.artistName ?? collection.artistName ?? "";
+  const displayArtist = preferred.artistName ?? collection.artistName ?? "";
 
-  // A tracklist from a *fallback* store is in that store's language — a KR
-  // listener got the US store's "Highway". Re-localize it into the listener's
-  // store by looking the songs up by TRACK id there (see itunes-lookup.ts for
-  // why that works when the album lookup doesn't), keeping the order; a song
-  // that store doesn't carry keeps its fallback title, so the list never shrinks.
-  // The same rows carry the album's localized name for the title.
   let localizedTitle: string | undefined;
-  if (preferredStore && trackStore !== preferredStore && trackItems.length > 0) {
-    const sourceCollectionId = collection.collectionId;
-    const rows = new Map<number, ITunesRow>();
-    const found = await lookupByIds(
-      preferredStore,
-      trackItems.map((t) => t.trackId),
-    );
-    for (const x of found) {
-      if (x.wrapperType === "track" && x.trackId != null) rows.set(x.trackId, x);
-    }
-    trackItems = trackItems.map((t) => {
-      const row = rows.get(t.trackId);
-      const name = row?.trackCensoredName ?? row?.trackName;
-      return row && name ? { ...t, name, artist: row.artistName ?? t.artist } : t;
-    });
-    localizedTitle = [...rows.values()].find(
-      (x) => x.collectionId === sourceCollectionId && x.collectionName,
-    )?.collectionName;
+  if (trackStore !== preferredStore && trackItems.length > 0) {
+    ({ trackItems, localizedTitle } = await relocalizeTracks(preferredStore, collection, trackItems));
   }
 
   // A fallback tracklist carries that store's artist on each row (e.g. "BTS").
@@ -230,7 +252,7 @@ export async function GET(request: Request) {
   const releaseDate = collection.releaseDate ?? "";
   const detail: AlbumDetail = {
     id: `itunes-${collection.collectionId}`,
-    title: localizedTitle ?? display.collectionName ?? collection.collectionName ?? "",
+    title: localizedTitle ?? preferred.collectionName ?? collection.collectionName ?? "",
     artist: displayArtist,
     genre: collection.primaryGenreName ?? "—",
     year: yearOf(releaseDate),
