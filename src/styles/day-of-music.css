@@ -4322,9 +4322,6 @@ button.dom-day-add:hover {
   color: var(--ink3);
   text-transform: uppercase;
 }
-.dom-bow-card-dow-ko {
-  opacity: 0.7;
-}
 
 /* Champion / result */
 .dom-bow-result {

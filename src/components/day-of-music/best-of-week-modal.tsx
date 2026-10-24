@@ -9,7 +9,7 @@ import { useMemo } from "react";
 import { MONTHS_LONG, weekOfMonth } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useActiveThemeObject } from "@/lib/day-of-music/themes";
-import { useT } from "@/lib/day-of-music/i18n";
+import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { bestOfKey, weekContenders, weekPeriodKey } from "@/lib/day-of-music/best-of-bracket";
 import { shareFileName } from "@/lib/day-of-music/save-card";
 import { BestOfModal } from "@/components/day-of-music/best-of-modal";
@@ -31,6 +31,7 @@ export function BestOfWeekModal({
   onClose: () => void;
 }) {
   const t = useT();
+  const names = useDateNames();
   const { albumsByDate } = useJournal();
   const activeTheme = useActiveThemeObject();
 
@@ -47,7 +48,7 @@ export function BestOfWeekModal({
       contenders={contenders}
       storeKey={bestOfKey("week", activeTheme.id, weekPeriodKey(labelDate))}
       title={t("bow.title")}
-      periodLabel={`${monthLabel} · Week ${weekNum}`}
+      periodLabel={`${names.monthLong(labelDate.getMonth())} · ${t("week.weekN", { n: weekNum })}`}
       championKicker={t("bow.champion")}
       emptyText={t("bow.empty")}
       emptyHint={t("bow.emptyHint")}

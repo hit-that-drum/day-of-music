@@ -6,7 +6,7 @@
 
 import type { CSSProperties, Ref } from "react";
 
-import type { Album } from "@/lib/day-of-music/data";
+import { DOW_MON_FIRST, type Album } from "@/lib/day-of-music/data";
 import type {
   MonthSharePayload,
   SharedAlbum,
@@ -123,7 +123,6 @@ export function WeekPoster({
   );
 }
 
-const MONTH_DOW = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const;
 const MONTH_DOW_KO = ["월", "화", "수", "목", "금", "토", "일"] as const;
 
 export function MonthPoster({
@@ -140,7 +139,7 @@ export function MonthPoster({
       {/* Month grid — identical markup/classes to the monthly board. */}
       <div className="dom-month-cal dom-share-monthcal">
         <div className="dom-month-cal-hd">
-          {MONTH_DOW.map((d, i) => (
+          {DOW_MON_FIRST.map((d, i) => (
             <div key={d} className="dom-month-cal-dow">
               <span>{d}</span>
               <span className="dom-month-cal-dowKo">{MONTH_DOW_KO[i]}</span>

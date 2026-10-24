@@ -74,6 +74,8 @@ export const MONTHS_LONG = [
 
 export const DOW = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
 export const DOW_KO = ["일", "월", "화", "수", "목", "금", "토"] as const;
+// Column headers of the Mon-first calendars (week picker, month poster).
+export const DOW_MON_FIRST = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const;
 
 const EMPTY_GENRES = new Set(["", "-", "—", "–", "ㅡ"]);
 

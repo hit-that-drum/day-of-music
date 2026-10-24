@@ -7,7 +7,7 @@
 
 import { MONTHS_LONG } from "@/lib/day-of-music/data";
 import { useActiveThemeObject } from "@/lib/day-of-music/themes";
-import { useT } from "@/lib/day-of-music/i18n";
+import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { useBestOfMonthStatus } from "@/lib/day-of-music/best-of";
 import { bestOfKey, monthKey } from "@/lib/day-of-music/best-of-bracket";
 import { shareFileName } from "@/lib/day-of-music/save-card";
@@ -26,6 +26,7 @@ export function BestOfMonthModal({
   onClose: () => void;
 }) {
   const t = useT();
+  const names = useDateNames();
   const activeTheme = useActiveThemeObject();
   const { contenders } = useBestOfMonthStatus(anchor, splitByMonth, today);
 
@@ -37,7 +38,7 @@ export function BestOfMonthModal({
       contenders={contenders}
       storeKey={bestOfKey("month", activeTheme.id, monthKey(anchor))}
       title={t("bom.title")}
-      periodLabel={`${monthLabel} ${year}`}
+      periodLabel={names.monthYear(anchor)}
       championKicker={t("bom.champion")}
       emptyText={t("bom.empty")}
       emptyHint={t("bom.emptyHint")}

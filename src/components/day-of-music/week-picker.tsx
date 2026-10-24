@@ -9,14 +9,12 @@ import { useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
-import { DOW_KO, MONTHS_LONG, fmtDate, startOfWeek } from "@/lib/day-of-music/data";
+import { DOW_KO, DOW_MON_FIRST, MONTHS_LONG, fmtDate, startOfWeek } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { isPhoneViewport } from "@/lib/day-of-music/phone";
 import { IconButton } from "@/components/day-of-music/atoms";
 import { useCapturedEscape, useMonthWeeks } from "@/components/day-of-music/mini-calendar";
-
-const DOW_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const;
 
 export function WeekPicker({
   initialMonth,
@@ -98,7 +96,7 @@ export function WeekPicker({
         </div>
 
         <div className="dom-wp-dow">
-          {DOW_LABELS.map((d, i) => (
+          {DOW_MON_FIRST.map((d, i) => (
             <span key={d} className="dom-wp-dow-cell">
               <span className="dom-wp-legacy">
                 {d}

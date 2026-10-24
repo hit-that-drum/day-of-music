@@ -13,10 +13,10 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { DOW, DOW_KO, parseDate } from "@/lib/day-of-music/data";
+import { parseDate } from "@/lib/day-of-music/data";
 import { findTheme, formatThemeLabel, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
 import { displayHandle, useProfile } from "@/lib/day-of-music/profile";
-import { useT } from "@/lib/day-of-music/i18n";
+import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { useBestOf } from "@/lib/day-of-music/best-of";
 import {
   advance,
@@ -225,9 +225,8 @@ export function BestOfModal({
 
 // A single day in a matchup. `onPick` present → it's a clickable choice.
 function ContenderCard({ c, onPick }: { c: Contender; onPick?: (c: Contender) => void }) {
+  const names = useDateNames();
   const d = parseDate(c.date);
-  const dow = DOW[d.getDay()];
-  const dowKo = DOW_KO[d.getDay()];
   const inner = (
     <>
       <div className="dom-bow-card-cover">
@@ -235,7 +234,7 @@ function ContenderCard({ c, onPick }: { c: Contender; onPick?: (c: Contender) =>
       </div>
       <div className="dom-bow-card-meta">
         <div className="dom-bow-card-day">
-          {dow} <span className="dom-bow-card-dow-ko">{dowKo}</span> · {d.getMonth() + 1}/{d.getDate()}
+          {names.weekdayShort(d)} · {d.getMonth() + 1}/{d.getDate()}
         </div>
         <div className="dom-title">{c.album.title}</div>
         <div className="dom-artist">{c.album.artist}</div>
@@ -269,8 +268,8 @@ function ChampionPoster({
   handle: string;
   kicker: string;
 }) {
+  const names = useDateNames();
   const d = parseDate(c.date);
-  const dow = DOW[d.getDay()];
   return (
     <div className="dom-bow-champion" ref={ref}>
       <div className="dom-bow-champ-hd">
@@ -283,7 +282,7 @@ function ChampionPoster({
       </div>
       <div className="dom-bow-champ-meta">
         <div className="dom-bow-champ-day">
-          {dow} · {d.getFullYear()}.{String(d.getMonth() + 1).padStart(2, "0")}.
+          {names.weekdayShort(d)} · {d.getFullYear()}.{String(d.getMonth() + 1).padStart(2, "0")}.
           {String(d.getDate()).padStart(2, "0")}
         </div>
         <div className="dom-bow-champ-title">{c.album.title}</div>
