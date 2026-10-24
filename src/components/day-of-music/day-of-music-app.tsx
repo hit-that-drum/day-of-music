@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { addDays, fmtDate, formatDisplayDate, parseDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
 import { useCountry } from "@/lib/day-of-music/profile";
-import { useLanguage, useT } from "@/lib/day-of-music/i18n";
+import { useT } from "@/lib/day-of-music/i18n";
 import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
 import { useActiveTheme } from "@/lib/day-of-music/themes";
 import { isLocalStorageAvailable, makeSessionFlagStore } from "@/lib/day-of-music/local-store";
@@ -105,8 +105,6 @@ export function DayOfMusicApp({
   // Storefront country drives date formatting so every displayed date matches
   // the listener's locale (see formatDisplayDate).
   const country = useCountry();
-  // Effective UI language (derived from the language preference / country).
-  const { locale } = useLanguage();
   const t = useT();
 
   // Persisted across reloads via localStorage (see lib/day-of-music/tweaks.ts).
@@ -172,13 +170,6 @@ export function DayOfMusicApp({
   useEffect(() => {
     applyTheme(rootRef.current, tweaks.aesthetic, tweaks.typography);
   }, [tweaks.aesthetic, tweaks.typography]);
-
-  // Reflect the active language on <html lang> for a11y/SEO. The layout renders
-  // lang="en" server-side (matching the DEFAULT_LOCALE snapshot); this updates
-  // it once the client resolves the stored preference.
-  useEffect(() => {
-    document.documentElement.lang = locale;
-  }, [locale]);
 
   // Monday of the anchor's ISO week, and the full Mon–Sun strip.
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);

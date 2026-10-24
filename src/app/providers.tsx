@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { AuthProvider } from "@/lib/day-of-music/auth-provider";
+import { useLanguage } from "@/lib/day-of-music/i18n";
 import { PHONE_QUERY } from "@/lib/day-of-music/phone";
 import { JournalProvider } from "@/lib/day-of-music/use-journal";
 
@@ -34,6 +35,18 @@ function useToastPosition(): "bottom-center" | "top-center" {
   return mobile ? "top-center" : "bottom-center";
 }
 
+// <html lang> follows the UI language on every page, not just the board. The
+// layout renders lang="en" (the DEFAULT_LOCALE server snapshot); this corrects
+// it once the client resolves the stored preference. Inside AuthProvider: the
+// language preference syncs with the account.
+function HtmlLangSync() {
+  const { locale } = useLanguage();
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+  return null;
+}
+
 export function Providers({ children }: ProvidersProps) {
   const toastPosition = useToastPosition();
   const [queryClient] = useState(
@@ -52,6 +65,7 @@ export function Providers({ children }: ProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <ServiceWorkerRegister />
       <AuthProvider>
+        <HtmlLangSync />
         <JournalProvider>{children}</JournalProvider>
       </AuthProvider>
       <Toaster position={toastPosition} richColors closeButton />
