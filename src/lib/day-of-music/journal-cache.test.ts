@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { coverFromSeed } from "@/lib/day-of-music/cover-seed";
 import type { Album } from "@/lib/day-of-music/data";
 import type { JournalEntry } from "@/lib/day-of-music/journal";
 import {
@@ -7,6 +8,7 @@ import {
   applySwap,
   applyUpsert,
   mergeEntry,
+  normalizeAlbum,
   restoreSlots,
   slotAlbum,
   type JournalCache,
@@ -47,6 +49,30 @@ const base: JournalCache = {
   entries: [entry("A", "2026-10-19"), entry("B", "2026-10-20", "daily", 5), entry("C", "2026-10-19", "drive")],
   albums: [A, B, C],
 };
+
+describe("normalizeAlbum", () => {
+  it("passes a whole album through as stored, optional fields included", () => {
+    const stored = album("itunes-1", { tracksCountry: "KR", tracksVersion: 2, releaseDate: "2024-10-14" });
+    expect(normalizeAlbum(stored)).toEqual(stored);
+  });
+
+  it("repairs a blob with missing fields instead of dropping it", () => {
+    const repaired = normalizeAlbum({ id: "itunes-2", title: "Partial" });
+    expect(repaired).toMatchObject({ id: "itunes-2", title: "Partial", artist: "", rating: 0, note: "", tracks: [] });
+    expect(repaired?.cover).toEqual(coverFromSeed("itunes-2"));
+  });
+
+  it("takes the id the blob is stored under when it has none of its own", () => {
+    expect(normalizeAlbum({ title: "No id" }, "itunes-3")?.id).toBe("itunes-3");
+  });
+
+  it("is null for a missing blob, a non-object, or no id at all", () => {
+    expect(normalizeAlbum(null, "itunes-4")).toBeNull();
+    expect(normalizeAlbum("album", "itunes-4")).toBeNull();
+    expect(normalizeAlbum([], "itunes-4")).toBeNull();
+    expect(normalizeAlbum({ title: "No id" })).toBeNull();
+  });
+});
 
 describe("mergeEntry", () => {
   it("overlays the day's date, rating and note on the album's metadata", () => {

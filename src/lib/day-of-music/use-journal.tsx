@@ -41,6 +41,7 @@ import {
   applySwap,
   applyUpsert,
   mergeEntry,
+  normalizeAlbum,
   restoreSlots,
   slotAlbum,
   type JournalCache,
@@ -68,7 +69,8 @@ type JournalRow = {
   rating: number;
   note: string;
   theme: string | null;
-  album: Album | null;
+  // jsonb the database doesn't check — read through normalizeAlbum.
+  album: unknown;
 };
 
 const JournalContext = createContext<JournalContextValue | null>(null);
@@ -169,7 +171,7 @@ async function fetchJournal(userId: string | null): Promise<JournalResponse> {
     })),
     // Older rows predate the `album` column and come back null — those albums
     // get backfilled from localStorage by the effect in JournalProvider.
-    albums: rows.map((r) => r.album).filter((a): a is Album => Boolean(a)),
+    albums: rows.flatMap((r) => normalizeAlbum(r.album, r.album_id) ?? []),
   };
 }
 
@@ -180,7 +182,8 @@ function readCustomAlbums(): Album[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(CUSTOM_ALBUMS_STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Album[]) : [];
+    const saved: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(saved) ? saved.flatMap((a) => normalizeAlbum(a) ?? []) : [];
   } catch {
     return [];
   }

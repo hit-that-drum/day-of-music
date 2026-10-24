@@ -1,14 +1,46 @@
 // journal-cache.ts — the pure half of use-journal.tsx's cache updates. The
 // journal query cache holds journal entries (one per theme + date slot) and the
 // album metadata pool (keyed by album id); these functions turn one cache state
-// into the next. JournalProvider keeps the I/O — Supabase, localStorage, the
-// move chain — and calls these for the optimistic updates, the move / swap
-// staging and its rollback, so that logic is testable on its own.
+// into the next, and normalizeAlbum vets the album blobs a load reads into it.
+// JournalProvider keeps the I/O — Supabase, localStorage, the move chain — and
+// calls these for the optimistic updates, the move / swap staging and its
+// rollback, so that logic is testable on its own.
 
+import { coverFromSeed } from "@/lib/day-of-music/cover-seed";
 import type { Album } from "@/lib/day-of-music/data";
 import type { JournalEntry } from "@/lib/day-of-music/journal";
 
 export type JournalCache = { entries: JournalEntry[]; albums: Album[] };
+
+/** An album blob as a load reads it back — a journal row's `album` jsonb or
+ *  the local-mode pool in localStorage — made safe to render. Every write
+ *  stores a whole Album, so this is defensive: a missing required field gets a
+ *  default rather than the album being dropped (an entry without metadata
+ *  vanishes from the board), and the optional fields — tracksCountry,
+ *  tracksVersion and releaseDate, which Day Detail's enrichment checks, among
+ *  them — pass through as stored. `id` is the album id the blob is stored
+ *  under, for a blob without its own. Null for a missing blob or one with no id. */
+export function normalizeAlbum(raw: unknown, id?: string): Album | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const a = raw as Partial<Album>;
+  const albumId = typeof a.id === "string" && a.id ? a.id : id;
+  if (!albumId) return null;
+  return {
+    ...a,
+    id: albumId,
+    date: a.date ?? "",
+    title: a.title ?? "",
+    titleKo: a.titleKo ?? "",
+    artist: a.artist ?? "",
+    genre: a.genre ?? "",
+    year: a.year ?? 0,
+    format: a.format ?? "",
+    cover: a.cover ?? coverFromSeed(albumId),
+    note: a.note ?? "",
+    rating: a.rating ?? 0,
+    tracks: Array.isArray(a.tracks) ? a.tracks : [],
+  };
+}
 
 /** One album per day per theme: (theme, date) identifies a slot. */
 export function isSlot(entry: JournalEntry, theme: string, date: string): boolean {
