@@ -173,16 +173,29 @@ export function DomSelect({
     navKeys(e);
   }
 
+  // Without search, focus stays on the trigger while ↑/↓ move the highlight, so
+  // the trigger itself is the combobox (APG "select-only combobox") and points
+  // at the highlighted option. With search, the filter input is the combobox
+  // and the trigger is just the button that opens it.
+  const triggerAria = searchable
+    ? { "aria-expanded": open }
+    : {
+        role: "combobox",
+        "aria-haspopup": "listbox" as const,
+        "aria-expanded": open,
+        // The list only exists while open.
+        "aria-controls": open ? listId : undefined,
+        "aria-activedescendant": open && active >= 0 ? optionId(active) : undefined,
+      };
+
   return (
     <div className="dom-select" ref={rootRef}>
       <button
         ref={triggerRef}
         type="button"
         className="dom-select-trigger"
-        aria-haspopup="listbox"
-        aria-expanded={open}
+        {...triggerAria}
         aria-label={ariaLabel}
-        aria-activedescendant={open && !searchable && active >= 0 ? optionId(active) : undefined}
         data-open={open ? "1" : "0"}
         onClick={() => (open ? close() : openSelect())}
         onKeyDown={onTriggerKeyDown}
