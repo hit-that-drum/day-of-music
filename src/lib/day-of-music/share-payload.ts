@@ -7,10 +7,13 @@
 
 import { z } from "zod";
 
+import { COVER_STYLES } from "@/lib/day-of-music/data";
+import { AESTHETIC_KEYS, TYPE_KEYS } from "@/lib/day-of-music/theme";
+
 // ── Payload schemas ─────────────────────────────────────────────────────────
 
 const coverSpecSchema = z.object({
-  style: z.enum(["stack", "diag", "center", "split", "edge", "ring", "block", "ticker"]),
+  style: z.enum(COVER_STYLES),
   bg: z.string().max(64),
   fg: z.string().max(64),
   accent: z.string().max(64),
@@ -62,8 +65,8 @@ const sharedAlbumSchema = z.object({
 // The sharer's visual theme, so the public page renders the card the way the
 // sharer saw it. Falls back to editorial when absent or unknown.
 export const shareThemeSchema = z.object({
-  aesthetic: z.enum(["editorial", "minimal", "vibrant", "dark"]),
-  typography: z.enum(["editorial", "modern", "display", "classic"]),
+  aesthetic: z.enum(AESTHETIC_KEYS),
+  typography: z.enum(TYPE_KEYS),
 });
 
 const shareBaseSchema = z.object({

@@ -176,7 +176,7 @@ export async function saveCardAsImage(node: HTMLElement, filename: string): Prom
     // Make sure web fonts are ready before we measure, so the frozen box sizes
     // match the rasterized text.
     try {
-      await (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
+      await document.fonts?.ready;
     } catch {
       /* fonts API unavailable — continue */
     }

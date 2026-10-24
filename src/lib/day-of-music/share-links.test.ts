@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { Album } from "@/lib/day-of-music/data";
+import { COVER_STYLES, type Album } from "@/lib/day-of-music/data";
+import { AESTHETIC_KEYS, TYPE_KEYS } from "@/lib/day-of-music/theme";
 import { createGuestWeekLink, sanitizeAlbum } from "@/lib/day-of-music/share-links";
 import {
   decodeGuestShareParam,
@@ -120,6 +121,19 @@ describe("sharePayloadSchema", () => {
 
   it("accepts a payload the app builds", () => {
     expect(sharePayloadSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("accepts every cover style and theme the app can produce", () => {
+    for (const style of COVER_STYLES) {
+      const cover = { ...album().cover, style };
+      expect(sharePayloadSchema.safeParse(weekPayload(sanitizeAlbum(album({ cover })))).success).toBe(true);
+    }
+    for (const aesthetic of AESTHETIC_KEYS) {
+      for (const typography of TYPE_KEYS) {
+        const themed = { ...valid, theme: { aesthetic, typography } };
+        expect(sharePayloadSchema.safeParse(themed).success).toBe(true);
+      }
+    }
   });
 
   it("rejects tampered payloads", () => {

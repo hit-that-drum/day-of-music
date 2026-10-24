@@ -2,7 +2,7 @@
 // Converts a search result into a full Album so it can be logged in the
 // journal.
 
-import type { Album, CoverSpec, CoverStyle } from "@/lib/day-of-music/data";
+import { COVER_STYLES, type Album, type CoverSpec } from "@/lib/day-of-music/data";
 import type { AlbumDetail, TrackItem } from "@/lib/day-of-music/music-types";
 
 export type { AlbumDetail, TrackItem };
@@ -83,7 +83,6 @@ export function parseAppleMusicLink(input: string): AppleMusicLink | null {
 // ── Deterministic typographic cover for albums without a hand-made CoverSpec.
 // (Cover renders real artwork when artworkUrl is set; this is the fallback.)
 
-const STYLES: CoverStyle[] = ["stack", "diag", "center", "split", "edge", "ring", "block", "ticker"];
 
 const PALETTES: Array<Omit<CoverSpec, "style">> = [
   { bg: "#b9a3d9", fg: "#1a1430", accent: "#f6e6ff" },
@@ -107,7 +106,7 @@ function hashSeed(seed: string): number {
 export function coverFromSeed(seed: string): CoverSpec {
   const h = hashSeed(seed);
   return {
-    style: STYLES[h % STYLES.length],
+    style: COVER_STYLES[h % COVER_STYLES.length],
     ...PALETTES[(h >> 3) % PALETTES.length],
   };
 }

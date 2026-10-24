@@ -2,8 +2,12 @@
 // Four aesthetic directions × four typography pairs. Tokens are applied as CSS
 // custom properties on the .dom-root frame so the whole app themes uniformly.
 
-export type AestheticKey = "editorial" | "minimal" | "vibrant" | "dark";
-export type TypeKey = "editorial" | "modern" | "display" | "classic";
+// Tuples, so the share-link schema validates a shared theme against the same
+// keys AESTHETICS / TYPE_PAIRS (below) must define.
+export const AESTHETIC_KEYS = ["editorial", "minimal", "vibrant", "dark"] as const;
+export type AestheticKey = (typeof AESTHETIC_KEYS)[number];
+export const TYPE_KEYS = ["editorial", "modern", "display", "classic"] as const;
+export type TypeKey = (typeof TYPE_KEYS)[number];
 
 type AestheticTokens = {
   bg: string;

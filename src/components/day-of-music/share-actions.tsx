@@ -40,12 +40,12 @@ export function ShareActions({
   async function handleCreatePublicLink() {
     setBusy(true);
     try {
-      const url =
-        signedIn && user
-          ? await createSharedCardLink(user.id, payload)
-          : await createGuestWeekLink(
-              payload as Extract<SharePayload, { kind: "week" }>,
-            );
+      let url: string;
+      if (signedIn && user) url = await createSharedCardLink(user.id, payload);
+      // Guests can only link the week card (its payload rides in the URL), and
+      // the button is only offered for it — canCopyLink above.
+      else if (payload.kind === "week") url = await createGuestWeekLink(payload);
+      else throw new Error("Only the week card has a guest link");
       await navigator.clipboard.writeText(url);
       toast.success(t("share.toastCopied"));
       setConfirmOpen(false);

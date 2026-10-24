@@ -7,15 +7,19 @@ import isoWeek from "dayjs/plugin/isoWeek";
 
 dayjs.extend(isoWeek);
 
-export type CoverStyle =
-  | "stack"
-  | "diag"
-  | "center"
-  | "split"
-  | "edge"
-  | "ring"
-  | "block"
-  | "ticker";
+// The typographic cover styles (rendered by components/day-of-music/cover.tsx).
+// A tuple, so the share-link schema validates against this exact list.
+export const COVER_STYLES = [
+  "stack",
+  "diag",
+  "center",
+  "split",
+  "edge",
+  "ring",
+  "block",
+  "ticker",
+] as const;
+export type CoverStyle = (typeof COVER_STYLES)[number];
 
 export type CoverSpec = {
   style: CoverStyle;
