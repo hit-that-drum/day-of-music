@@ -33,10 +33,11 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 Copy `.env.example` to `.env.local` and fill in the values you need.
 
 Auth and cross-device journal persistence need a Supabase project: set the two
-`NEXT_PUBLIC_SUPABASE_*` values, then run the SQL in
-[`supabase/migrations/0001_journal_entries.sql`](./supabase/migrations/0001_journal_entries.sql)
-once (Supabase Dashboard → SQL editor). The table is queried directly from the
-client with supabase-js; the RLS policies in that file are the authorization layer.
+`NEXT_PUBLIC_SUPABASE_*` values, then run every file in
+[`supabase/migrations/`](./supabase/migrations/README.md) once, in filename
+order (Supabase Dashboard → SQL editor). The tables are queried directly from
+the client with supabase-js; the RLS policies in those files are the
+authorization layer.
 
 Without Supabase keys the app runs unauthenticated and persists to localStorage.
 
