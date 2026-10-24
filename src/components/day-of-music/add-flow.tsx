@@ -18,8 +18,8 @@ import {
 import {
   albumFromDetail,
   albumFromSearchResult,
+  albumFromManual,
   albumFromTrack,
-  coverFromSeed,
   fetchAlbumDetail,
   parseAppleMusicLink,
   searchMusic,
@@ -110,25 +110,6 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
   }
 
   // Build a journal-ready Album from the manual fields.
-  function buildManualAlbum(): Album {
-    return {
-      id: manualId,
-      date: "", // assigned when the entry is logged
-      title: manualTitle.trim(),
-      titleKo: "",
-      artist: manualArtist.trim() || "Unknown artist",
-      genre: manualGenre.trim(),
-      year: new Date().getFullYear(),
-      format: "Manual",
-      cover: coverFromSeed(manualId),
-      artworkUrl: manualArt ?? undefined,
-      kind: "album",
-      note: "",
-      rating: 0,
-      tracks: [],
-    };
-  }
-
   const debouncedQuery = useDebounced(query.trim(), 300);
   // Search the user's preferred storefront first (server falls back to the
   // common stores after it).
@@ -488,7 +469,17 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
               onClick={() => {
                 // Leaving step 1 in manual mode: turn the typed fields into the
                 // picked album so steps 2–3 (and Save) work unchanged.
-                if (step === 1 && manualMode) setPicked(buildManualAlbum());
+                if (step === 1 && manualMode) {
+                  setPicked(
+                    albumFromManual({
+                      id: manualId,
+                      title: manualTitle,
+                      artist: manualArtist,
+                      genre: manualGenre,
+                      artworkUrl: manualArt ?? undefined,
+                    }),
+                  );
+                }
                 setStep(step + 1);
               }}
             >
