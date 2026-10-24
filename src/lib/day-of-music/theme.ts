@@ -115,7 +115,6 @@ type TypePair = {
   display: string;
   body: string;
   mono: string;
-  sans: string;
   googleFonts: string[];
 };
 
@@ -125,7 +124,6 @@ export const TYPE_PAIRS: Record<TypeKey, TypePair> = {
     display: '"Spectral", Georgia, serif',
     body: '"Spectral", Georgia, serif',
     mono: '"JetBrains Mono", ui-monospace, monospace',
-    sans: 'ui-sans-serif, system-ui, -apple-system, "SF Pro Text", sans-serif',
     googleFonts: ["Spectral:wght@300;400;500;600;700", "JetBrains+Mono:wght@400;500;600"],
   },
   modern: {
@@ -133,7 +131,6 @@ export const TYPE_PAIRS: Record<TypeKey, TypePair> = {
     display: '"Manrope", system-ui, sans-serif',
     body: '"Manrope", system-ui, sans-serif',
     mono: '"JetBrains Mono", ui-monospace, monospace',
-    sans: '"Manrope", system-ui, sans-serif',
     googleFonts: ["Manrope:wght@300;400;500;600;700;800", "JetBrains+Mono:wght@400;500;600"],
   },
   display: {
@@ -141,7 +138,6 @@ export const TYPE_PAIRS: Record<TypeKey, TypePair> = {
     display: '"Bricolage Grotesque", system-ui, sans-serif',
     body: '"Bricolage Grotesque", system-ui, sans-serif',
     mono: '"JetBrains Mono", ui-monospace, monospace',
-    sans: '"Bricolage Grotesque", system-ui, sans-serif',
     googleFonts: ["Bricolage+Grotesque:wght@300;400;500;600;700;800", "JetBrains+Mono:wght@400;500;600"],
   },
   classic: {
@@ -149,7 +145,6 @@ export const TYPE_PAIRS: Record<TypeKey, TypePair> = {
     display: '"Cormorant Garamond", Georgia, serif',
     body: '"Cormorant Garamond", Georgia, serif',
     mono: '"Geist Mono", ui-monospace, monospace',
-    sans: "ui-sans-serif, system-ui, sans-serif",
     googleFonts: ["Cormorant+Garamond:wght@300;400;500;600;700", "Geist+Mono:wght@400;500;600"],
   },
 };
@@ -211,7 +206,6 @@ export function themeStyleVars(
   vars["--font-display"] = t.display;
   vars["--font-body"] = t.body;
   vars["--font-mono"] = t.mono;
-  vars["--font-sans"] = t.sans;
   vars["--cover-display"] = t.display;
   vars["--cover-mono"] = t.mono;
   return vars;
