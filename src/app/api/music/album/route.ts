@@ -17,6 +17,7 @@ import {
   itunesFetch,
   lookupByIds,
   storefrontsFor,
+  withItunesCalls,
   yearOf,
   type ITunesRow,
 } from "@/lib/day-of-music/itunes-lookup";
@@ -185,7 +186,13 @@ async function relocalizeTracks(
   };
 }
 
-export async function GET(request: Request) {
+// All of one lookup's iTunes calls share a scope, so a 403 midway stops the
+// rest (see withItunesCalls).
+export function GET(request: Request) {
+  return withItunesCalls(() => lookup(request));
+}
+
+async function lookup(request: Request) {
   const url = new URL(request.url);
   const parsed = lookupParamsSchema.safeParse(
     Object.fromEntries(url.searchParams),

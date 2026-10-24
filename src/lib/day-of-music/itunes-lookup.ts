@@ -17,6 +17,8 @@
 // store ("Ha Hyun Sang" even in KR), so an artist's name comes from their
 // album rows instead.
 
+import { AsyncLocalStorage } from "node:async_hooks";
+
 import dayjs from "dayjs";
 
 /** One row of an iTunes Search or Lookup response: an artist, a collection
@@ -45,25 +47,32 @@ const ITUNES_TIMEOUT_MS = 8_000;
 
 // Apple answers 403 (or 429) once this server is over its limit, ~20 calls a
 // minute shared by every listener (they all reach Apple from this server's IP).
-// Errors aren't cached and the routes try every store, so carrying on spends
-// 4-5 calls per search and only stretches the lockout. Stand down instead: for
-// a minute every call fails at once, the way an unreachable store does. Not on
-// 5xx — Apple's edge answers 502 to some malformed lookups, and one such
-// request mustn't pause the music search for everyone.
-const RATE_LIMIT_PAUSE_MS = 60_000;
-let pausedUntil = 0;
+// Errors aren't cached, so a request that carries on store after store only
+// spends 4-5 more calls and stretches the lockout: after one such answer, the
+// rest of that request's calls fail at once, the way an unreachable store
+// does. Per request on purpose — a pause shared by every request would also
+// fail the ones Next's Data Cache answers without calling Apple. Not on 5xx:
+// Apple's edge answers 502 to some malformed lookups.
+const rateLimit = new AsyncLocalStorage<{ hit: boolean }>();
+
+/** Run one route request's iTunes calls; after a 403/429 the rest of them are
+ *  skipped (see above). Calls made outside it are never skipped. */
+export function withItunesCalls<T>(handle: () => Promise<T>): Promise<T> {
+  return rateLimit.run({ hit: false }, handle);
+}
 
 /** One iTunes Search or Lookup request. Identical requests are cached for an
  *  hour (the rate limit is ~20 calls/min). Resolves to the response's rows, or
  *  null when the store couldn't be reached, timed out, answered with an error,
- *  or Apple is rate-limiting us (see RATE_LIMIT_PAUSE_MS). No lang is added:
- *  pass lang "en_us" for English text, or leave it out to get names in the
- *  store's own language. */
+ *  or Apple already rate-limited this request (see withItunesCalls). No lang is
+ *  added: pass lang "en_us" for English text, or leave it out to get names in
+ *  the store's own language. */
 export async function itunesFetch(
   endpoint: "search" | "lookup",
   params: Record<string, string>,
 ): Promise<ITunesRow[] | null> {
-  if (Date.now() < pausedUntil) return null;
+  const request = rateLimit.getStore();
+  if (request?.hit) return null;
   const url = new URL(`https://itunes.apple.com/${endpoint}`);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
   try {
@@ -73,7 +82,7 @@ export async function itunesFetch(
       signal: AbortSignal.timeout(ITUNES_TIMEOUT_MS),
     });
     if (resp.status === 403 || resp.status === 429) {
-      pausedUntil = Date.now() + RATE_LIMIT_PAUSE_MS;
+      if (request) request.hit = true;
       return null;
     }
     if (!resp.ok) return null;

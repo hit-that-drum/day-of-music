@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-/** A fresh itunes-lookup (its rate-limit pause is module state) over a fake
- *  upstream that answers `upstream.status` — change it mid-test. */
-async function withUpstream(status: number) {
-  vi.resetModules();
+import { itunesFetch, withItunesCalls } from "@/lib/day-of-music/itunes-lookup";
+
+/** A fake upstream that answers `upstream.status` — change it mid-test. */
+function stubUpstream(status: number) {
   const upstream = { status };
   const fetch = vi.fn(async () =>
     upstream.status === 200
@@ -11,38 +11,46 @@ async function withUpstream(status: number) {
       : new Response("", { status: upstream.status }),
   );
   vi.stubGlobal("fetch", fetch);
-  const { itunesFetch } = await import("@/lib/day-of-music/itunes-lookup");
-  return { itunesFetch, fetch, upstream };
+  return { fetch, upstream };
 }
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  vi.useRealTimers();
 });
 
 describe("itunesFetch", () => {
-  it.each([403, 429])("stops calling Apple for a minute after a %i", async (status) => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    const { itunesFetch, fetch, upstream } = await withUpstream(status);
-    expect(await itunesFetch("search", { term: "a" })).toBeNull();
+  it.each([403, 429])("skips the rest of a request's calls after a %i", async (status) => {
+    const { fetch, upstream } = stubUpstream(status);
+    await withItunesCalls(async () => {
+      expect(await itunesFetch("search", { term: "a", country: "KR" })).toBeNull();
+      upstream.status = 200;
+      expect(await itunesFetch("search", { term: "a", country: "US" })).toBeNull();
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  // The next request may be one Next's Data Cache answers without calling
+  // Apple at all, so a rate-limited request must not fail it.
+  it("leaves other requests alone", async () => {
+    const { fetch, upstream } = stubUpstream(403);
+    await withItunesCalls(() => itunesFetch("search", { term: "a" }));
 
     upstream.status = 200;
-    expect(await itunesFetch("search", { term: "b" })).toBeNull();
-    expect(fetch).toHaveBeenCalledTimes(1);
-
-    vi.setSystemTime(Date.now() + 60_000);
-    expect(await itunesFetch("search", { term: "c" })).toEqual([{ trackId: 1 }]);
+    await expect(withItunesCalls(() => itunesFetch("search", { term: "b" }))).resolves.toEqual([
+      { trackId: 1 },
+    ]);
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
-  // Apple's edge answers 502 to some malformed lookups — that must not pause
-  // the search for everyone.
+  // Apple's edge answers 502 to some malformed lookups — no reason to give up
+  // on the request's other stores.
   it("keeps calling after any other failure", async () => {
-    const { itunesFetch, fetch, upstream } = await withUpstream(502);
-    expect(await itunesFetch("lookup", { id: "1" })).toBeNull();
-
-    upstream.status = 200;
-    expect(await itunesFetch("lookup", { id: "1" })).toEqual([{ trackId: 1 }]);
+    const { fetch, upstream } = stubUpstream(502);
+    await withItunesCalls(async () => {
+      expect(await itunesFetch("lookup", { id: "1" })).toBeNull();
+      upstream.status = 200;
+      expect(await itunesFetch("lookup", { id: "1" })).toEqual([{ trackId: 1 }]);
+    });
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 });
