@@ -35,6 +35,15 @@ import {
   useThemes,
 } from "@/lib/day-of-music/themes";
 import { useAuth } from "@/lib/day-of-music/auth-provider";
+import {
+  applyRemove,
+  applySwap,
+  applyUpsert,
+  mergeEntry,
+  restoreSlots,
+  slotAlbum,
+  type JournalCache,
+} from "@/lib/day-of-music/journal-cache";
 import { useT } from "@/lib/day-of-music/i18n";
 import {
   AUTH_CALL_TIMEOUT_MS,
@@ -49,7 +58,7 @@ type UpsertVars = { album: Album; theme: string; optimistic?: boolean };
 type RemoveVars = { date: string; theme: string; optimistic?: boolean };
 // `albums` carries the full metadata for every logged album so a second device
 // can render entries it never saw created. Built from each row's `album` blob.
-type JournalResponse = { entries: JournalEntry[]; albums: Album[] };
+type JournalResponse = JournalCache;
 
 // Row shape of public.journal_entries (snake_case).
 type JournalRow = {
@@ -297,7 +306,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       if (e.theme !== theme) continue;
       const meta = poolById.get(e.albumId);
       if (!meta) continue; // metadata not loaded yet (recovery handles it)
-      out[e.date] = { ...meta, date: e.date, rating: e.rating, note: e.note };
+      out[e.date] = mergeEntry(meta, e);
     }
     return out;
   }, [queryData, theme, poolById]);
@@ -307,13 +316,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     for (const e of queryData?.entries ?? []) {
       const meta = poolById.get(e.albumId);
       if (!meta) continue;
-      out.push({
-        ...meta,
-        date: e.date,
-        rating: e.rating,
-        note: e.note,
-        theme: e.theme,
-      });
+      out.push({ ...mergeEntry(meta, e), theme: e.theme });
     }
     return out;
   }, [queryData, poolById]);
@@ -353,27 +356,11 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       // rollback), so it opts out of this per-call optimistic update.
       if (!optimistic) return { previous: undefined };
       const previous = queryClient.getQueryData<JournalResponse>(queryKey);
-      const base = previous ?? { entries: [], albums: [] };
-      const entry: JournalEntry = {
-        albumId: album.id,
-        date: album.date,
-        rating: album.rating,
-        note: album.note,
-        theme: lane,
-      };
       // Replace whatever was in this (theme, date) slot.
-      const nextEntries = [
-        ...base.entries.filter((e) => !(e.date === album.date && e.theme === lane)),
-        entry,
-      ];
-      // The album-metadata pool is keyed by id (theme-independent).
-      const nextAlbums = [...base.albums.filter((a) => a.id !== album.id), album];
-      queryClient.setQueryData<JournalResponse>(queryKey, {
-        entries: nextEntries,
-        albums: nextAlbums,
-      });
+      const next = applyUpsert(previous ?? { entries: [], albums: [] }, album, lane);
+      queryClient.setQueryData<JournalResponse>(queryKey, next);
       // localStorage write-through only in unconfigured (no-Supabase) mode.
-      if (!configured) writeLocalEntries(nextEntries);
+      if (!configured) writeLocalEntries(next.entries);
       return { previous };
     },
     onError: (err, vars, ctx) => {
@@ -409,16 +396,10 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       // moveSlot manages the cache atomically; skip the per-call update.
       if (!optimistic) return { previous: undefined };
       const previous = queryClient.getQueryData<JournalResponse>(queryKey);
-      const base = previous ?? { entries: [], albums: [] };
       // Clear just this (theme, date) slot; album metadata stays in the pool.
-      const nextEntries = base.entries.filter(
-        (e) => !(e.date === date && e.theme === lane),
-      );
-      queryClient.setQueryData<JournalResponse>(queryKey, {
-        entries: nextEntries,
-        albums: base.albums,
-      });
-      if (!configured) writeLocalEntries(nextEntries);
+      const next = applyRemove(previous ?? { entries: [], albums: [] }, date, lane);
+      queryClient.setQueryData<JournalResponse>(queryKey, next);
+      if (!configured) writeLocalEntries(next.entries);
       return { previous };
     },
     onError: (_err, _vars, ctx) => {
@@ -490,43 +471,23 @@ export function JournalProvider({ children }: { children: ReactNode }) {
         entries: [],
         albums: [],
       };
-      const slotAt = (date: string): Album | undefined => {
-        const e = base.entries.find((x) => x.theme === theme && x.date === date);
-        if (!e) return undefined;
-        const meta = poolById.get(e.albumId) ?? base.albums.find((x) => x.id === e.albumId);
-        return meta ? { ...meta, date: e.date, rating: e.rating, note: e.note } : undefined;
-      };
-      const a = slotAt(fromDate);
+      const a = slotAlbum(base, theme, fromDate, poolById);
       if (!a) return Promise.resolve(false);
-      const b = slotAt(toDate);
+      const b = slotAlbum(base, theme, toDate, poolById);
 
       // Drop both slots in this theme, then re-add them swapped.
-      const touched = (e: JournalEntry) =>
-        e.theme === theme && (e.date === fromDate || e.date === toDate);
-      const swapped: JournalEntry[] = [
-        ...base.entries.filter((e) => !touched(e)),
-        { albumId: a.id, date: toDate, rating: a.rating, note: a.note, theme },
-      ];
-      if (b) {
-        swapped.push({
-          albumId: b.id,
-          date: fromDate,
-          rating: b.rating,
-          note: b.note,
-          theme,
-        });
-      }
-      queryClient.setQueryData<JournalResponse>(queryKey, { ...base, entries: swapped });
-      if (!configured) writeLocalEntries(swapped);
+      const swapped = applySwap(base, theme, fromDate, toDate, a, b);
+      queryClient.setQueryData<JournalResponse>(queryKey, swapped);
+      if (!configured) writeLocalEntries(swapped.entries);
 
       // Restore just the two touched slots on top of whatever the cache holds
       // by then, so a later move's staging on other days survives. (A later
       // move that reused one of these days is reconciled by the refetch.)
       const rollback = () => {
         const cur = queryClient.getQueryData<JournalResponse>(queryKey) ?? base;
-        const restored = [...cur.entries.filter((e) => !touched(e)), ...base.entries.filter(touched)];
-        queryClient.setQueryData<JournalResponse>(queryKey, { ...cur, entries: restored });
-        if (!configured) writeLocalEntries(restored);
+        const restored = restoreSlots(cur, base, theme, fromDate, toDate);
+        queryClient.setQueryData<JournalResponse>(queryKey, restored);
+        if (!configured) writeLocalEntries(restored.entries);
       };
       // Sequenced, not parallel: a rejected FIRST write leaves the server
       // untouched, so the rollback is the literal truth. Only a rejected second
@@ -605,10 +566,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       const meta = local.get(e.albumId);
       if (!meta) continue;
       backfilledRef.current.add(e.albumId);
-      upsertMutate({
-        album: { ...meta, date: e.date, rating: e.rating, note: e.note },
-        theme: e.theme,
-      });
+      upsertMutate({ album: mergeEntry(meta, e), theme: e.theme });
     }
   }, [guest, configured, user, queryData, storeAlbums, upsertMutate]);
 
@@ -642,12 +600,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       recoveredRef.current.add(e.albumId);
       void fetchAlbumDetail(e.albumId).then((detail) => {
         if (!detail) return;
-        const album: Album = {
-          ...albumFromDetail(detail),
-          date: e.date,
-          rating: e.rating,
-          note: e.note,
-        };
+        const album = mergeEntry(albumFromDetail(detail), e);
         // Show it on this device now, and persist the blob (in the entry's own
         // theme) so it syncs.
         upsertCustomAlbum(album, !guest);
