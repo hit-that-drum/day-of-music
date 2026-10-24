@@ -5,7 +5,8 @@ import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   applicationName: "Day of Music",
-  title: "Day of Music",
+  // Child pages set just their own part ("Week", a shared card's title).
+  title: { default: "Day of Music", template: "%s — Day of Music" },
   description: "A music calendar image maker for weekly album picks.",
   appleWebApp: {
     capable: true,

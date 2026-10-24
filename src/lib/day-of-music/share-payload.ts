@@ -5,6 +5,7 @@
 // Web APIs Node has too) — so the server-rendered /s pages import only this.
 // Building payloads and minting links live in share-links.ts.
 
+import type { Metadata } from "next";
 import { z } from "zod";
 
 import { COVER_STYLES } from "@/lib/day-of-music/data";
@@ -153,6 +154,29 @@ export function shareDescription(p: SharePayload): string {
       ? `${p.stats.total} albums · ${p.stats.genreCount} genres · ★ ${p.stats.avgRating}`
       : `${p.stats.count} albums · ${p.stats.genres} genres · ★ ${p.stats.avg}`;
   return `@${p.username} · ${p.themeLabel} — ${s}`;
+}
+
+/** Metadata for a public share page: always noindex + no-referrer (the URL is
+ *  the secret), plus the card's title and summary when it decoded. The root
+ *  layout's title template adds " — Day of Music". */
+export function sharedCardMetadata(payload: SharePayload | null): Metadata {
+  const base: Metadata = {
+    robots: { index: false, follow: false },
+    referrer: "no-referrer",
+  };
+  if (!payload) return { ...base, title: "Shared card" };
+  const description = shareDescription(payload);
+  return {
+    ...base,
+    title: payload.title,
+    description,
+    openGraph: {
+      title: payload.title,
+      description,
+      siteName: "Day of Music",
+      type: "website",
+    },
+  };
 }
 
 // ── Guest link codec (the payload lives in the URL, nothing stored) ──────────

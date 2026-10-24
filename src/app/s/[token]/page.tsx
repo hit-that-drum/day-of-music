@@ -9,7 +9,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import {
-  shareDescription,
+  sharedCardMetadata,
   sharePayloadSchema,
   type SharePayload,
 } from "@/lib/day-of-music/share-payload";
@@ -48,24 +48,7 @@ const getSharedCard = cache(async (token: string): Promise<SharePayload | null> 
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { token } = await params;
-  const payload = await getSharedCard(token);
-  const base: Metadata = {
-    robots: { index: false, follow: false },
-    referrer: "no-referrer",
-  };
-  if (!payload) return { ...base, title: "Shared card — Day of Music" };
-  const description = shareDescription(payload);
-  return {
-    ...base,
-    title: `${payload.title} — Day of Music`,
-    description,
-    openGraph: {
-      title: payload.title,
-      description,
-      siteName: "Day of Music",
-      type: "website",
-    },
-  };
+  return sharedCardMetadata(await getSharedCard(token));
 }
 
 export default async function SharedCardPage({ params }: Props) {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { BrandMark } from "@/components/day-of-music/atoms";
 
 export const metadata: Metadata = {
-  title: "이용약관 — Day of Music",
+  title: "이용약관",
   description: "Day of Music 서비스 이용약관",
 };
 

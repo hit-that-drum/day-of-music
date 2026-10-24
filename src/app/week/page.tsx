@@ -9,7 +9,7 @@ import { TZ_COOKIE, todayInZone } from "@/lib/day-of-music/today";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Week — Day of Music",
+  title: "Week",
 };
 
 export default async function WeekPage() {
