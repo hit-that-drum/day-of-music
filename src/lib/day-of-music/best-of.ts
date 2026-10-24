@@ -184,6 +184,11 @@ function rowsToMap(rows: BestOfRow[]): BestOfMap {
   return map;
 }
 
+/** The row written for one result — the inverse of rowsToMap's mapping. */
+function toRow(userId: string, key: string, r: BestOfResult): BestOfRow & { user_id: string } {
+  return { user_id: userId, key, winner_date: r.winnerDate, method: r.method, decided_at: r.decidedAt };
+}
+
 async function fetchBestOf(userId: string | null): Promise<BestOfMap> {
   const supabase = getSupabaseBrowserClient();
   if (!supabase || !userId) return {};
@@ -220,16 +225,7 @@ export function useBestOf(): {
       if (!supabase || !userId) return;
       await runQuery(
         "best_of upsert",
-        supabase.from("best_of").upsert(
-          {
-            user_id: userId,
-            key,
-            winner_date: result.winnerDate,
-            method: result.method,
-            decided_at: result.decidedAt,
-          },
-          { onConflict: "user_id,key" },
-        ),
+        supabase.from("best_of").upsert(toRow(userId, key, result), { onConflict: "user_id,key" }),
       );
     },
     onMutate: ({ key, result }) => {
@@ -261,13 +257,7 @@ export function useBestOf(): {
     // isn't rolled back by a stale token still carrying the old map.
     const rows = Object.entries(legacy)
       .filter(([key]) => !remote[key])
-      .map(([key, r]) => ({
-        user_id: userId,
-        key,
-        winner_date: r.winnerDate,
-        method: r.method,
-        decided_at: r.decidedAt,
-      }));
+      .map(([key, r]) => toRow(userId, key, r));
 
     void (async () => {
       try {

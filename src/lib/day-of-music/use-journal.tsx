@@ -61,13 +61,15 @@ type RemoveVars = { date: string; theme: string; optimistic?: boolean };
 // can render entries it never saw created. Built from each row's `album` blob.
 type JournalResponse = JournalCache;
 
-// Row shape of public.journal_entries (snake_case).
+// Row shape of public.journal_entries (snake_case). `theme` is not null
+// (default 'daily') since 0004_themes.sql; `album` is null on rows older
+// than 0002_album_metadata.sql.
 type JournalRow = {
   album_id: string;
   date: string;
   rating: number;
   note: string;
-  theme: string | null;
+  theme: string;
   // jsonb the database doesn't check — read through normalizeAlbum.
   album: unknown;
 };
@@ -161,7 +163,7 @@ async function fetchJournal(userId: string | null): Promise<JournalResponse> {
       date: r.date,
       rating: r.rating,
       note: r.note,
-      theme: r.theme ?? DEFAULT_THEME_ID,
+      theme: r.theme,
     })),
     // Older rows predate the `album` column and come back null — those albums
     // get backfilled from localStorage by the effect in JournalProvider.
