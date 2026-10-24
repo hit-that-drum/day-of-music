@@ -1,5 +1,7 @@
-// itunes-lookup.ts — iTunes Lookup helpers shared by the /api/music routes
-// (album detail + search). Server-side only: plain fetches, no React.
+// itunes-lookup.ts — iTunes helpers shared by the /api/music routes (album
+// detail + search): the one fetch every iTunes call goes through, the
+// storefront fallback order, row → field conversions, and the id lookups that
+// re-localize results. Server-side only: plain fetches, no React.
 //
 // Why look things up by id: some storefronts — notably KR — answer an album
 // lookup with the album but none of its songs, and the KR search index comes
@@ -14,6 +16,8 @@
 // carry is simply missing from the result. Artist rows stay romanized in every
 // store ("Ha Hyun Sang" even in KR), so an artist's name comes from their
 // album rows instead.
+
+import dayjs from "dayjs";
 
 /** One row of an iTunes Search or Lookup response: an artist, a collection
  *  (album) or a track, with the fields the /api/music routes read. */
@@ -34,6 +38,52 @@ export type ITunesRow = {
   discNumber?: number;
   trackNumber?: number;
 };
+
+// Per request: the routes try store after store, so one that hangs must give
+// way to the next rather than hold the whole response.
+const ITUNES_TIMEOUT_MS = 8_000;
+
+/** One iTunes Search or Lookup request. Identical requests are cached for an
+ *  hour (the rate limit is ~20 calls/min). Resolves to the response's rows, or
+ *  null when the store couldn't be reached, timed out, or answered with an
+ *  error. No lang is added: pass lang "en_us" for English text, or leave it
+ *  out to get names in the store's own language. */
+export async function itunesFetch(
+  endpoint: "search" | "lookup",
+  params: Record<string, string>,
+): Promise<ITunesRow[] | null> {
+  const url = new URL(`https://itunes.apple.com/${endpoint}`);
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  try {
+    // The signal only bounds the request; it isn't part of the cache key.
+    const resp = await fetch(url, {
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(ITUNES_TIMEOUT_MS),
+    });
+    if (!resp.ok) return null;
+    const body = JSON.parse(await resp.text()) as { results?: ITunesRow[] };
+    return body.results ?? [];
+  } catch {
+    return null;
+  }
+}
+
+/** The storefronts to try, in order: the listener's own, then the common
+ *  ones. An album only exists in the stores it was released in, and some
+ *  stores list an album without its songs. */
+export function storefrontsFor(country: string): string[] {
+  return [...new Set([country.toUpperCase(), "US", "KR", "JP", "GB"])];
+}
+
+/** The year of an iTunes release date; 0 when there is none. */
+export function yearOf(releaseDate: string): number {
+  return releaseDate ? dayjs(releaseDate).year() : 0;
+}
+
+/** A row's artwork URL is templated by size: ask for a sharper 600x600. */
+export function hiResArtwork(row: ITunesRow): string {
+  return row.artworkUrl100?.replace("100x100bb", "600x600bb") ?? "";
+}
 
 /** A search result as far as localizing it goes; `id` is "itunes-<id>". */
 type Named = { id: string; title: string; artist: string };
@@ -57,21 +107,10 @@ export async function lookupByIds(
   const batches: number[][] = [];
   for (let i = 0; i < ids.length; i += 150) batches.push(ids.slice(i, i + 150));
   const rows = await Promise.all(
-    batches.map(async (batch) => {
-      const lookupUrl = new URL("https://itunes.apple.com/lookup");
-      lookupUrl.searchParams.set("id", batch.join(","));
-      lookupUrl.searchParams.set("country", store);
-      for (const [key, value] of Object.entries(params))
-        lookupUrl.searchParams.set(key, value);
-      try {
-        // Cache identical lookups for an hour (iTunes rate limit is ~20/min).
-        const resp = await fetch(lookupUrl, { next: { revalidate: 3600 } });
-        if (!resp.ok) return [];
-        return (JSON.parse(await resp.text()).results ?? []) as ITunesRow[];
-      } catch {
-        return [];
-      }
-    }),
+    batches.map(
+      async (batch) =>
+        (await itunesFetch("lookup", { id: batch.join(","), country: store, ...params })) ?? [],
+    ),
   );
   return rows.flat();
 }

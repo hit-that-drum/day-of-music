@@ -148,7 +148,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
     queryFn: () => fetchAlbumDetail(pastedLink!.id, { country: pastedLink!.country }),
     enabled: Boolean(pastedLink),
     staleTime: 5 * 60 * 1000,
-    retry: 1,
+    // No retry: fetchAlbumDetail resolves null on failure instead of throwing.
   });
 
   // Tracklist of the expanded album, for picking a single track.

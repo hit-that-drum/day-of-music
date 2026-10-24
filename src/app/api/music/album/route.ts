@@ -9,20 +9,24 @@
 // are Apple Music catalog IDs, this can later be swapped for the (paid) Apple
 // Music API without changing the client.
 
-import dayjs from "dayjs";
 import { z } from "zod";
 
-import { lookupByIds, type ITunesRow } from "@/lib/day-of-music/itunes-lookup";
+import { badRequest, countryParam } from "@/app/api/music/_shared";
+import {
+  hiResArtwork,
+  itunesFetch,
+  lookupByIds,
+  storefrontsFor,
+  yearOf,
+  type ITunesRow,
+} from "@/lib/day-of-music/itunes-lookup";
 import type { AlbumDetail, TrackItem } from "@/lib/day-of-music/music-types";
 
 const lookupParamsSchema = z.object({
   // Accept either a bare collectionId ("1234567") or the app's prefixed form
   // ("itunes-1234567"); we extract the digits below.
   id: z.string().trim().min(1),
-  country: z
-    .string()
-    .regex(/^[a-zA-Z]{2}$/, "country must be a 2-letter code")
-    .default("US"),
+  country: countryParam,
 });
 
 // AlbumDetail / TrackItem are shared with the client (music-types.ts) so the
@@ -33,21 +37,38 @@ function collectionIdFromParam(raw: string): string | null {
   return match ? match[1] : null;
 }
 
+// An album and its songs in one store: the collection row plus a row per track.
+function lookupIn(store: string, lookupId: string): Promise<ITunesRow[] | null> {
+  // Normalize text (e.g. genre names) to English regardless of storefront.
+  return itunesFetch("lookup", { id: lookupId, entity: "song", country: store, lang: "en_us" });
+}
+
+function buildTrackItems(r: ITunesRow[], coll: ITunesRow): TrackItem[] {
+  return r
+    .filter((x) => x.wrapperType === "track" && x.kind === "song")
+    .sort(
+      (a, b) =>
+        (a.discNumber ?? 1) - (b.discNumber ?? 1) ||
+        (a.trackNumber ?? 0) - (b.trackNumber ?? 0),
+    )
+    .filter((x) => x.trackId != null)
+    .map((x) => ({
+      trackId: x.trackId as number,
+      name: x.trackCensoredName ?? x.trackName ?? "",
+      artist: x.artistName ?? coll.artistName ?? "",
+    }))
+    .filter((t) => t.name.length > 0);
+}
+
+const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const parsed = lookupParamsSchema.safeParse(
     Object.fromEntries(url.searchParams),
   );
 
-  if (!parsed.success) {
-    return Response.json(
-      {
-        error: "Invalid lookup parameters.",
-        issues: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 },
-    );
-  }
+  if (!parsed.success) return badRequest("Invalid lookup parameters.", parsed.error);
 
   const { id, country } = parsed.data;
   const collectionId = collectionIdFromParam(id);
@@ -61,42 +82,7 @@ export async function GET(request: Request) {
   // An album only exists in the storefronts it was released in, and a recovered
   // entry carries no storefront (just the id). So try the requested store
   // first, then common fallbacks, and use the first that has the album.
-  const storefronts = [...new Set([country.toUpperCase(), "US", "KR", "JP", "GB"])];
-
-  async function lookupIn(store: string, lookupId: string): Promise<ITunesRow[] | null> {
-    const itunesUrl = new URL("https://itunes.apple.com/lookup");
-    itunesUrl.searchParams.set("id", lookupId);
-    itunesUrl.searchParams.set("entity", "song");
-    itunesUrl.searchParams.set("country", store);
-    // Normalize text (e.g. genre names) to English regardless of storefront.
-    itunesUrl.searchParams.set("lang", "en_us");
-    try {
-      // Cache identical lookups for an hour (iTunes rate limit is ~20/min).
-      const resp = await fetch(itunesUrl, { next: { revalidate: 3600 } });
-      if (!resp.ok) return null;
-      const body = JSON.parse(await resp.text()) as { results?: ITunesRow[] };
-      return body.results ?? [];
-    } catch {
-      return null;
-    }
-  }
-
-  function buildTrackItems(r: ITunesRow[], coll: ITunesRow): TrackItem[] {
-    return r
-      .filter((x) => x.wrapperType === "track" && x.kind === "song")
-      .sort(
-        (a, b) =>
-          (a.discNumber ?? 1) - (b.discNumber ?? 1) ||
-          (a.trackNumber ?? 0) - (b.trackNumber ?? 0),
-      )
-      .filter((x) => x.trackId != null)
-      .map((x) => ({
-        trackId: x.trackId as number,
-        name: x.trackCensoredName ?? x.trackName ?? "",
-        artist: x.artistName ?? coll.artistName ?? "",
-      }))
-      .filter((t) => t.name.length > 0);
-  }
+  const storefronts = storefrontsFor(country);
 
   // Find an edition of an album (by name + artist) that actually has tracks.
   // Used when the requested id resolves to a songless collection.
@@ -105,27 +91,20 @@ export async function GET(request: Request) {
   // collection fallback and short-circuits on the first edition with tracks, so
   // it's left serial for now. Parallelize per-store if it becomes a latency hot
   // spot.
-  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
   async function findAlbumWithTracks(
     artist: string,
     name: string,
   ): Promise<{ collection: ITunesRow; trackItems: TrackItem[] } | null> {
     if (!artist || !name) return null;
     for (const store of storefronts) {
-      let albums: ITunesRow[];
-      try {
-        const searchUrl = new URL("https://itunes.apple.com/search");
-        searchUrl.searchParams.set("term", `${artist} ${name}`);
-        searchUrl.searchParams.set("entity", "album");
-        searchUrl.searchParams.set("limit", "15");
-        searchUrl.searchParams.set("country", store);
-        searchUrl.searchParams.set("lang", "en_us");
-        const resp = await fetch(searchUrl, { next: { revalidate: 3600 } });
-        if (!resp.ok) continue;
-        albums = (JSON.parse(await resp.text()).results ?? []) as ITunesRow[];
-      } catch {
-        continue;
-      }
+      const albums = await itunesFetch("search", {
+        term: `${artist} ${name}`,
+        entity: "album",
+        limit: "15",
+        country: store,
+        lang: "en_us",
+      });
+      if (!albums) continue;
       // Same album name (normalized), fullest tracklist first.
       const candidates = albums
         .filter((a) => a.collectionId != null && normalize(a.collectionName ?? "") === normalize(name))
@@ -254,9 +233,9 @@ export async function GET(request: Request) {
     title: localizedTitle ?? display.collectionName ?? collection.collectionName ?? "",
     artist: displayArtist,
     genre: collection.primaryGenreName ?? "—",
-    year: releaseDate ? dayjs(releaseDate).year() : 0,
+    year: yearOf(releaseDate),
     releaseDate,
-    artworkUrl: collection.artworkUrl100?.replace("100x100bb", "600x600bb") ?? "",
+    artworkUrl: hiResArtwork(collection),
     trackCount: collection.trackCount ?? tracks.length,
     tracks,
     trackItems: localizedTrackItems,
