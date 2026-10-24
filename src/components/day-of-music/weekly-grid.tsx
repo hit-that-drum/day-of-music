@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useRef, useState, type DragEvent } from "react";
+import { useCallback, useRef, useState, type CSSProperties, type DragEvent } from "react";
 import { ArrowLeft, ArrowRight, CalendarSearch } from "lucide-react";
 
 import {
@@ -140,7 +140,7 @@ export function WeeklyGrid({
       <div
         className="dom-grid"
         ref={gridRef}
-        style={{ ["--cols" as string]: days.length }}
+        style={{ "--cols": days.length } as CSSProperties}
       >
         {/* Label cell — only visible in the 2-column mobile grid. */}
         <div className="dom-grid-label">

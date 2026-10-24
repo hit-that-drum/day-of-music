@@ -4,7 +4,7 @@
 // payload back from a stored (or URL-encoded) snapshot — one renderer, so the
 // copied link can never drift from what the sharer saw.
 
-import type { Ref } from "react";
+import type { CSSProperties, Ref } from "react";
 
 import type { Album } from "@/lib/day-of-music/data";
 import type {
@@ -74,7 +74,7 @@ export function WeekPoster({
       {/* Week grid — identical markup/classes to the weekly board. */}
       <div
         className="dom-grid dom-share-week"
-        style={{ ["--cols" as string]: payload.cells.length }}
+        style={{ "--cols": payload.cells.length } as CSSProperties}
       >
         {payload.cells.map(({ date, dayNum, dow, outOfMonth, album }) => (
           <div
