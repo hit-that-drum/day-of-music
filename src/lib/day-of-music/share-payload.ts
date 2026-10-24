@@ -9,7 +9,7 @@ import type { Metadata } from "next";
 import { z } from "zod";
 
 import { COVER_STYLES } from "@/lib/day-of-music/data";
-import { AESTHETIC_KEYS, TYPE_KEYS } from "@/lib/day-of-music/theme";
+import { AESTHETIC_KEYS, TYPE_KEYS } from "@/lib/day-of-music/appearance";
 
 // ── Payload schemas ─────────────────────────────────────────────────────────
 

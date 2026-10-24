@@ -12,7 +12,7 @@ import {
   TYPE_PAIRS,
   type AestheticKey,
   type TypeKey,
-} from "@/lib/day-of-music/theme";
+} from "@/lib/day-of-music/appearance";
 import type { Tweaks } from "@/lib/day-of-music/tweaks";
 
 /** id of the open panel — the header's Tweaks triggers aria-control it. */

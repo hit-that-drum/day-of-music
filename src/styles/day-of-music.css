@@ -1,11 +1,12 @@
 /* day-of-music.css — Day of Music app styles. Themes applied via CSS variables
-   set on .dom-root by lib/day-of-music/theme.ts. Ported from the design handoff. */
+   set inline on .dom-stage from lib/day-of-music/appearance.ts. Ported from the
+   design handoff. */
 
 .dom-stage {
-  /* Editorial-theme defaults so pages/elements that don't run applyTheme
-     (auth cards, legal pages, modals) still resolve every font and color var.
-     applyTheme overrides these inline per chosen theme. The fonts are
-     TYPE_PAIRS.editorial in lib/day-of-music/theme.ts. */
+  /* Editorial-theme defaults so pages that don't set a theme inline (auth
+     cards, legal pages) still resolve every font and color var. The app and
+     share frames override these inline per chosen theme. The fonts are
+     TYPE_PAIRS.editorial in lib/day-of-music/appearance.ts. */
   --font-display: "Spectral", Georgia, serif;
   --font-body: "Spectral", Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;

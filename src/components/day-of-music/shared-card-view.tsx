@@ -1,13 +1,13 @@
 // shared-card-view.tsx — the public share page body (/s/<token> and /s?d=…).
 // Server-rendered: the poster comes straight from the validated snapshot, and
-// the sharer's theme is reproduced as inline CSS variables (same map
-// applyTheme uses). Only the viewer-aware CTA is a small client boundary.
+// the sharer's theme is reproduced as inline CSS variables (the same map the
+// app frame uses). Only the viewer-aware CTA is a small client boundary.
 
 import type { CSSProperties } from "react";
 import Link from "next/link";
 
 import { POSTER_WIDTH } from "@/lib/day-of-music/poster-size";
-import { googleFontsHref, themeStyleVars } from "@/lib/day-of-music/theme";
+import { themeStyleVars } from "@/lib/day-of-music/appearance";
 import type { SharePayload } from "@/lib/day-of-music/share-payload";
 import {
   MonthPoster,
@@ -26,15 +26,6 @@ export function SharedCardView({ payload }: { payload: SharePayload }) {
 
   return (
     <div className="dom-stage" style={vars}>
-      {/* React hoists these to <head>; same families ensureFonts() loads. */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link
-        rel="preconnect"
-        href="https://fonts.gstatic.com"
-        crossOrigin="anonymous"
-      />
-      <link rel="stylesheet" precedence="dom-fonts" href={googleFontsHref()} />
-
       <main
         className="dom-root"
         data-grid="0"

@@ -5,7 +5,7 @@
 // client modules, share-links.ts included.
 
 import { makeJsonStore, useStore } from "@/lib/day-of-music/local-store";
-import type { AestheticKey, TypeKey } from "@/lib/day-of-music/theme";
+import type { AestheticKey, TypeKey } from "@/lib/day-of-music/appearance";
 
 export type Tweaks = {
   aesthetic: AestheticKey;

@@ -8,9 +8,9 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   useSyncExternalStore,
+  type CSSProperties,
 } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
@@ -27,7 +27,7 @@ import {
   weekDays,
   type Album,
 } from "@/lib/day-of-music/data";
-import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
+import { AESTHETICS, themeStyleVars } from "@/lib/day-of-music/appearance";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { useT } from "@/lib/day-of-music/i18n";
 import type { JournalAlbum } from "@/lib/day-of-music/journal";
@@ -114,7 +114,6 @@ export function DayOfMusicApp({
    *  the tz cookie was present, otherwise the server's (see app/week/page.tsx). */
   initialToday: string;
 }) {
-  const rootRef = useRef<HTMLDivElement>(null);
   const { logAlbum, updateSlot, moveSlot, removeSlot, enrichSlot, albumsByDate } = useJournal();
   const { setActiveTheme } = useActiveTheme();
   const { configured, loading: authLoading, user, signOut } = useAuth();
@@ -173,19 +172,17 @@ export function DayOfMusicApp({
     setReplaceTarget(null);
   }, []);
 
-  useEffect(() => {
-    ensureFonts();
-  }, []);
-
   // Leave the browser's zone in a cookie so the next server render can start
   // from the listener's date instead of its own (no post-hydration correction).
   useEffect(() => {
     rememberTimeZone();
   }, []);
 
-  useEffect(() => {
-    applyTheme(rootRef.current, tweaks.aesthetic, tweaks.typography);
-  }, [tweaks.aesthetic, tweaks.typography]);
+  // The chosen look, as the frame's inline CSS variables (see .dom-stage).
+  const themeVars = useMemo(
+    () => themeStyleVars(tweaks.aesthetic, tweaks.typography) as CSSProperties,
+    [tweaks.aesthetic, tweaks.typography],
+  );
 
   // Monday of the anchor's ISO week, and the full Mon–Sun strip.
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
@@ -403,10 +400,10 @@ export function DayOfMusicApp({
   return (
     // Theme vars are applied to the stage so the modals (scrim/add-flow/share),
     // which render outside .dom-root, inherit them too.
-    <div className="dom-stage" ref={rootRef}>
+    <div className="dom-stage" style={themeVars}>
       <div
         className="dom-root"
-        data-grid={tweaks.aesthetic === "editorial" || tweaks.aesthetic === "dark" ? "1" : "0"}
+        data-grid={AESTHETICS[tweaks.aesthetic].tokens.gridShow ? "1" : "0"}
         // Number of in-flow banners above <main>, so the grid rows match.
         data-banners={String((showGuestBanner ? 1 : 0) + (storageBlocked ? 1 : 0))}
       >

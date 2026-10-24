@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { COVER_STYLES, type Album } from "@/lib/day-of-music/data";
-import { AESTHETIC_KEYS, TYPE_KEYS } from "@/lib/day-of-music/theme";
+import { AESTHETIC_KEYS, TYPE_KEYS } from "@/lib/day-of-music/appearance";
 import {
   buildMonthSharePayload,
   buildWeekSharePayload,

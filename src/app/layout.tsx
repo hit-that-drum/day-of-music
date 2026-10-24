@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "../styles/day-of-music.css";
+import { googleFontsHref } from "@/lib/day-of-music/appearance";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
@@ -51,6 +52,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
+      <head>
+        {/* Every typography pair's Google Fonts, on every route — auth and
+            legal pages too, which would otherwise fall back to Georgia. Saved
+            card images embed the same URL (save-card.ts). */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="stylesheet" href={googleFontsHref()} />
+      </head>
       <body className="flex min-h-full flex-col">
         <Providers>{children}</Providers>
       </body>

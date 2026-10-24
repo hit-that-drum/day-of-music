@@ -3,11 +3,11 @@
 
 "use client";
 
-import { Fragment, useEffect, useRef } from "react";
+import { Fragment, type CSSProperties } from "react";
 import Link from "next/link";
 
 import type { Album } from "@/lib/day-of-music/data";
-import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
+import { themeStyleVars } from "@/lib/day-of-music/appearance";
 import { useT } from "@/lib/day-of-music/i18n";
 import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { BrandMark } from "@/components/day-of-music/atoms";
@@ -69,20 +69,17 @@ const REPORT_EMAIL_HREF = `mailto:dayofmusic365@gmail.com?subject=${encodeURICom
   "이용 중 불편했던 점이나 개선 의견을 자유롭게 적어주세요.\n\n내용:\n\n사용 환경(선택):\n",
 )}`;
 
+// The landing always shows the default look, whatever the visitor's Tweaks.
+const LANDING_THEME = themeStyleVars("editorial", "editorial") as CSSProperties;
+
 export function HomeLanding() {
-  const rootRef = useRef<HTMLDivElement>(null);
   const { configured, user, signOut } = useAuth();
   const t = useT();
   // Empty in English, which shows just the wordmark (as the header does).
   const tagline = t("brand.tagline");
 
-  useEffect(() => {
-    ensureFonts();
-    applyTheme(rootRef.current, "editorial", "editorial");
-  }, []);
-
   return (
-    <div className="dom-stage" ref={rootRef}>
+    <div className="dom-stage" style={LANDING_THEME}>
       <div className="dom-root" data-grid="1">
         <header className="dom-topbar">
           <div className="dom-brand">

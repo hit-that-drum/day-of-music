@@ -6,7 +6,7 @@
 import { toPng } from "html-to-image";
 
 import { POSTER_WIDTH } from "@/lib/day-of-music/poster-size";
-import { googleFontsHref } from "@/lib/day-of-music/theme";
+import { googleFontsHref } from "@/lib/day-of-music/appearance";
 
 // The reference export width — matches --dom-modal-w (the poster's full-size
 // desktop layout). Every export is rendered at this width so the saved image is
