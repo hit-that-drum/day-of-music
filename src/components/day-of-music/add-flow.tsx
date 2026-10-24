@@ -241,6 +241,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                     <button
                       className="dom-addflow-result"
                       data-active={picked?.id === a.id ? "1" : "0"}
+                      aria-pressed={picked?.id === a.id}
                       onClick={() => {
                         setPicked(a);
                         setExpandedId(expandable ? a.id : null);
@@ -401,6 +402,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                     key={k}
                     className="dom-addflow-date"
                     data-active={selectedDates.has(k) ? "1" : "0"}
+                    aria-pressed={selectedDates.has(k)}
                     onClick={() => toggleDate(k)}
                   >
                     <span className="dom-addflow-date-num">{d.getDate()}</span>
@@ -545,6 +547,7 @@ function TrackPanel({
               key={track.trackId}
               className="dom-addflow-track"
               data-active={picked?.id === trackAlbum.id ? "1" : "0"}
+              aria-pressed={picked?.id === trackAlbum.id}
               onClick={() => onPick(trackAlbum)}
             >
               <span className="dom-addflow-track-name">{track.name}</span>
