@@ -17,6 +17,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
@@ -52,6 +53,11 @@ export function focusUnlessPhone(el: HTMLElement | null) {
   }
   el.closest<HTMLElement>(".dom-modal")?.focus({ preventScroll: true });
 }
+
+// What Tab can land on inside a panel (visibility is checked separately).
+const TABBABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), ' +
+  'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 type Sample = { y: number; t: number };
 type Drag = { id: number; startY: number; dy: number; samples: Sample[] };
@@ -105,6 +111,33 @@ export function Modal({
       }
     };
   }, [opener]);
+
+  // Tab stays in the dialog: past the last control it wraps to the first, and
+  // Shift+Tab the other way. aria-modal hides the board behind the scrim from
+  // screen readers, but not from the keyboard.
+  function onPanelKeyDown(e: ReactKeyboardEvent<HTMLDivElement>) {
+    const sheet = sheetRef.current;
+    if (e.key !== "Tab" || !sheet) return;
+    // A dialog opened inside this one (the public-link confirm) keeps its own.
+    if ((e.target as Element).closest(".dom-modal") !== sheet) return;
+    const tabbables = Array.from(sheet.querySelectorAll<HTMLElement>(TABBABLE)).filter(
+      (el) => el.getClientRects().length > 0,
+    );
+    const first = tabbables[0];
+    const last = tabbables[tabbables.length - 1];
+    if (!first || !last) {
+      e.preventDefault();
+      return;
+    }
+    const active = document.activeElement;
+    if (e.shiftKey && (active === first || active === sheet)) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
 
   // Return the sheet to rest. Clearing the inline transform matters: a
   // transformed .dom-modal is the containing block for fixed descendants
@@ -205,19 +238,17 @@ export function Modal({
   }
 
   return (
-    <div
-      className="dom-scrim"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label={label}
-      aria-labelledby={labelledBy}
-    >
+    <div className="dom-scrim" onClick={onClose} role="presentation">
       <div
         ref={sheetRef}
         className={className ? `dom-modal ${className}` : "dom-modal"}
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        aria-labelledby={labelledBy}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={onPanelKeyDown}
       >
         <div
           className="dom-modal-bar"
