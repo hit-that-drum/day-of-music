@@ -12,6 +12,7 @@ import {
   useSyncExternalStore,
   type CSSProperties,
 } from "react";
+import Link from "next/link";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -278,22 +279,16 @@ export function DayOfMusicApp({
   // Drag-and-drop reschedule (onMove={moveSlot}): dropping onto an empty day
   // moves the album there; dropping onto a filled day swaps the two days.
   // moveSlot is a stable ref, so it's passed straight through (its Promise
-  // result is ignored there). Day Detail's reschedule arrives via handleMove
-  // below instead, so the `date` branch in handleUpdate is legacy — kept for
-  // safety in case a patch still carries a different date.
+  // result is ignored there). Day Detail's reschedule arrives via handleMove.
 
-  // `date` identifies the slot. A patch carrying `date` is a reschedule (move);
-  // otherwise it's a rating/note edit on the same slot.
+  // A rating / note / info edit on the slot at `date`. Never a move: the patch
+  // can't carry a date (Day Detail reschedules through handleMove).
   const handleUpdate = useCallback(
-    (date: string, patch: Partial<Album>) => {
-      if (patch.date && patch.date !== date) {
-        moveSlot(date, patch.date);
-      } else {
-        updateSlot(date, patch);
-      }
+    (date: string, patch: Omit<Partial<Album>, "date">) => {
+      updateSlot(date, patch);
       setOpenAlbum((prev) => (prev && prev.date === date ? { ...prev, ...patch } : prev));
     },
-    [moveSlot, updateSlot],
+    [updateSlot],
   );
 
   // Lazily-fetched album metadata (tracklist, release date) from iTunes Lookup.
@@ -356,6 +351,13 @@ export function DayOfMusicApp({
     setShowAdd(true);
   }, []);
 
+  // Open the Add flow on a day (an empty board cell). Not memoized: none of
+  // the boards it's passed to is a memo component.
+  const openAddFor = (date: string) => {
+    setAddDate(date);
+    setShowAdd(true);
+  };
+
   const handleSave = useCallback(
     (entry: NewEntry) => {
       // Log the same album to every selected day (one album per day per theme)
@@ -394,6 +396,8 @@ export function DayOfMusicApp({
     getStorageBlockedServer,
   );
 
+  // The signed-in account, for the top bar and the More sheet.
+  const account = configured && user ? { email: user.email ?? "", onSignOut: signOut } : null;
   const guestDismissed = useStore(guestBannerDismissed);
   const showGuestBanner = isGuest && !guestDismissed;
 
@@ -414,7 +418,7 @@ export function DayOfMusicApp({
           tweaksOpen={showTweaks}
           onMore={() => setShowMore(true)}
           moreOpen={showMore}
-          account={configured && user ? { email: user.email ?? "", onSignOut: signOut } : null}
+          account={account}
           showAuthLinks={isGuest}
         />
 
@@ -423,12 +427,12 @@ export function DayOfMusicApp({
             {/* Long copy on desktop, one-line short copy + ✕ on phones (CSS). */}
             <span className="dom-guest-banner-long">{t("guest.banner")}</span>
             <span className="dom-guest-banner-short">{t("guest.bannerShort")}</span>
-            <a href="/signup" className="dom-guest-banner-cta-long">
+            <Link href="/signup" className="dom-guest-banner-cta-long">
               {t("guest.signup")}
-            </a>
-            <a href="/signup" className="dom-guest-banner-cta-short">
+            </Link>
+            <Link href="/signup" className="dom-guest-banner-cta-short">
               {t("actions.signUp")}
-            </a>
+            </Link>
             <IconButton
               icon={X}
               iconSize={16}
@@ -457,10 +461,7 @@ export function DayOfMusicApp({
               splitByMonth={tweaks.weekSplit}
               today={today}
               onOpen={handleOpen}
-              onAdd={(date) => {
-                setAddDate(date);
-                setShowAdd(true);
-              }}
+              onAdd={openAddFor}
               onPrev={prevWeek}
               onNext={nextWeek}
               // Jump the week view to whatever date the user picks in the mini calendar.
@@ -476,10 +477,7 @@ export function DayOfMusicApp({
               today={today}
               splitByMonth={tweaks.weekSplit}
               onOpen={handleOpen}
-              onAdd={(date) => {
-                setAddDate(date);
-                setShowAdd(true);
-              }}
+              onAdd={openAddFor}
               onPrev={prevMonth}
               onNext={nextMonth}
               onJump={setAnchor}
@@ -559,7 +557,7 @@ export function DayOfMusicApp({
       {showMore && (
         <MoreSheet
           onClose={() => setShowMore(false)}
-          account={configured && user ? { email: user.email ?? "", onSignOut: signOut } : null}
+          account={account}
           showAuthLinks={isGuest}
         />
       )}

@@ -29,8 +29,8 @@ type Tab = "tracklist" | "journal" | "info";
 type DayDetailProps = {
   album: Album;
   onClose: () => void;
-  /** Update the slot at this date — rating / note / info. Never carries `date`; moves go through onMove. */
-  onUpdate: (date: string, patch: Partial<Album>) => void;
+  /** Update the slot at this date — rating / note / info. Moves go through onMove. */
+  onUpdate: (date: string, patch: Omit<Partial<Album>, "date">) => void;
   /** Reschedule: move this entry to `toDate` (swap when that day is logged). The app closes the modal. */
   onMove: (fromDate: string, toDate: string) => void;
   today: Date;
