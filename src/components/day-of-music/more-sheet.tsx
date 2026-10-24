@@ -9,6 +9,7 @@ import { useEffect, useRef, type KeyboardEvent } from "react";
 
 import { Button, buttonClass } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
+import type { Account } from "@/components/day-of-music/top-bar";
 import { LOCALES, useLanguage, useT } from "@/lib/day-of-music/i18n";
 
 export function MoreSheet({
@@ -17,7 +18,7 @@ export function MoreSheet({
   showAuthLinks,
 }: {
   onClose: () => void;
-  account: { email: string; onSignOut: () => void } | null;
+  account: Account | null;
   showAuthLinks: boolean;
 }) {
   const t = useT();

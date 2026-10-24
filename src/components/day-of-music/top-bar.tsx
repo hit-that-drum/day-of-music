@@ -5,23 +5,26 @@
 import Link from "next/link";
 import { Ellipsis, SlidersHorizontal } from "lucide-react";
 
-import type { ScreenId } from "@/components/day-of-music/day-of-music-app";
 import { BrandMark, Button, IconButton, buttonClass } from "@/components/day-of-music/atoms";
 import { LanguageSwitch } from "@/components/day-of-music/language-switch";
 import { useT } from "@/lib/day-of-music/i18n";
 import type { MessageKey } from "@/lib/day-of-music/messages";
 
-// Each screen's label comes from the message dictionary (nav.*), rendered in
-// the current language only. Exported so the phone tab bar shares the list.
-export const SCREENS: { id: ScreenId; key: MessageKey }[] = [
+// The app's screens, in nav order. Each label comes from the message
+// dictionary (nav.*), rendered in the current language only. Exported so the
+// phone tab bar and the app shell share the list.
+export const SCREENS = [
   { id: "week", key: "nav.week" },
   { id: "month", key: "nav.month" },
   { id: "search", key: "nav.journal" },
   { id: "logs", key: "nav.logs" },
   { id: "profile", key: "nav.profile" },
-];
+] as const satisfies readonly { id: string; key: MessageKey }[];
 
-type Account = { email: string; onSignOut: () => void };
+export type ScreenId = (typeof SCREENS)[number]["id"];
+
+/** The signed-in account as the header and the phone More sheet show it. */
+export type Account = { email: string; onSignOut: () => void };
 
 export function TopBar({
   screen,

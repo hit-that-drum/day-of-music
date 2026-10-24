@@ -38,12 +38,10 @@ import { MoreSheet } from "@/components/day-of-music/more-sheet";
 import { BestOfWeekModal } from "@/components/day-of-music/best-of-week-modal";
 import { BestOfMonthModal } from "@/components/day-of-music/best-of-month-modal";
 import { ThemeTabs } from "@/components/day-of-music/theme-tabs";
-import { TopBar } from "@/components/day-of-music/top-bar";
+import { TopBar, type ScreenId } from "@/components/day-of-music/top-bar";
 import { TweaksPanel } from "@/components/day-of-music/tweaks-panel";
 import { setTweak, useTweaks } from "@/lib/day-of-music/tweaks";
 import { WeeklyGrid } from "@/components/day-of-music/weekly-grid";
-
-export type ScreenId = "week" | "month" | "search" | "logs" | "profile";
 
 // "Today" is the listener's local calendar date, as YYYY-MM-DD. (The sample
 // catalog covers Jan 5–18, 2026 — navigate back to that week to see the demo
