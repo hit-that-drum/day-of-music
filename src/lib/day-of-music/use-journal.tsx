@@ -27,6 +27,8 @@ import {
   type JournalPatch,
 } from "@/lib/day-of-music/journal";
 import { albumFromDetail, fetchAlbumDetail } from "@/lib/day-of-music/music-search";
+import { TRACKLIST_VERSION } from "@/lib/day-of-music/music-types";
+import { useCountry } from "@/lib/day-of-music/profile";
 import {
   DEFAULT_THEME_ID,
   resolveActiveTheme,
@@ -201,6 +203,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const { configured, user } = useAuth();
   const t = useT();
+  const country = useCountry();
   const userId = user?.id ?? null;
   const queryKey = useMemo(() => ["journal", userId ?? "anon"] as const, [userId]);
 
@@ -555,15 +558,24 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     );
     for (const e of missing) {
       recoveredRef.current.add(e.albumId);
-      void fetchAlbumDetail(e.albumId).then((detail) => {
+      // In the listener's storefront, like Day Detail's own fetch, and a
+      // non-empty tracklist is tagged with that store and TRACKLIST_VERSION —
+      // untagged, opening the entry would refetch it as stale.
+      void fetchAlbumDetail(e.albumId, { country }).then((detail) => {
         if (!detail) return;
-        const album = mergeEntry(albumFromDetail(detail), e);
+        const fetched = albumFromDetail(detail);
+        const album = mergeEntry(
+          detail.tracks.length
+            ? { ...fetched, tracksCountry: country, tracksVersion: TRACKLIST_VERSION }
+            : fetched,
+          e,
+        );
         // Show it on this device now, and persist the blob (in the entry's own
         // theme) so it syncs.
         upsertMutate({ album, theme: e.theme });
       });
     }
-  }, [queryData, poolById, upsertMutate]);
+  }, [queryData, poolById, country, upsertMutate]);
 
   const value = useMemo<JournalContextValue>(
     () => ({
