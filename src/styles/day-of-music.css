@@ -2640,6 +2640,10 @@
   background-color: var(--bg);
   padding: 52px 0 24px;
 }
+/* Takes focus when it opens (poster-fit.tsx); a container, so no ring. */
+.dom-poster-zoom-view:focus {
+  outline: none;
+}
 .dom-poster-zoom-close {
   position: fixed;
   top: 8px;
@@ -3247,6 +3251,9 @@
 /* ── Tweaks panel ───────────────────────────────────────────────────────── */
 
 /* Panel drops down from the header Tweaks button (top-right). */
+.dom-tweaks-panel:focus {
+  outline: none; /* takes focus on open (tweaks-panel.tsx) */
+}
 .dom-tweaks-panel {
   position: fixed;
   top: 92px;

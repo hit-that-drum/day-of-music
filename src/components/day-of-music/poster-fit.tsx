@@ -103,6 +103,20 @@ export function PosterFit({ children }: { children: ReactNode }) {
   // Escape closes the zoom view, not the share modal underneath it.
   useEscapeLayer(() => setZoomed(false), expanded);
 
+  // Focus follows the zoom: into the view as it opens (its opener, the zoom
+  // button, unmounts as the poster moves out), and back to that button —
+  // mounted again in the frame — once it closes.
+  const zoomViewRef = useRef<HTMLDivElement>(null);
+  const closeZoomRef = useRef<HTMLButtonElement>(null);
+  const wasExpanded = useRef(false);
+  useEffect(() => {
+    if (expanded) zoomViewRef.current?.focus({ preventScroll: true });
+    else if (wasExpanded.current) {
+      frameRef.current?.querySelector<HTMLElement>(".dom-poster-zoom")?.focus();
+    }
+    wasExpanded.current = expanded;
+  }, [expanded]);
+
   const poster = (
     <div
       className="dom-poster-fit-inner"
@@ -146,16 +160,26 @@ export function PosterFit({ children }: { children: ReactNode }) {
         createPortal(
           <div
             className="dom-poster-zoom-view"
+            ref={zoomViewRef}
             role="dialog"
             aria-modal="true"
             aria-label={t("poster.zoomLabel")}
+            tabIndex={-1}
             // Tapping the margin around the 1:1 poster closes, like a lightbox.
             onClick={(e) => {
               if (e.target === e.currentTarget) setZoomed(false);
             }}
+            // The ✕ is the view's only control, so Tab stays on it rather than
+            // wandering to the board behind.
+            onKeyDown={(e) => {
+              if (e.key !== "Tab") return;
+              e.preventDefault();
+              closeZoomRef.current?.focus();
+            }}
           >
             {poster}
             <button
+              ref={closeZoomRef}
               type="button"
               className="dom-poster-zoom-close"
               onClick={() => setZoomed(false)}

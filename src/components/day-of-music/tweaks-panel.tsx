@@ -31,6 +31,8 @@ export function TweaksPanel({
   onChange: <K extends keyof Tweaks>(key: K, value: Tweaks[K]) => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  // Set when a click elsewhere closes the panel (see the focus effect below).
+  const closedByPointer = useRef(false);
   const t = useT();
 
   // Dismiss when a pointer-down lands outside the panel. The header's Tweaks
@@ -43,6 +45,7 @@ export function TweaksPanel({
       if (!target) return;
       if (panelRef.current?.contains(target)) return;
       if (target.closest("[data-dom-tweaks-trigger]")) return;
+      closedByPointer.current = true;
       onClose();
     }
     window.addEventListener("pointerdown", onPointerDown, true);
@@ -50,6 +53,25 @@ export function TweaksPanel({
   }, [open, onClose]);
 
   useEscapeLayer(onClose, open);
+
+  // Focus moves into the panel when it opens and back to the Tweaks button
+  // when it closes (✕, Escape) — but not when a click elsewhere closed it:
+  // that click is on its way to its own target, and moving focus in the
+  // middle of it swallowed it (an empty day's "+ log" stopped opening the Add
+  // flow). Non-modal, so Tab may still leave the panel.
+  useEffect(() => {
+    if (!open) return;
+    const panel = panelRef.current;
+    const opener = document.activeElement as HTMLElement | null;
+    closedByPointer.current = false;
+    panel?.focus();
+    return () => {
+      if (closedByPointer.current) return;
+      const active = document.activeElement;
+      const lost = !active || active === document.body || panel?.contains(active);
+      if (lost && opener?.isConnected) opener.focus();
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -60,6 +82,7 @@ export function TweaksPanel({
       role="dialog"
       aria-label={t("tweaks.title")}
       ref={panelRef}
+      tabIndex={-1}
     >
       <div className="dom-tweaks-panel-hd">
         <span className="dom-tweak-section dom-tweaks-panel-title">{t("tweaks.title")}</span>

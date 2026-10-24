@@ -66,8 +66,9 @@ export function WeekPicker({
       <div
         className="dom-wp"
         data-mode="week"
+        // A popover, not a modal: on desktop focus stays on the title ▾ that
+        // opened it (see above), so the board behind isn't declared inert.
         role="dialog"
-        aria-modal="true"
         aria-label={t("week.jumpTitle")}
         ref={wpRef}
         tabIndex={-1}
