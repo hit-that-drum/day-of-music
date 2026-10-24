@@ -5,6 +5,7 @@
 
 import type { CSSProperties } from "react";
 
+import { artworkSrcSet } from "@/lib/day-of-music/artwork-size";
 import type { Album } from "@/lib/day-of-music/data";
 
 const NATIVE = 240;
@@ -16,6 +17,11 @@ type CoverProps = {
   album: Album;
   /** Pixel size, or "100%" to fill the container fluidly (1:1). */
   size?: number | "100%";
+  /** How wide a fluid cover is shown, as an img `sizes` value, so real artwork
+   *  loads at a matching resolution (see artwork-size.ts). A pixel `size`
+   *  already says it. Without either the stored artwork loads as is, which is
+   *  what the share posters and Day Detail want. */
+  sizes?: string;
 };
 
 type StyleArgs = {
@@ -27,16 +33,20 @@ type StyleArgs = {
   bg: string;
 };
 
-export function Cover({ album, size = 240 }: CoverProps) {
+export function Cover({ album, size = 240, sizes }: CoverProps) {
   const { cover, title, artist, artworkUrl } = album;
   const { style, bg, fg, accent } = cover;
   const args: StyleArgs = { s: NATIVE, title, artist, fg, accent, bg };
+  const shownAt = typeof size === "number" ? `${size}px` : sizes;
+  const srcSet = artworkUrl && shownAt ? artworkSrcSet(artworkUrl) : undefined;
 
   // Real artwork (e.g. iTunes search results) wins over the typographic tile.
   const inner = artworkUrl ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={artworkUrl}
+      srcSet={srcSet}
+      sizes={srcSet ? shownAt : undefined}
       alt={`${title} — ${artist}`}
       width={NATIVE}
       height={NATIVE}

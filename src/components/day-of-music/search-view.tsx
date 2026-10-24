@@ -13,6 +13,8 @@ import { Cover } from "@/components/day-of-music/cover";
 import { MetaLine, Stars } from "@/components/day-of-music/atoms";
 
 const RESULT_PAGE_SIZE = 10;
+// A result's artwork is a fixed 135px square (.dom-search-result, 12-search.css).
+const COVER_SIZES = "135px";
 
 export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
   const { allAlbums } = useJournal();
@@ -113,7 +115,7 @@ export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
               onClick={() => onOpen(a)}
             >
               <div>
-                <Cover album={a} size="100%" />
+                <Cover album={a} size="100%" sizes={COVER_SIZES} />
               </div>
               <div className="dom-search-result-info">
                 <div className="dom-search-result-title">{a.title}</div>

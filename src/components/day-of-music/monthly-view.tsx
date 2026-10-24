@@ -23,6 +23,11 @@ import { Button, IconButton } from "@/components/day-of-music/atoms";
 import { BestOfButton } from "@/components/day-of-music/best-of-button";
 import { Cover } from "@/components/day-of-music/cover";
 
+// How wide a day's cover is shown (a seventh of the board less its gutters,
+// fitted to the rendered widths; at most 76px on phones), so its artwork loads
+// at a matching resolution. A few px off only changes which rendition is picked.
+const COVER_SIZES = "(max-width: 760px) 76px, calc((100vw - 120px) / 7)";
+
 export function MonthlyView({
   anchor,
   today,
@@ -266,7 +271,7 @@ function MonthCell({
           </div>
           {album && (
             <div className="dom-month-cal-cover">
-              <Cover album={album} size="100%" />
+              <Cover album={album} size="100%" sizes={COVER_SIZES} />
             </div>
           )}
           {album && (

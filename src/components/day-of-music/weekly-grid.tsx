@@ -23,6 +23,14 @@ import { Cover } from "@/components/day-of-music/cover";
 import { Button, IconButton, MetaLine } from "@/components/day-of-music/atoms";
 import { WeekPicker } from "@/components/day-of-music/week-picker";
 
+// How wide a day's cover is shown (7 columns, 4 at ≤1100px, 2 on phones, less
+// the board's gutters; fitted to the rendered widths), so its artwork loads at a
+// matching resolution. A few px off only changes which rendition is picked.
+const COVER_SIZES =
+  "(max-width: 760px) calc((100vw - 56px) / 2), " +
+  "(max-width: 1100px) calc((100vw - 112px) / 4), " +
+  "calc((100vw - 121px) / 7)";
+
 type WeeklyGridProps = {
   days: Date[];
   /** Day whose month + week-number label the header shows. Equals the week's
@@ -354,7 +362,7 @@ function DayCell({
           aria-label={t("aria.openAlbum", { title: album.title })}
         >
           <div className="dom-cover-wrap">
-            <Cover album={album} size="100%" />
+            <Cover album={album} size="100%" sizes={COVER_SIZES} />
           </div>
           <div className="dom-day-meta">
             <div className="dom-title">{album.title}</div>
