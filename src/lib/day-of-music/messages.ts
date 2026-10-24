@@ -780,6 +780,17 @@ export const MESSAGES = {
   "share.createCopy": { en: "Create & copy", ko: "생성 후 복사", ja: "作成してコピー", zh: "创建并复制", es: "Crear y copiar" },
   "share.toastCopied": { en: "Link copied", ko: "링크를 복사했어요", ja: "リンクをコピーしました", zh: "已复制链接", es: "Enlace copiado" },
   "share.toastError": { en: "Couldn't create share link", ko: "공유 링크를 만들지 못했어요", ja: "共有リンクを作成できませんでした", zh: "无法创建分享链接", es: "No se pudo crear el enlace" },
+  // Shown in the dialog when the link was created but the clipboard refused it.
+  "share.createdTitle": { en: "Link created", ko: "링크를 만들었어요", ja: "リンクを作成しました", zh: "链接已创建", es: "Enlace creado" },
+  "share.copyFailedBody": {
+    en: "It couldn't be copied automatically, so copy it from the box below. There's no need to create it again.",
+    ko: "자동으로 복사하지 못했어요. 아래 칸에서 직접 복사해 주세요. 다시 만들 필요는 없어요.",
+    ja: "自動でコピーできませんでした。下の欄からコピーしてください。作り直す必要はありません。",
+    zh: "无法自动复制，请从下方的框中复制。无需重新创建。",
+    es: "No se pudo copiar automáticamente: cópialo del cuadro de abajo. No hace falta crearlo de nuevo.",
+  },
+  "share.copyLink": { en: "Copy link", ko: "링크 복사", ja: "リンクをコピー", zh: "复制链接", es: "Copiar enlace" },
+  "share.toastCopyFailed": { en: "Couldn't copy the link", ko: "링크를 복사하지 못했어요", ja: "リンクをコピーできませんでした", zh: "无法复制链接", es: "No se pudo copiar el enlace" },
 
   // ── Poster zoom (phone-only: the preview is a scaled-down miniature) ────
   "poster.zoom": { en: "Actual size", ko: "원본 크기", ja: "原寸大", zh: "原始尺寸", es: "Tamaño real" },
