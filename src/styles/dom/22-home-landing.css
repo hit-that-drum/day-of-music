@@ -1,0 +1,135 @@
+/* ── Home landing & guest mode ──────────────────────────────────────────── */
+
+a.dom-brand,
+a.dom-signin-brand {
+  text-decoration: none;
+  color: inherit;
+}
+a.dom-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dom-btn-lg {
+  padding: 14px 24px;
+  font-size: 15px;
+}
+
+.dom-home-hero {
+  width: min(640px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 48px 24px;
+  text-align: left;
+}
+.dom-home-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(44px, 8vw, 72px);
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+  margin: 0;
+}
+.dom-home-sub {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--ink2);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 46ch;
+}
+/* Four fluid tiles. max-width keeps them at their designed 120px on a wide
+   hero; the phone override drops the row to two columns (see the phone pass). */
+.dom-home-covers {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 8px 0;
+  width: 100%;
+  max-width: 510px;
+}
+.dom-home-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.dom-home-note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+  margin: 0;
+}
+.dom-home-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 2px 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink3);
+}
+.dom-home-footer a,
+.dom-auth-terms a {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
+.dom-home-legal {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dom-auth-terms {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--ink3);
+}
+
+.dom-guest-banner {
+  grid-column: 1 / -1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ink2);
+  background-color: var(--chip);
+  border: 1px solid var(--line);
+  padding: 8px 14px;
+}
+.dom-guest-banner a {
+  color: var(--ink);
+}
+
+.dom-signin-sub a {
+  color: var(--ink);
+}
+
+/* Phone pass for the landing (kept here, after the base rules above, so the
+   overrides win the cascade). */
+@media (max-width: 760px) {
+  .dom-home-hero {
+    padding: 32px 4px 24px;
+  }
+  /* Four 120px tiles left ~90px of dead gutter beside them at 375. Two even
+     columns fill the row instead. */
+  .dom-home-covers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: none;
+  }
+  .dom-home-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .dom-home-legal {
+    flex-wrap: wrap;
+  }
+}

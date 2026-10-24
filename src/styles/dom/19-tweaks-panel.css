@@ -1,0 +1,83 @@
+/* ── Tweaks panel ───────────────────────────────────────────────────────── */
+
+/* Panel drops down from the header Tweaks button (top-right). */
+.dom-tweaks-panel:focus {
+  outline: none; /* takes focus on open (tweaks-panel.tsx) */
+}
+.dom-tweaks-panel {
+  position: fixed;
+  top: 92px;
+  right: 28px;
+  z-index: 60;
+  width: 260px;
+  background-color: var(--panel, #f6efe0);
+  border: 1px solid var(--line, #1a1612);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: none;
+  overflow: visible;
+  font-family: var(--font-mono);
+}
+.dom-tweaks-panel-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dom-tweaks-panel-title {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.dom-tweaks-close {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink2);
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 8px;
+}
+.dom-tweaks-close:hover {
+  background-color: var(--chip);
+}
+.dom-tweak-section {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-tweak-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dom-tweak-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+.dom-tweak-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.dom-tweak-switch {
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 4px 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.dom-tweak-switch[data-on="1"] {
+  background-color: var(--ink);
+  color: var(--bg);
+}

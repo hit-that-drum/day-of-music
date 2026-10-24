@@ -1,0 +1,499 @@
+/* ── Mobile app shell (≤760px) ─────────────────────────────────────────────
+   Compact 1-row header (.dom-topbar-app), 5-tab fixed bottom bar, 1-line
+   dismissible guest banner, board header rows, week-jump sheet, More sheet.
+   Appended last on purpose: several rules override same-specificity phone
+   rules in the ≤760 blocks above (topbar, theme select, week header) and base
+   rules that follow the Phone pass (guest banner). Tokens only; radius 0; 1px
+   rules. */
+@media (max-width: 760px) {
+  /* Header ─────────────────────────────────────────────────────────────── */
+  .dom-topbar-app {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    justify-items: stretch;
+    align-items: center;
+    row-gap: 0;
+    column-gap: 8px;
+    padding: 5px 8px 5px 12px;
+  }
+  .dom-topbar-app .dom-nav,
+  .dom-topbar-app .dom-topbar-actions {
+    display: none;
+  }
+  .dom-topbar-app .dom-brand {
+    min-width: 0;
+    min-height: 44px;
+    align-items: center;
+    gap: 8px;
+    justify-self: start;
+  }
+  .dom-topbar-app .dom-brand-name {
+    font-size: 18px;
+  }
+  .dom-topbar-m {
+    display: flex;
+    gap: 4px;
+  }
+  .dom-topbar-m .dom-iconbtn {
+    width: 44px;
+    height: 44px;
+    border-color: transparent;
+    color: var(--ink2);
+  }
+  .dom-topbar-m .dom-iconbtn:active {
+    background-color: var(--chip);
+  }
+
+  /* Bottom tab bar ─────────────────────────────────────────────────────── */
+  .dom-tabbar {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 45;
+    height: calc(56px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background-color: var(--panel);
+    border-top: 1px solid var(--line);
+  }
+  .dom-tab-btn {
+    height: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px 2px;
+    min-width: 0;
+    color: var(--ink2);
+    transition:
+      background-color 0.12s ease,
+      color 0.12s ease;
+  }
+  .dom-tab-btn + .dom-tab-btn {
+    border-left: 1px solid var(--lineSoft);
+  }
+  .dom-tab-btn:active {
+    background-color: var(--chip);
+  }
+  .dom-tab-btn[data-active="1"] {
+    background-color: var(--ink);
+    color: var(--bg);
+  }
+  .dom-tab-btn:focus-visible,
+  .dom-topbar-m .dom-iconbtn:focus-visible,
+  .dom-guest-dismiss:focus-visible,
+  .dom-menu-lang:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--accent);
+  }
+  .dom-tab-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1.1;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: center;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  /* Room under the last row (overrides the base padding); the bar is out of
+     grid flow. */
+  .dom-root {
+    padding-bottom: calc(56px + max(var(--pad), env(safe-area-inset-bottom)));
+  }
+  /* iOS/Android lift fixed bars onto the soft keyboard — hide the bar while a
+     text field inside the page has focus (Journal search, Profile forms).
+     Padding above stays, so nothing jumps. Modal inputs live outside .dom-root. */
+  .dom-root:has(.dom-input:focus) .dom-tabbar {
+    display: none;
+  }
+
+  /* Guest banner — one 40px line, dismissible ─────────────────────────── */
+  .dom-guest-banner[data-kind="guest"] {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 2px 0 12px;
+  }
+  .dom-guest-banner[data-kind="guest"] .dom-guest-banner-long,
+  .dom-guest-banner[data-kind="guest"] a.dom-guest-banner-cta-long {
+    display: none;
+  }
+  .dom-guest-banner[data-kind="guest"] .dom-guest-banner-short {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dom-guest-banner[data-kind="guest"] a.dom-guest-banner-cta-short {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    white-space: nowrap;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .dom-guest-banner[data-kind="guest"] .dom-guest-dismiss {
+    display: inline-flex;
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border-color: transparent;
+    color: var(--ink2);
+    position: relative;
+  }
+  /* 44×44 hit area for the ✕ while the visible box stays 36px inside the
+     40px banner line (the banner does not clip). -5px: inset is measured from
+     the padding box, 1px inside the border. */
+  .dom-guest-banner[data-kind="guest"] .dom-guest-dismiss::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+  }
+
+  /* Theme select — 54px block (overrides the earlier ≤760 rules) ────────── */
+  .dom-theme-select {
+    padding: 10px 14px 0;
+    gap: 0;
+  }
+  .dom-theme-select .dom-select-field-label {
+    display: none; /* trigger carries aria-label via DomSelectField */
+  }
+  /* Exact (0,5,0) / (0,4,0) copies of the base large-underline selectors so
+     they tie and win by order. */
+  .dom-root
+    .dom-theme-select[data-variant="underline"][data-size="large"]
+    .dom-select-trigger {
+    min-height: 44px;
+    font-size: 16px; /* iOS zoom guard */
+  }
+  .dom-theme-select[data-variant="underline"][data-size="large"]
+    .dom-select-value {
+    padding: 10px 0;
+    font-size: 16px;
+  }
+  .dom-theme-select[data-variant="underline"][data-size="large"]
+    .dom-select-caret {
+    width: 44px;
+    margin-left: 10px;
+  }
+
+  /* Week board header row: [←] [jump] [→] ─────────────────────────────── */
+  .dom-week {
+    padding: 12px 14px 32px;
+  }
+  .dom-week-hd-board {
+    align-items: center;
+    gap: 0;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+  }
+  .dom-week-hd-board .dom-week-actions {
+    flex: 1;
+    gap: 8px;
+  }
+  .dom-week-hd-board .dom-iconbtn {
+    width: 44px;
+    height: 44px;
+  }
+  .dom-week-hd-board .dom-week-jump {
+    display: inline-flex;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .dom-week-hd-board .dom-board-actions {
+    display: none;
+  }
+  /* Best-of + Share live in the phone-only label cell. */
+  .dom-grid-label .dom-board-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .dom-grid-label .dom-board-actions .dom-btn {
+    width: 100%;
+    min-height: 40px;
+    padding: 6px 8px;
+    font-size: 12px;
+    white-space: normal;
+    line-height: 1.15;
+  }
+
+  /* Week-jump sheet (WeekPicker, z70/71) ──────────────────────────────── */
+  .dom-wp-backdrop {
+    background: rgba(10, 8, 6, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    animation: dom-fade 0.2s ease;
+  }
+  .dom-wp[data-mode="week"] {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    box-shadow: none;
+    border-width: 1px 0 0;
+    padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+    animation: dom-sheet-up 0.25s ease;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  .dom-wp[data-mode="week"]:focus {
+    outline: none;
+  }
+  .dom-wp[data-mode="week"] .dom-wp-legacy {
+    display: none;
+  }
+  .dom-wp[data-mode="week"] .dom-wp-loc {
+    display: inline;
+  }
+  .dom-wp[data-mode="week"] .dom-wp-nav {
+    width: 44px;
+    height: 44px;
+  }
+  .dom-wp[data-mode="week"] .dom-wp-dow-cell {
+    font-size: 10px;
+  }
+  .dom-wp[data-mode="week"] .dom-wp-row {
+    border-radius: 0;
+  }
+  .dom-wp[data-mode="week"] .dom-wp-day {
+    min-height: 44px;
+    padding: 11px 0;
+    font-size: 14px;
+  }
+  .dom-wp[data-mode="week"] .dom-wp-today-btn {
+    min-height: 44px;
+    font-size: 11px;
+  }
+
+  /* Month header: title ⟷ arrows / CTAs 2-up / stats 4-up ────────────── */
+  .dom-month {
+    padding: 12px 14px 20px;
+  }
+  .dom-month-hd {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+    grid-auto-rows: auto;
+    gap: 8px;
+    align-items: center;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+  }
+  .dom-month-hd-left {
+    grid-column: 1;
+    grid-row: 1;
+    gap: 0;
+  }
+  .dom-month-hd-left .dom-eyebrow {
+    display: none;
+  }
+  .dom-month-h1 {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .dom-month-h1-name {
+    font-size: 28px;
+  }
+  .dom-month-h1-year {
+    font-size: 13px;
+  }
+  .dom-month-nav {
+    display: contents;
+  }
+  .dom-month-arrows {
+    display: flex;
+    gap: 8px;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+  .dom-month-arrows .dom-iconbtn {
+    width: 44px;
+    height: 44px;
+  }
+  .dom-month-ctas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .dom-month-ctas .dom-btn {
+    min-height: 44px;
+    padding: 8px 10px;
+    font-size: 12px;
+    white-space: normal;
+    line-height: 1.15;
+  }
+  .dom-month-ctas .dom-month-cta-today {
+    grid-column: 1 / -1;
+  }
+  .dom-month-hd-right {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    align-items: start;
+    justify-self: stretch;
+  }
+  .dom-month-stat {
+    min-width: 0;
+  }
+  .dom-month-stat-num {
+    font-size: 20px;
+  }
+  .dom-month-stat-num i.dom-month-stat-star {
+    font-size: 16px;
+  }
+  .dom-month-stat-lbl {
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    white-space: normal;
+    line-height: 1.25;
+  }
+  .dom-month-cal-dow {
+    padding: 8px 4px;
+    justify-content: center;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+  .dom-month-cal-dowKo {
+    display: none;
+  }
+
+  /* Journal / My Logs / Profile headers (scoped by parent) ────────────── */
+  .dom-search,
+  .dom-profile {
+    padding: 12px 14px 20px;
+  }
+  .dom-search .dom-week-hd,
+  .dom-profile .dom-week-hd {
+    align-items: flex-end;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+  }
+  .dom-search .dom-week-title h1,
+  .dom-profile .dom-week-title h1 {
+    font-size: 22px;
+    margin-top: 4px;
+  }
+  .dom-search-box {
+    margin-bottom: 12px;
+  }
+
+  /* More sheet body: surface/layout live in the all-widths hook group above;
+     inside the sheet the panel draws no edge of its own (the sheet has the
+     top rule) ─────────────────────────────────────────────────────────── */
+  .dom-sheet-body {
+    border: 0;
+  }
+  .dom-menu-langs {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  /* Bare button outside .dom-root — the dom-reset layer does not reach it, so
+     it carries its own reset. */
+  .dom-menu-lang {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 2px;
+    box-sizing: border-box;
+    background: transparent;
+    border: 1px solid var(--line);
+    margin-left: -1px; /* collapsed 1px rules */
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--ink2);
+    text-align: center;
+    transition:
+      background-color 0.12s ease,
+      color 0.12s ease;
+  }
+  .dom-menu-lang:first-child {
+    margin-left: 0;
+  }
+  .dom-menu-lang:active {
+    background-color: var(--chip);
+  }
+  .dom-menu-lang[data-active="1"] {
+    background-color: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+    position: relative;
+    z-index: 1;
+  }
+  .dom-menu-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 44px;
+  }
+  .dom-menu-row .dom-account-email {
+    max-width: none;
+    flex: 1;
+    min-width: 0;
+  }
+  .dom-menu-2up {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .dom-menu-2up .dom-btn {
+    justify-content: center;
+    min-height: 44px;
+  }
+  .dom-menu-legal {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink2);
+    padding-top: 10px;
+    border-top: 1px solid var(--lineSoft);
+  }
+  .dom-menu-legal a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    color: var(--ink2);
+  }
+
+  /* Reduced motion (phones only, so desktop CSS stays byte-identical) */
+  @media (prefers-reduced-motion: reduce) {
+    .dom-wp[data-mode="week"],
+    .dom-wp-backdrop {
+      animation: none;
+    }
+    .dom-tab-btn,
+    .dom-menu-lang,
+    .dom-topbar-m .dom-iconbtn {
+      transition: none;
+    }
+  }
+}
+
+/* ══ SECTION bottom-sheets — owner: sheets stream. Insert below this marker only. ══ */

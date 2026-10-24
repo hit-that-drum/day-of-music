@@ -1,0 +1,162 @@
+/* ── Phone pass (≤760px) ───────────────────────────────────────────────────
+   Everything below is about fitting a 375×667 screen: give the content back the
+   width the desktop gutters were eating, keep tap targets thumb-sized, and stop
+   iOS Safari from zooming the page whenever a field takes focus. Kept in one
+   block rather than sprinkled through the file so the phone layout can be read
+   (and changed) in one place. */
+@media (max-width: 760px) {
+  /* sonner pins its toast list with left:16/right:16 but also sets width:100%,
+     and width wins — so the list ran 16px off the right edge of the screen.
+     Let the two insets size it. (`body` only for specificity: sonner injects
+     its stylesheet at runtime, after ours.) */
+  body [data-sonner-toaster] {
+    width: auto;
+  }
+
+  /* Korean wraps character-by-character by default, which at 375 broke words
+     across lines all over the app ("필터를 지워보 / 세요."). keep-all wraps at
+     spaces the way the legal pages already do; overflow-wrap is the escape
+     hatch for a single token wider than its box (a long English album title in
+     a 48px month cell). */
+  .dom-root,
+  .dom-scrim {
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  /* Screen gutters. These were desktop-sized (28–32px) at every width, so the
+     week grid rendered 293px wide inside a 351px panel — and .dom-theme-select
+     used 16px, which left the theme field and the grid visibly misaligned. One
+     value for all of them now. */
+  .dom-week {
+    padding: 16px 14px 32px;
+  }
+  .dom-search,
+  .dom-profile {
+    padding: 16px 14px 20px;
+  }
+  .dom-month {
+    padding: 16px 14px 20px;
+  }
+  .dom-theme-select {
+    padding: 14px 14px 0;
+  }
+
+  /* My Logs headline numbers were sized for a desktop column; at 100px the
+     hero stat alone took over half a 667px screen. */
+  .dom-stat-num {
+    font-size: 52px;
+  }
+  .dom-stat-lg .dom-stat-num {
+    font-size: 76px;
+  }
+  .dom-stat-compact .dom-stat-num {
+    font-size: 38px;
+  }
+
+  /* Touch targets. 44px is the platform minimum; the small variant stays
+     smaller but still well clear of the 16px-tall text links we had. */
+  .dom-btn {
+    min-height: 44px;
+  }
+  .dom-btn-sm {
+    min-height: 36px;
+  }
+  .dom-home-footer a,
+  .dom-home-legal a,
+  .dom-signin-sub a,
+  .dom-auth-terms a,
+  .dom-guest-banner a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+  }
+  .dom-modal-close {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* iOS Safari zooms the whole page when a focused field's text is under 16px,
+     and the user has to pinch back out. Every input the app shows on a phone
+     sits at 16px or above. */
+  .dom-input,
+  .dom-textarea,
+  .dom-select-trigger {
+    font-size: 16px;
+  }
+  .dom-input-lg {
+    /* 18px overflowed the Journal placeholder at 375; 16px still clears the
+       zoom threshold. */
+    padding: 14px 16px;
+    font-size: 16px;
+  }
+
+  /* Modal chrome on phones = the "Bottom sheets (≤760px)" block near the end of the file. */
+
+  /* Search results inside the add-flow are laid out as a grid of columns, so
+     the UA's centred button text reads as accidental (the modals render outside
+     .dom-root, where the bare-button reset that sets text-align lives). */
+  .dom-addflow-result {
+    text-align: left;
+  }
+  .dom-addflow {
+    padding: 24px 20px;
+  }
+  .dom-addflow-title {
+    font-size: 24px;
+  }
+
+  /* ── Swipe navigation (lib/day-of-music/use-swipe-nav.ts) ─────────────────
+     pan-y keeps the vertical page scroll native and pinch-zoom stays allowed
+     (layout.tsx never disables user zoom). Without this both Chrome Android and
+     iOS Safari turn any pan — even a horizontal one with nothing to scroll —
+     into a scroll attempt and fire pointercancel, so the move stream dies.
+     Nothing inside either board scrolls horizontally (.dom-main is
+     overflow:hidden; the only overflow-x:auto is the legal table). Side effect:
+     double-tap-to-zoom is off on the boards (pinch still works); cells respond
+     to taps with no delay. The slide-in itself is a Web Animations call in
+     useNavSlide, not CSS, so it needs no rule here. */
+  .dom-week,
+  .dom-month {
+    touch-action: pan-y pinch-zoom;
+  }
+  /* Disabled month cells (out-of-month, and in-month future empties — which is
+     EVERY cell of a future month) must not swallow a swipe that starts on them:
+     Firefox dispatches no pointer events on disabled controls and nothing
+     bubbles to the grid. Let hit-testing fall through. They have no hover state
+     to lose (:not(:disabled):hover above). Trade-off, accepted: at phone width
+     an iOS long-press drag can no longer drop on a future empty cell of the
+     current month — the touch "move to another date" sheet is the phone's
+     reschedule path and ships with this. */
+  .dom-month-cal-cell:disabled {
+    pointer-events: none;
+  }
+  /* A long-press that is about to become a native iOS drag must not race the
+     text-selection magnifier on the title/artist text. */
+  .dom-day-draggable,
+  .dom-month-cal-cell[draggable="true"] {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* Monthly calendar cells are ~44px wide on a phone, where the day number and
+   the TODAY / rating slot can't share a baseline row — they overlapped. Let the
+   right-hand slot drop under the number. */
+@media (max-width: 640px) {
+  .dom-month-cal-date {
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .dom-month-cal-num {
+    font-size: 16px;
+  }
+  .dom-month-cal-today {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+  }
+  .dom-month-cal-cell {
+    padding: 6px 6px 8px;
+  }
+}

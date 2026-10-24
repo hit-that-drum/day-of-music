@@ -1,0 +1,9 @@
+/* ── Main ───────────────────────────────────────────────────────────────── */
+
+.dom-main {
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  padding: 0;
+  min-width: 0;
+  overflow: hidden;
+}

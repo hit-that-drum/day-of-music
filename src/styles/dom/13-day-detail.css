@@ -1,0 +1,40 @@
+/* ── Day Detail modal ───────────────────────────────────────────────────── */
+
+.dom-scrim {
+  /* Shared modal width — every overlay modal (Day Detail, Add/Log Album,
+     Share Week/Month) reads this token so they're all the same size. */
+  --dom-modal-w: 1100px; /* = POSTER_WIDTH (lib/day-of-music/poster-size.ts) */
+  /* Everything a modal panel has to share the viewport with: this scrim's own
+     top+bottom padding plus .dom-modal's reserved close-button gap. Panels size
+     themselves with calc(100dvh - var(--dom-modal-chrome)), so shrinking either
+     on mobile automatically gives the panel the room back — before this the
+     numbers were hardcoded and the Day Detail overflowed a 667px screen. */
+  --dom-modal-chrome: 100px; /* 24 + 24 padding + 52 close gap */
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(10, 8, 6, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  /* Allow the overlay to scroll when a modal is taller than the viewport, and
+     fall back to top-alignment (`safe`) so the top + bottom (e.g. the Save
+     image button) stay reachable instead of being clipped off-screen. */
+  align-items: safe center;
+  justify-content: safe center;
+  padding: 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  animation: dom-fade 0.2s ease;
+}
+@keyframes dom-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes dom-rise {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+}

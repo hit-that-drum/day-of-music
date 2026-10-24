@@ -1,0 +1,289 @@
+/* ── Responsive collapse ────────────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .dom-root {
+    --pad: 18px;
+    --gap: 16px;
+  }
+  .dom-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .dom-grid > * {
+    min-height: 240px;
+  }
+  .dom-week-title h1 {
+    font-size: 32px;
+  }
+  .dom-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dom-theme-recap-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dom-theme-genre-card {
+    grid-column: span 2;
+  }
+  .dom-fives {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .dom-fives.dom-fives-compact {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .dom-detail {
+    grid-template-columns: 1fr;
+    /* Single-column: revert to content-driven height + whole-modal scroll
+       (the fixed two-column height doesn't apply when stacked). */
+    grid-template-rows: auto;
+    height: auto;
+    max-height: calc(100vh - var(--dom-modal-chrome));
+    max-height: calc(100dvh - var(--dom-modal-chrome));
+    overflow-y: auto;
+  }
+  .dom-detail-left {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .dom-month {
+    padding: 18px 20px;
+  }
+  .dom-month-h1-name {
+    font-size: 56px;
+  }
+  .dom-month-hd {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    gap: 16px;
+  }
+  .dom-month-hd-left {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .dom-month-nav {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+  }
+  .dom-month-hd-right {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: end;
+    gap: 18px;
+  }
+}
+
+@media (max-width: 760px) {
+  .dom-root {
+    --pad: 12px;
+    --gap: 10px;
+  }
+  .dom-month-h1 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .dom-month-h1-name {
+    font-size: 44px;
+  }
+  .dom-month-hd {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+  .dom-month-hd-left {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .dom-month-nav {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: end;
+    justify-content: flex-end;
+  }
+  .dom-month-hd-right {
+    grid-column: 1;
+    grid-row: 3;
+    justify-self: stretch;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .dom-month-cal-cell {
+    padding: 8px 8px 10px;
+    gap: 6px;
+  }
+  .dom-month-cal-cover {
+    max-width: 76px;
+  }
+  .dom-month-cal-info {
+    display: none;
+  }
+  .dom-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dom-profile-section-hd {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .dom-theme-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 6px;
+  }
+  .dom-theme-row-meta {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .dom-theme-row-icon {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .dom-theme-recap-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dom-theme-genre-card {
+    grid-column: span 2;
+  }
+  .dom-stat-compact .dom-stat-num {
+    font-size: 42px;
+  }
+  .dom-stat-num {
+    font-size: 60px;
+  }
+  .dom-stat-lg .dom-stat-num {
+    font-size: 100px;
+  }
+  .dom-fives {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dom-fives.dom-fives-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dom-search-result {
+    grid-template-columns: 135px minmax(0, 1fr);
+    gap: 12px;
+    padding: 0 10px;
+  }
+  .dom-search-result > div:first-child {
+    width: 135px;
+    height: 135px;
+    margin-left: -10px;
+  }
+  .dom-search-result-info,
+  .dom-search-result-date {
+    padding-block: 10px;
+  }
+  .dom-search-result-date {
+    display: none;
+  }
+  .dom-search-result-title {
+    font-size: 15px;
+  }
+  /* Brand and nav can't share a row on phones — stack them. */
+  .dom-topbar {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    row-gap: 8px;
+    padding: 12px;
+  }
+  /* The header actions used to be display:none here, which quietly took the
+     language switch, the Tweaks panel (aesthetic / typography / split weeks)
+     and Sign out away from every phone — none of them has another entry point.
+     They get their own centred row instead, sized so the widest case (guest:
+     language + 꾸미기 + 로그인 + 회원가입) still lands on a single line at 375. */
+  .dom-topbar-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+  .dom-topbar-actions .dom-btn {
+    min-height: 38px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .dom-lang-switch .dom-select-trigger {
+    min-height: 38px;
+    padding: 8px 10px;
+    gap: 4px;
+    font-size: 12px;
+  }
+  .dom-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .dom-nav-btn {
+    padding: 8px 10px;
+    min-height: 40px;
+    justify-content: center;
+  }
+  .dom-brand-ko {
+    display: none;
+  }
+  .dom-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dom-grid > * {
+    min-height: 200px;
+  }
+  /* On 2-col mobile grid, the label cell appears first then the 7 days. */
+  .dom-grid-label {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px;
+    min-height: 0;
+    background-color: var(--chip);
+  }
+  .dom-grid-label-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .dom-grid-label .dom-month-name {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 28px;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .dom-grid-label .dom-month-sub {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--ink2);
+  }
+  .dom-grid-label .dom-month-tag {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    padding-top: 6px;
+    border-top: 1px solid var(--lineSoft);
+    margin-top: 2px;
+  }
+  /* Week board only (.dom-week-hd-board): the grid's label cell already prints
+     "8월 · 4주차", so the title collapses to a 0-width box. It stays rendered
+     (not display:none) because .dom-week-title-anchor hosts the WeekPicker,
+     which the phone shows as a fixed bottom sheet. Journal / My Logs / Profile
+     keep their heading. */
+  .dom-week-hd-board .dom-week-title {
+    display: block;
+    flex: 0 0 0;
+    width: 0;
+    min-width: 0;
+    overflow: visible;
+  }
+  .dom-week-hd-board .dom-week-title > .dom-eyebrow,
+  .dom-week-hd-board .dom-week-title-btn {
+    display: none;
+  }
+  .dom-week-hd {
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+  .dom-week-title h1 {
+    font-size: 26px;
+  }
+}

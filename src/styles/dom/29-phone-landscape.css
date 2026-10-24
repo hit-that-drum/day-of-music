@@ -1,0 +1,85 @@
+/* ── Phone landscape (≤760 wide AND ≤500 tall, e.g. 667×375) ──────────────
+   92dvh is 345px there; after the band a Day Detail had ~0px of scrollable
+   column left. Use the full height (no peek — ✕ / handle / Esc still close),
+   keep the chrome token exact (45 = band + sheet rule), and shrink the cover
+   row to a 56px tile instead of hiding the date. */
+@media (max-width: 760px) and (max-height: 500px) {
+  .dom-scrim {
+    --dom-modal-chrome: calc(45px + env(safe-area-inset-bottom, 0px));
+  }
+  .dom-modal {
+    max-height: 100vh;
+    max-height: 100dvh;
+  }
+  .dom-detail-left {
+    padding: 10px 16px;
+  }
+  .dom-detail-cover {
+    width: 56px;
+    max-width: 56px;
+  }
+  .dom-detail-date {
+    font-size: 28px;
+  }
+}
+
+/* Scoped to phones so the desktop stylesheet output is unchanged; widening it
+   to every width is a one-line follow-up. (The week-jump sheet's opt-out is
+   in the mobile shell block.) */
+@media (max-width: 760px) and (prefers-reduced-motion: reduce) {
+  .dom-scrim,
+  .dom-modal,
+  .dom-tweaks-panel {
+    animation: none;
+  }
+}
+
+/* ══ SECTION day-detail-move — owner: touchmove stream. Insert below this marker only. ══ */
+
+/* Day Detail "Logged on" on phones: swap the native date field for the
+   trigger + inline day picker (both are always in the DOM; this is the
+   switch), and give the week popover's mouse-sized 28px rows thumb-sized
+   cells. Lives here, after the Phone pass, so it wins the cascade over the
+   Phone-pass .dom-input rule and the ≤1100 .dom-detail rules. On phones the
+   picker is reached by scrolling .dom-detail-right (the sheet's scroller). */
+@media (max-width: 760px) {
+  .dom-move-native {
+    display: none;
+  }
+  .dom-move-touch {
+    display: flex;
+  }
+  .dom-move-trigger {
+    min-height: 44px;
+  }
+  .dom-wp[data-mode="day"] {
+    max-width: none;
+    padding: 12px;
+  }
+  /* Every control in the sheet is a 44px target — the arrows, the footer
+     buttons (the only phone path to confirm a swap) and the Today jump. */
+  .dom-wp[data-mode="day"] .dom-wp-nav {
+    width: 44px;
+    height: 44px;
+  }
+  .dom-wp[data-mode="day"] .dom-wp-foot .dom-btn {
+    min-height: 44px;
+  }
+  .dom-wp[data-mode="day"] .dom-wp-day {
+    min-height: 44px;
+    padding: 10px 0;
+    font-size: 14px;
+  }
+  .dom-wp[data-mode="day"] .dom-wp-day[data-logged="1"]::after {
+    bottom: 6px;
+    width: 4px;
+    height: 4px;
+  }
+  .dom-wp-jump-today {
+    min-width: 44px;
+    min-height: 44px;
+    text-align: left;
+  }
+}
+
+/* ══ SECTION swipe-nav — owner: swipe stream. Rules live in the Phone pass block; reserved. ══ */

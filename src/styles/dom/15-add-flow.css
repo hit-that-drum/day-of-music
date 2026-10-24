@@ -1,0 +1,181 @@
+/* ── Add / Log Album flow ───────────────────────────────────────────────── */
+
+/* Tracklist shown under a picked album, to log a single track. */
+.dom-addflow-tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 8px 14px;
+  padding-left: 12px;
+  border-left: 2px solid var(--lineSoft);
+}
+.dom-addflow-tracks-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding: 4px 0;
+}
+.dom-addflow-track {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-align: left;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.dom-addflow-track:hover {
+  background-color: var(--chip);
+}
+.dom-addflow-track[data-active="1"] {
+  border-color: var(--accent);
+  background-color: color-mix(in oklab, var(--accent) 12%, transparent);
+}
+.dom-addflow-track-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--ink);
+  flex: 1;
+  min-width: 0;
+}
+.dom-addflow-track-artist {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink3);
+}
+
+.dom-rate-row[data-size="lg"] .dom-star {
+  font-size: 28px;
+  padding: 2px 4px;
+}
+.dom-addflow {
+  width: 100%;
+  /* Fixed height: the modal stays put while only its inner content changes
+     (the body scrolls internally instead of resizing the modal). Tall enough
+     for the manual-entry form (cover + title + artist + genre) to show without
+     scrolling on desktop, while still fitting inside the overlay padding plus
+     the modal chrome's close-button gap (--dom-modal-chrome). dvh keeps the
+     panel inside the *visible* viewport on mobile, where the on-screen keyboard
+     and the address bar make 100vh a lie. */
+  height: min(820px, calc(100vh - var(--dom-modal-chrome)));
+  height: min(820px, calc(100dvh - var(--dom-modal-chrome)));
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  padding: 32px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.dom-addflow-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--ink3);
+}
+.dom-addflow-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.dom-addflow-progress {
+  height: 2px;
+  background-color: var(--lineSoft);
+  margin: 4px 0 12px;
+  position: relative;
+}
+.dom-addflow-progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background-color: var(--accent);
+  transition: width 0.25s ease;
+}
+.dom-addflow-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  /* Scroll the body (not the modal) when content is taller than the fixed
+     modal — e.g. the manual-entry form on a short viewport — so the pinned
+     actions row never gets overlapped. */
+  overflow-y: auto;
+}
+.dom-addflow-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-addflow-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.dom-addflow-result {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 12px;
+  padding: 8px;
+  align-items: center;
+  border: 1px solid transparent;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
+  width: 100%;
+}
+.dom-addflow-result:hover {
+  background-color: var(--chip);
+}
+.dom-addflow-result[data-active="1"] {
+  border-color: var(--accent);
+  background-color: var(--chip);
+}
+.dom-addflow-result-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+}
+.dom-addflow-result-artist {
+  font-family: var(--font-display);
+  font-size: 12px;
+  opacity: 0.7;
+}
+.dom-addflow-check {
+  color: var(--accent);
+  font-size: 16px;
+}
+.dom-addflow-empty {
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 14px 4px;
+}
+.dom-addflow-seeall {
+  margin-top: 4px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  flex: none;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+.dom-addflow-seeall:hover {
+  background-color: var(--chip);
+  color: var(--ink);
+}

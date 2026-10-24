@@ -1,0 +1,96 @@
+/* ── Top bar ────────────────────────────────────────────────────────────── */
+
+.dom-topbar {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 18px 24px;
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  position: relative;
+}
+.dom-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.dom-brand-mark {
+  width: 24px;
+  height: 24px;
+  /* .dom-brand / .dom-signin-brand align their items to the wordmark baseline;
+     center the logo against the text instead of dropping it to the baseline. */
+  align-self: center;
+}
+.dom-brand-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.dom-brand-ko {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--ink3);
+  padding-left: 8px;
+  border-left: 1px solid var(--lineSoft);
+  white-space: nowrap;
+}
+.dom-nav {
+  display: flex;
+  gap: 4px;
+}
+.dom-nav-btn {
+  padding: 10px 18px;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  border: 1px solid transparent;
+}
+.dom-nav-btn:hover {
+  background-color: var(--chip);
+}
+.dom-nav-btn[data-active="1"] {
+  background-color: var(--ink);
+  color: var(--bg);
+}
+.dom-nav-label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+.dom-topbar-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Header language switcher — a compact, auto-width DomSelect (see
+   language-switch.tsx). Its own control, separate from the Tweaks button. */
+.dom-lang-switch {
+  display: inline-flex;
+}
+.dom-lang-switch .dom-select {
+  width: auto;
+}
+.dom-lang-switch .dom-select-trigger {
+  padding: 8px 12px;
+  gap: 6px;
+  background-color: transparent;
+  border-color: var(--lineSoft);
+  font-size: 13px;
+  white-space: nowrap;
+}
+/* Right-align the dropdown to the trigger's edge so it doesn't overflow the
+   header's right side. */
+.dom-lang-switch .dom-select-panel {
+  left: auto;
+  right: 0;
+  min-width: 160px;
+}

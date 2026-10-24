@@ -1,0 +1,269 @@
+/* ── Monthly Overview — editorial calendar ─────────────────────────────── */
+
+.dom-month {
+  padding: 28px 32px 36px;
+}
+.dom-month-hd {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
+  gap: 24px;
+  align-items: start;
+  padding-bottom: 22px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--line);
+}
+.dom-month-hd-left {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dom-month-h1 {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  margin: 0;
+  line-height: 0.95;
+}
+.dom-month-h1-name {
+  font-size: 80px;
+}
+.dom-month-h1-year {
+  font-size: 22px;
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+  font-weight: 400;
+}
+.dom-month-nav {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 0;
+}
+.dom-month-hd-right {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: end;
+  display: flex;
+  gap: 28px;
+  align-items: flex-end;
+}
+.dom-month-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 80px;
+}
+.dom-month-stat-num {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 38px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--ink);
+}
+.dom-month-stat-num i {
+  font-size: 18px;
+  font-style: normal;
+  color: var(--ink3);
+  margin-left: 2px;
+}
+.dom-month-stat-num i.dom-month-stat-star {
+  font-size: 24px;
+  margin-left: 0;
+  color: var(--accent);
+}
+.dom-month-stat-lbl {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-top: 4px;
+}
+
+/* Calendar */
+.dom-month-cal {
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+.dom-month-cal-hd {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.dom-month-cal-dow {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  background-color: var(--chip);
+}
+.dom-month-cal-dowKo {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--ink3);
+  letter-spacing: 0.1em;
+}
+.dom-month-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.dom-month-cal-cell {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  background-color: transparent;
+  transition: background-color 0.12s ease;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+.dom-month-cal-cell:not(:disabled):hover {
+  background-color: var(--chip);
+}
+/* Days outside the viewed month blend into the page (no faded preview). */
+.dom-month-cal-cell[data-inmonth="0"] {
+  background-color: var(--bg);
+  cursor: default;
+}
+.dom-month-cal-cell[data-today="1"] {
+  background-color: color-mix(in oklab, var(--accent) 12%, transparent);
+}
+.dom-month-cal-cell[data-today="1"]:not(:disabled):hover {
+  background-color: color-mix(in oklab, var(--accent) 18%, transparent);
+}
+.dom-month-cal-date {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+}
+.dom-month-cal-num {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.dom-month-cal-today {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  font-weight: 600;
+}
+/* Per-day rating, top-right of the cell — shares the date row's right slot with
+   the TODAY label. */
+.dom-month-cal-date-right {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.dom-month-cal-rating {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.dom-month-cal-rating-star {
+  color: var(--accent);
+}
+/* Cover bleeds to the cell edges — negative margins cancel the cell's
+   10px/12px padding so only the date + text stay inset. */
+.dom-month-cal-cover {
+  /* Definite width, not `auto`. The cover inside asks for `width: 100%`, and a
+     percentage against a flex item that is only sized by `stretch` is what
+     WebKit declines to resolve — it reads as indefinite and the cover collapses.
+     calc(100% + 24px) is the same used width `auto` produced here (the cell's
+     content box plus the two -12px bleeds), just stated definitely. */
+  width: calc(100% + 24px);
+  max-width: none;
+  margin: 0 -12px;
+  transition: transform 0.2s ease;
+}
+.dom-month-cal-cell:hover .dom-month-cal-cover {
+  transform: translateY(-2px);
+}
+/* Match the weekly day-card: cover, title under it, artist pushed to the
+   bottom of the cell. */
+.dom-month-cal-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding-bottom: 6px;
+  flex: 1;
+}
+.dom-month-cal-info .dom-month-cal-artist {
+  margin-top: auto;
+}
+.dom-month-cal-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  overflow-wrap: break-word;
+}
+.dom-month-cal-artist {
+  font-family: var(--font-display);
+  font-size: 11px;
+  opacity: 0.8;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+.dom-month-cal-artist-ko {
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+}
+/* Empty in-month day: "+ log · 기록" affordance, mirroring the week view. */
+.dom-month-cal-add {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--ink3);
+  transition: color 0.12s ease;
+}
+.dom-month-cal-cell[data-add="1"]:hover .dom-month-cal-add {
+  color: var(--ink);
+}
+.dom-month-cal-add-mark {
+  font-size: 22px;
+  line-height: 1;
+}
+.dom-month-cal-add-lbl {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}

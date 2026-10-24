@@ -1,0 +1,242 @@
+/* ── Modal chrome (shared) ──────────────────────────────────────────────────
+   .dom-modal is the panel wrapper every overlay modal renders through (see
+   modal.tsx). It reserves a gap above the panel where the close button floats,
+   flush right — one spot for every modal, clear of any panel content. */
+.dom-modal {
+  position: relative;
+  width: 100%;
+  max-width: var(--dom-modal-w);
+  padding-top: 52px;
+  animation: dom-rise 0.25s ease;
+}
+/* The panel takes focus on open when nothing inside does (modal.tsx). It's a
+   container, not a control, so no UA ring around the whole dialog. */
+.dom-modal:focus {
+  outline: none;
+}
+.dom-modal-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  background-color: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+.dom-modal-close:hover {
+  background-color: var(--chip);
+}
+/* Sheet header band — phones only (see "Bottom sheets (≤760px)" near the end
+   of the file). On desktop it generates no box at all, so the ✕ keeps its
+   absolute slot in .dom-modal's reserved gap exactly as before. */
+.dom-modal-bar {
+  display: contents;
+}
+.dom-modal-handle {
+  display: none;
+}
+
+.dom-detail {
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  width: 100%;
+  max-width: var(--dom-modal-w);
+  /* Fixed height so every tab (tracklist / journal / info) is the same size —
+     matched to the journal tab; taller content (long tracklist) scrolls inside.
+     --dom-modal-chrome is the scrim padding + close-button gap (see .dom-scrim);
+     dvh so a mobile browser's collapsing address bar doesn't push the panel
+     past the visible viewport. */
+  height: min(660px, calc(100vh - var(--dom-modal-chrome)));
+  height: min(660px, calc(100dvh - var(--dom-modal-chrome)));
+  display: grid;
+  grid-template-columns: 460px minmax(0, 1fr);
+  /* Bound the single row to the modal's height so the right column's
+     overflow-y can engage — without this the row grows to the tracklist's
+     content height and a long list (and the actions below it) gets clipped. */
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
+}
+.dom-detail-left {
+  padding: 36px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background-color: var(--bg);
+}
+.dom-detail-cover {
+  box-shadow: 0 24px 60px -16px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 420px;
+  align-self: center;
+}
+.dom-detail-datewrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin-top: auto;
+}
+.dom-detail-date {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 46px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.dom-detail-dow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--ink3);
+}
+.dom-detail-format {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-top: 4px;
+}
+.dom-detail-right {
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* min-height:0 lets this grid item shrink below its content so overflow-y
+     scrolls the tracklist instead of stretching the modal. */
+  min-height: 0;
+  overflow-y: auto;
+}
+.dom-detail-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 48px;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  margin: 4px 0 0;
+}
+.dom-detail-artist {
+  font-family: var(--font-display);
+  font-size: 22px;
+  opacity: 0.85;
+}
+.dom-detail-from {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--ink3);
+  margin-top: 6px;
+}
+.dom-detail-artist-ko {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink3);
+  letter-spacing: 0.08em;
+}
+.dom-tabs {
+  display: flex;
+  gap: 18px;
+  border-bottom: 1px solid var(--lineSoft);
+  margin-top: 6px;
+}
+.dom-tab {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.dom-tab[data-active="1"] {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+.dom-tracklist li {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-track-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink3);
+}
+.dom-track-name {
+  font-family: var(--font-body);
+  font-size: 15px;
+}
+.dom-track-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink3);
+}
+.dom-info-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-info-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-info-value {
+  font-family: var(--font-body);
+  font-size: 15px;
+}
+.dom-info-pane {
+  display: flex;
+  flex-direction: column;
+}
+.dom-info-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dom-info-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 10px;
+}
+/* Cover picker in Day Detail's Info editor (manual entries only). Left-aligned
+   with the text fields below it, unlike the Add flow's centred column. */
+.dom-cover-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.dom-cover-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.dom-rate-row {
+  display: flex;
+  gap: 4px;
+}
+.dom-star {
+  font-size: 26px;
+  line-height: 1;
+  color: var(--lineSoft);
+}
+.dom-star[data-on="1"] {
+  color: var(--ink);
+}

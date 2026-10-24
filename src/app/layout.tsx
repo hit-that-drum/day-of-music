@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import "../styles/day-of-music.css";
+import "../styles/day-of-music";
 import { googleFontsHref } from "@/lib/day-of-music/appearance";
 import { Providers } from "./providers";
 

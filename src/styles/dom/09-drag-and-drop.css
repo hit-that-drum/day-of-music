@@ -1,0 +1,31 @@
+/* ── Drag-and-drop: reschedule a logged album by dragging it onto an empty day */
+.dom-day-draggable,
+.dom-month-cal-cell[draggable="true"] {
+  cursor: grab;
+}
+.dom-day-draggable:active,
+.dom-month-cal-cell[draggable="true"]:active {
+  cursor: grabbing;
+}
+/* Let the cell own the drag — don't start the cover image's native drag. */
+.dom-cover img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+/* Highlight the day being hovered as a drop target (empty or filled). */
+.dom-day[data-dragover="1"] .dom-day-body,
+.dom-month-cal-cell[data-dragover="1"] {
+  background-color: color-mix(in oklab, var(--accent) 16%, transparent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* Split-by-month: cells from the adjacent month blend into the page entirely —
+   no date, no preview. opacity:0 (not display:none) keeps the column height so
+   the 7-day grid stays aligned. */
+.dom-day[data-outmonth="1"] .dom-day-hd {
+  opacity: 0;
+}
+.dom-day-blank {
+  flex: 1;
+  background-color: var(--bg);
+}
