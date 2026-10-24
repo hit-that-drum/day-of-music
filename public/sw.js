@@ -1,9 +1,11 @@
+// v4: share pages (/s/…) and the auth round trip (/auth/…) are no longer stored
+// (see networkFirstPage); bumping the name drops the copies v3 already kept.
 // v3: bumped when the app icons were replaced (favicon.ico removed in favour of
 // app/icon.png; the vinyl PWA icons regenerated). Activating a new version
 // deletes the older cache, so clients re-fetch the new icons instead of serving
 // the old cache-first snapshot — the same mechanism that clears stale dev-server
 // chunks (dev chunk URLs aren't content-hashed).
-const CACHE_NAME = "day-of-music-v3";
+const CACHE_NAME = "day-of-music-v4";
 const PRECACHE_URLS = [
   "/",
   "/icons/apple-touch-icon.png",
@@ -91,18 +93,36 @@ async function cacheFirst(request) {
   return response;
 }
 
+// Pages that are never stored: a share page (the link is the secret, and the
+// server already answers it no-store, which Cache Storage ignores) and the auth
+// round trip (its URL carries a one-time code).
+function isPrivatePage(url) {
+  return (
+    url.pathname === "/s" ||
+    url.pathname.startsWith("/s/") ||
+    url.pathname.startsWith("/auth/")
+  );
+}
+
 async function networkFirstPage(request) {
   const cache = await caches.open(CACHE_NAME);
+  const keep = !isPrivatePage(new URL(request.url));
 
   try {
     const response = await fetch(request);
 
-    if (response.ok) {
+    if (response.ok && keep) {
       cache.put(request, response.clone());
     }
 
     return response;
   } catch {
+    // Offline: a private page has no stored copy, and the landing page must not
+    // stand in for it — let the browser show its own offline page.
+    if (!keep) {
+      return Response.error();
+    }
+
     return (await cache.match(request)) ?? cache.match("/");
   }
 }
