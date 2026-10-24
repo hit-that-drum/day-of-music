@@ -54,9 +54,11 @@ import {
 } from "@/lib/supabase/client";
 
 type PatchMap = Record<string, JournalPatch>;
-// Mutation variables. `optimistic: false` lets a multi-write caller (moveSlot)
-// own the cache update + rollback so the per-call optimistic logic is skipped.
-type UpsertVars = { album: Album; theme: string; optimistic?: boolean };
+// Mutation variables. An upsert fills one or more (theme, album.date) slots of
+// one theme, so the same album logged on several days is a single request.
+// `optimistic: false` lets a multi-write caller (moveSlot) own the cache update
+// + rollback so the per-call optimistic logic is skipped.
+type UpsertVars = { slots: Album[]; theme: string; optimistic?: boolean };
 type RemoveVars = { date: string; theme: string; optimistic?: boolean };
 // `albums` carries the full metadata for every logged album so a second device
 // can render entries it never saw created. Built from each row's `album` blob.
@@ -79,8 +81,9 @@ type JournalContextValue = {
   albums: Album[];
   allAlbums: JournalAlbum[];
   albumsByDate: Record<string, Album>;
-  /** Log (or replace) the album in the active theme's slot at `date`. */
-  logAlbum: (album: Album, entry: { date: string; rating: number; note: string }) => void;
+  /** Log (or replace) the album in the active theme's slot on each of
+   *  `dates` — one write, saved or rolled back as a whole. */
+  logAlbum: (album: Album, entry: { dates: string[]; rating: number; note: string }) => void;
   /** Update the slot at `date` while keeping the same album id/date. */
   updateSlot: (date: string, patch: Partial<Album>) => void;
   /** Move (or swap) the album between two dates within the active theme.
@@ -284,17 +287,20 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     return out;
   }, [queryData, poolById]);
 
-  // Takes the full merged Album so the album's metadata is persisted alongside
-  // its journal overlay — that metadata blob is what lets another device render
-  // the entry. The journal columns (date/rating/note) are derived from it.
+  // Takes the full merged Album for each slot so the album's metadata is
+  // persisted alongside its journal overlay — that metadata blob is what lets
+  // another device render the entry. The journal columns (date/rating/note) are
+  // derived from it.
   const upsert = useMutation({
-    mutationFn: async ({ album, theme: lane }: UpsertVars) => {
+    mutationFn: async ({ slots, theme: lane }: UpsertVars) => {
       // Guests: the optimistic cache update in onMutate is their whole
       // persistence. Unconfigured: localStorage write-through in onMutate.
       const supabase = getSupabaseBrowserClient();
       if (guest || !supabase || !userId) return;
 
-      const row = {
+      // One row per slot, all in one statement, which commits or fails as a
+      // whole: a failed multi-day log leaves none of its days half-saved.
+      const rows = slots.map((album) => ({
         user_id: userId,
         theme: lane,
         album_id: album.id,
@@ -302,25 +308,28 @@ export function JournalProvider({ children }: { children: ReactNode }) {
         rating: album.rating,
         note: album.note,
         album,
-      };
+      }));
       // The slot is (user_id, theme, date) — one album per day per theme.
       // Bounded like fetchJournal: a write pending forever behind the auth Web
       // Lock would otherwise never reject, and moveSlot's write chain (below)
       // would stall every later move behind it.
       const { error } = await withTimeout(
-        supabase.from("journal_entries").upsert(row, { onConflict: "user_id,theme,date" }),
+        supabase.from("journal_entries").upsert(rows, { onConflict: "user_id,theme,date" }),
         AUTH_CALL_TIMEOUT_MS,
         "journal upsert",
       );
       if (error) throw new Error(error.message);
     },
-    onMutate: ({ album, theme: lane, optimistic = true }) => {
+    onMutate: ({ slots, theme: lane, optimistic = true }) => {
       // moveSlot updates the cache itself (one atomic swap with a single
       // rollback), so it opts out of this per-call optimistic update.
       if (!optimistic) return { previous: undefined };
       const previous = queryClient.getQueryData<JournalResponse>(queryKey);
-      // Replace whatever was in this (theme, date) slot.
-      const next = applyUpsert(previous ?? { entries: [], albums: [] }, album, lane);
+      // Replace whatever was in each of these (theme, date) slots.
+      const next = slots.reduce(
+        (cache, album) => applyUpsert(cache, album, lane),
+        previous ?? { entries: [], albums: [] },
+      );
       queryClient.setQueryData<JournalResponse>(queryKey, next);
       // localStorage write-through only in unconfigured (no-Supabase) mode.
       if (!configured) {
@@ -383,10 +392,13 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   const { mutate: upsertMutate, mutateAsync: upsertAsync } = upsert;
   const { mutate: removeMutate, mutateAsync: removeAsync } = remove;
 
-  // Log / replace the album in the (active theme, date) slot.
+  // Log / replace the album in the active theme's slot on each of the dates.
   const logAlbum = useCallback<JournalContextValue["logAlbum"]>(
-    (album, { date, rating, note }) => {
-      upsertMutate({ album: { ...album, date, rating, note }, theme });
+    (album, { dates, rating, note }) => {
+      // Distinct days only: one upsert statement can't write the same slot twice.
+      const days = [...new Set(dates)];
+      if (days.length === 0) return;
+      upsertMutate({ slots: days.map((date) => ({ ...album, date, rating, note })), theme });
     },
     [upsertMutate, theme],
   );
@@ -398,7 +410,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       if (!base) return;
       const merged = { ...base, ...patch, date };
       // Re-persist the whole album so its metadata blob isn't dropped.
-      upsertMutate({ album: merged, theme });
+      upsertMutate({ slots: [merged], theme });
     },
     [albumsByDate, upsertMutate, theme],
   );
@@ -457,13 +469,13 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       // swap case re-upserts `b` on its original day before giving up, and the
       // finally-invalidate refetches whatever the server really holds.
       const writes = (): Promise<boolean> =>
-        upsertAsync({ album: { ...a, date: toDate }, theme, optimistic: false })
+        upsertAsync({ slots: [{ ...a, date: toDate }], theme, optimistic: false })
           .then(() =>
             b
-              ? upsertAsync({ album: { ...b, date: fromDate }, theme, optimistic: false }).catch(
+              ? upsertAsync({ slots: [{ ...b, date: fromDate }], theme, optimistic: false }).catch(
                   async (err: unknown) => {
                     // `b` still carries `date: toDate` — this is "put it back".
-                    await upsertAsync({ album: b, theme, optimistic: false }).catch(() => undefined);
+                    await upsertAsync({ slots: [b], theme, optimistic: false }).catch(() => undefined);
                     throw err;
                   },
                 )
@@ -495,7 +507,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       const merged = { ...base, ...patch };
       // Re-saving the slot refreshes the album in the metadata pool (so every
       // day showing it re-renders) and, when signed in, syncs the row.
-      upsertMutate({ album: merged, theme });
+      upsertMutate({ slots: [merged], theme });
     },
     [albumsByDate, upsertMutate, theme],
   );
@@ -529,7 +541,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       const meta = local.get(e.albumId);
       if (!meta) continue;
       backfilledRef.current.add(e.albumId);
-      upsertMutate({ album: mergeEntry(meta, e), theme: e.theme });
+      upsertMutate({ slots: [mergeEntry(meta, e)], theme: e.theme });
     }
   }, [guest, configured, user, queryData, upsertMutate]);
 
@@ -575,7 +587,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
         );
         // Show it on this device now, and persist the blob (in the entry's own
         // theme) so it syncs.
-        upsertMutate({ album, theme: e.theme });
+        upsertMutate({ slots: [album], theme: e.theme });
       });
     }
   }, [queryData, poolById, country, upsertMutate]);

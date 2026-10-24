@@ -354,14 +354,9 @@ export function DayOfMusicApp({
 
   const handleSave = useCallback(
     (entry: NewEntry) => {
-      // Log the same album to every selected day (one album per day per theme).
-      for (const date of entry.dates) {
-        logAlbum(entry.album, {
-          date,
-          rating: entry.rating,
-          note: entry.note,
-        });
-      }
+      // Log the same album to every selected day (one album per day per theme)
+      // in a single write.
+      logAlbum(entry.album, { dates: entry.dates, rating: entry.rating, note: entry.note });
       // If replacing and the original day wasn't among the chosen ones, clear it.
       if (replaceTarget && !entry.dates.includes(replaceTarget)) removeSlot(replaceTarget);
       setReplaceTarget(null);
