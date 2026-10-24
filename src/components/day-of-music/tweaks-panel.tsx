@@ -15,6 +15,9 @@ import {
 } from "@/lib/day-of-music/theme";
 import type { Tweaks } from "@/lib/day-of-music/tweaks";
 
+/** id of the open panel — the header's Tweaks triggers aria-control it. */
+export const TWEAKS_PANEL_ID = "dom-tweaks-panel";
+
 export function TweaksPanel({
   open,
   onClose,
@@ -48,7 +51,13 @@ export function TweaksPanel({
   if (!open) return null;
 
   return (
-    <div className="dom-tweaks-panel" role="dialog" aria-label={t("tweaks.title")} ref={panelRef}>
+    <div
+      className="dom-tweaks-panel"
+      id={TWEAKS_PANEL_ID}
+      role="dialog"
+      aria-label={t("tweaks.title")}
+      ref={panelRef}
+    >
       <div className="dom-tweaks-panel-hd">
         <span className="dom-tweak-section dom-tweaks-panel-title">{t("tweaks.title")}</span>
         <button className="dom-tweaks-close" onClick={onClose} aria-label={t("modal.close")}>

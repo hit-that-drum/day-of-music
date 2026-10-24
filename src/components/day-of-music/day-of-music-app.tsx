@@ -412,7 +412,9 @@ export function DayOfMusicApp({
           screen={screen}
           onScreen={setScreen}
           onTweaks={() => setShowTweaks((v) => !v)}
+          tweaksOpen={showTweaks}
           onMore={() => setShowMore(true)}
+          moreOpen={showMore}
           account={configured && user ? { email: user.email ?? "", onSignOut: signOut } : null}
           showAuthLinks={isGuest}
         />
