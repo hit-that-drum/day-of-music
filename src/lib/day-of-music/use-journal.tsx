@@ -225,6 +225,10 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     queryFn: () => fetchJournal(userId),
     // In auth mode, only load once signed in; in unconfigured mode, always.
     enabled: !configured || Boolean(user),
+    // A guest's journal exists only in this cache. This provider lives under
+    // /week, so a trip to the sign-up or legal pages unmounts it, and the
+    // default 5-minute GC would then drop the guest's entries.
+    gcTime: guest ? Infinity : undefined,
   });
 
   // A failed load renders exactly like an empty journal — same blank board, no

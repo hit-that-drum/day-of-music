@@ -8,7 +8,6 @@ import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { AuthProvider } from "@/lib/day-of-music/auth-provider";
 import { useLanguage } from "@/lib/day-of-music/i18n";
 import { PHONE_QUERY } from "@/lib/day-of-music/phone";
-import { JournalProvider } from "@/lib/day-of-music/use-journal";
 
 type ProvidersProps = {
   children: ReactNode;
@@ -66,7 +65,7 @@ export function Providers({ children }: ProvidersProps) {
       <ServiceWorkerRegister />
       <AuthProvider>
         <HtmlLangSync />
-        <JournalProvider>{children}</JournalProvider>
+        {children}
       </AuthProvider>
       <Toaster position={toastPosition} richColors closeButton />
     </QueryClientProvider>
