@@ -82,6 +82,14 @@ export function DayDetail({ album, today, onClose, onUpdate, onMove, onEnrich, o
   const moveTriggerRef = useRef<HTMLButtonElement>(null);
   const nativeDateRef = useRef<HTMLInputElement>(null);
   const pickerId = useId();
+  const tabsId = useId();
+  // On whichever panel is showing — the tabs swap the panel out rather than
+  // hiding the other two, so one id serves all three.
+  const panelProps = {
+    role: "tabpanel",
+    id: `${tabsId}-panel`,
+    "aria-labelledby": `${tabsId}-${tab}`,
+  };
   const nativeDateId = useId();
   const nativeConfirmId = useId();
   const { albumsByDate } = useJournal();
@@ -243,10 +251,15 @@ export function DayDetail({ album, today, onClose, onUpdate, onMove, onEnrich, o
             <div className="dom-detail-from">{t("common.fromAlbum", { title: album.albumTitle })}</div>
           )}
 
-          <div className="dom-tabs">
+          <div className="dom-tabs" role="tablist" aria-label={t("daydetail.tabsAria")}>
             {(["tracklist", "journal", "info"] as Tab[]).map((tabId) => (
               <button
                 key={tabId}
+                type="button"
+                role="tab"
+                id={`${tabsId}-${tabId}`}
+                aria-selected={tab === tabId}
+                aria-controls={`${tabsId}-panel`}
                 className="dom-tab"
                 data-active={tab === tabId ? "1" : "0"}
                 onClick={() => {
@@ -266,7 +279,7 @@ export function DayDetail({ album, today, onClose, onUpdate, onMove, onEnrich, o
 
           {tab === "tracklist" && (
             album.tracks.length > 0 ? (
-              <ol className="dom-tracklist">
+              <ol className="dom-tracklist" {...panelProps}>
                 {/* Tracklist order is fixed for a given album, so the index is a stable key. */}
                 {album.tracks.map((name, i) => (
                   <li key={i}>
@@ -277,7 +290,7 @@ export function DayDetail({ album, today, onClose, onUpdate, onMove, onEnrich, o
                 ))}
               </ol>
             ) : (
-              <div className="dom-addflow-empty">
+              <div className="dom-addflow-empty" {...panelProps}>
                 {album.kind === "track"
                   ? album.albumTitle
                     ? t("daydetail.singleTrackFrom", { title: album.albumTitle })
@@ -290,7 +303,7 @@ export function DayDetail({ album, today, onClose, onUpdate, onMove, onEnrich, o
           )}
 
           {tab === "journal" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }} {...panelProps}>
               <RatingInput
                 value={album.rating}
                 onChange={commitRating}
@@ -381,7 +394,7 @@ export function DayDetail({ album, today, onClose, onUpdate, onMove, onEnrich, o
           )}
 
           {tab === "info" && (
-            <div className="dom-info-pane">
+            <div className="dom-info-pane" {...panelProps}>
               {editingInfo ? (
                 <div className="dom-info-edit">
                   {/* Only hand-typed entries own their cover picture — catalog

@@ -503,6 +503,7 @@ export const MESSAGES = {
   "daydetail.modalLabel": { en: "{title} detail", ko: "{title} 상세", ja: "{title} の詳細", zh: "{title} 详情", es: "Detalle de {title}" },
   "daydetail.eyebrowTrack": { en: "track of the day", ko: "오늘의 곡", ja: "今日の曲", zh: "每日单曲", es: "pista del día" },
   "daydetail.eyebrowAlbum": { en: "album of the day", ko: "오늘의 앨범", ja: "今日のアルバム", zh: "每日专辑", es: "álbum del día" },
+  "daydetail.tabsAria": { en: "Album details", ko: "앨범 정보", ja: "アルバム情報", zh: "专辑信息", es: "Detalles del álbum" },
   "daydetail.tabTracklist": { en: "Tracklist", ko: "트랙리스트", ja: "トラックリスト", zh: "曲目", es: "Lista de pistas" },
   "daydetail.tabJournal": { en: "Journal", ko: "저널", ja: "ジャーナル", zh: "日志", es: "Diario" },
   "daydetail.tabInfo": { en: "Info", ko: "정보", ja: "情報", zh: "信息", es: "Info" },
