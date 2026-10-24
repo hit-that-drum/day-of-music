@@ -26,6 +26,11 @@ isoCountries.registerLocale(zhLocale);
 isoCountries.registerLocale(esLocale);
 
 export const DEFAULT_USERNAME = "listener";
+
+/** The @handle shown for a username — the default when it's blank. */
+export function displayHandle(username: string): string {
+  return username.trim() || DEFAULT_USERNAME;
+}
 export const DEFAULT_COUNTRY = "US";
 // "auto" follows the storefront country (see localeForCountry in i18n.ts); an
 // explicit language chosen in the header replaces it.

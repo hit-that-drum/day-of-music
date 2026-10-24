@@ -9,7 +9,7 @@
 import { useMemo, useRef } from "react";
 
 import { type AlbumStats } from "@/lib/day-of-music/album-stats";
-import { DEFAULT_USERNAME, useProfile } from "@/lib/day-of-music/profile";
+import { displayHandle, useProfile } from "@/lib/day-of-music/profile";
 import { type JournalAlbum } from "@/lib/day-of-music/use-journal";
 import { saveCardAsImage, shareFileName } from "@/lib/day-of-music/save-card";
 import { buildStatsSharePayload } from "@/lib/day-of-music/share-links";
@@ -46,7 +46,7 @@ export function StatsShareCard({
     () =>
       buildStatsSharePayload({
         title,
-        username: username.trim() || DEFAULT_USERNAME,
+        username: displayHandle(username),
         themeLabel,
         sub,
         showFives,

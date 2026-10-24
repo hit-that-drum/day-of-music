@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { formatDisplayDate, type Album } from "@/lib/day-of-music/data";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { useT } from "@/lib/day-of-music/i18n";
-import { useThemes } from "@/lib/day-of-music/themes";
+import { formatThemeLabel, useThemes } from "@/lib/day-of-music/themes";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { Cover } from "@/components/day-of-music/cover";
 import { MetaLine, Stars } from "@/components/day-of-music/atoms";
@@ -28,10 +28,7 @@ export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
   const themeLabels = useMemo(
     () =>
       new Map(
-        themes.map((theme) => [
-          theme.id,
-          theme.emoji ? `${theme.emoji} ${theme.name}` : theme.name,
-        ]),
+        themes.map((theme) => [theme.id, formatThemeLabel(theme)]),
       ),
     [themes],
   );

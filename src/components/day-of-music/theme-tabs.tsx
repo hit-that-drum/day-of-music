@@ -5,7 +5,12 @@
 
 import { DomSelectField } from "@/components/day-of-music/dom-select";
 import { useT } from "@/lib/day-of-music/i18n";
-import { resolveActiveTheme, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
+import {
+  formatThemeLabel,
+  resolveActiveTheme,
+  useActiveTheme,
+  useThemes,
+} from "@/lib/day-of-music/themes";
 
 export function ThemeTabs() {
   const t = useT();
@@ -14,7 +19,7 @@ export function ThemeTabs() {
   const active = resolveActiveTheme(themes, activeTheme);
   const options = themes.map((theme) => ({
     value: theme.id,
-    label: theme.emoji ? `${theme.emoji} ${theme.name}` : theme.name,
+    label: formatThemeLabel(theme),
   }));
 
   if (!themes.length) return null;

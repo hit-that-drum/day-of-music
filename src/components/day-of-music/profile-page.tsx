@@ -23,6 +23,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   countriesForLocale,
   DEFAULT_USERNAME,
+  displayHandle,
   useProfile,
   type ProfilePatch,
 } from "@/lib/day-of-music/profile";
@@ -615,7 +616,7 @@ function SettingsForm({
     () => countriesForLocale(locale).map((c) => ({ value: c.code, label: c.label })),
     [locale],
   );
-  const handle = name.trim() || DEFAULT_USERNAME;
+  const handle = displayHandle(name);
   const dirty =
     name.trim() !== initialName.trim() || country !== initialCountry;
 

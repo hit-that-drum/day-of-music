@@ -16,7 +16,8 @@ export const DEFAULT_THEME_ID = "daily";
 
 // New users start with a single lane; they add more in Profile. Existing
 // entries migrate to "daily" (see migration), matching this default id.
-export const DEFAULT_THEMES: Theme[] = [{ id: "daily", name: "Daily", emoji: "🎧" }];
+export const DEFAULT_THEME: Theme = { id: DEFAULT_THEME_ID, name: "Daily", emoji: "🎧" };
+export const DEFAULT_THEMES: Theme[] = [DEFAULT_THEME];
 
 /** Clamp an active-theme id to one that still exists: a stale id (its theme was
  *  deleted) falls back to the first theme. Shared so the tabs and the board
@@ -25,6 +26,19 @@ export function resolveActiveTheme(themes: Theme[], activeTheme: string): string
   return themes.some((t) => t.id === activeTheme)
     ? activeTheme
     : themes[0]?.id ?? DEFAULT_THEME_ID;
+}
+
+/** The theme object for an id. A stale id (its theme was deleted) falls back to
+ *  the first theme, exactly as resolveActiveTheme does. */
+export function findTheme(themes: Theme[], id: string): Theme {
+  return themes.find((t) => t.id === id) ?? themes[0] ?? DEFAULT_THEME;
+}
+
+/** A theme as it's labelled everywhere — tabs, search results, share cards:
+ *  "🎧 Daily", or just the name when it has no emoji. Share links store this
+ *  text, so changing the format changes what new links say. */
+export function formatThemeLabel(theme: Theme): string {
+  return theme.emoji ? `${theme.emoji} ${theme.name}` : theme.name;
 }
 
 // localStorage stores live in local-store.ts (hydration-safe, shared with
@@ -65,4 +79,11 @@ export function useActiveTheme(): { activeTheme: string; setActiveTheme: (id: st
     activeStore.getServerSnapshot,
   );
   return { activeTheme, setActiveTheme: activeStore.set };
+}
+
+/** The lane being viewed (useActiveTheme), as its theme object. */
+export function useActiveThemeObject(): Theme {
+  const { themes } = useThemes();
+  const { activeTheme } = useActiveTheme();
+  return findTheme(themes, activeTheme);
 }

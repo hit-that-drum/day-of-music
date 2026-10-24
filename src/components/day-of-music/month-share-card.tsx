@@ -17,8 +17,8 @@ import {
 } from "@/lib/day-of-music/data";
 import { periodSummary } from "@/lib/day-of-music/album-stats";
 import { useJournal } from "@/lib/day-of-music/use-journal";
-import { DEFAULT_USERNAME, useProfile } from "@/lib/day-of-music/profile";
-import { useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
+import { displayHandle, useProfile } from "@/lib/day-of-music/profile";
+import { formatThemeLabel, useActiveThemeObject } from "@/lib/day-of-music/themes";
 import { saveCardAsImage, shareFileName } from "@/lib/day-of-music/save-card";
 import { readShareTheme, sanitizeAlbum } from "@/lib/day-of-music/share-links";
 import type { MonthSharePayload } from "@/lib/day-of-music/share-payload";
@@ -37,11 +37,9 @@ export function MonthShareCard({
   const cardRef = useRef<HTMLDivElement>(null);
   const { albums, albumsByDate } = useJournal();
   const { username } = useProfile();
-  const { themes } = useThemes();
-  const { activeTheme } = useActiveTheme();
-  const activeThemeObj = themes.find((t) => t.id === activeTheme) ?? themes[0];
-  const themeName = activeThemeObj?.name ?? "Daily";
-  const themeEmoji = activeThemeObj?.emoji ?? "🎧";
+  const activeTheme = useActiveThemeObject();
+  const themeName = activeTheme.name;
+  const themeLabel = formatThemeLabel(activeTheme);
 
   const year = dayjs(anchor).year();
   const month = dayjs(anchor).month();
@@ -72,14 +70,14 @@ export function MonthShareCard({
       v: 1,
       kind: "month",
       title: `${monthLabel} · ${year}`,
-      username: username.trim() || DEFAULT_USERNAME,
-      themeLabel: themeEmoji ? `${themeEmoji} ${themeName}` : themeName,
+      username: displayHandle(username),
+      themeLabel,
       theme: readShareTheme(),
       numWeeks,
       cells,
       stats: periodSummary(monthAlbums),
     };
-  }, [anchor, month, year, monthLabel, albums, albumsByDate, username, themeEmoji, themeName]);
+  }, [anchor, month, year, monthLabel, albums, albumsByDate, username, themeLabel]);
 
   async function handleSaveImage() {
     if (!cardRef.current) return false;

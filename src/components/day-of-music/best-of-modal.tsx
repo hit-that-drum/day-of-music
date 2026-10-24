@@ -14,8 +14,8 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { DOW, DOW_KO, parseDate } from "@/lib/day-of-music/data";
-import { useThemes, useActiveTheme } from "@/lib/day-of-music/themes";
-import { DEFAULT_USERNAME, useProfile } from "@/lib/day-of-music/profile";
+import { findTheme, formatThemeLabel, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
+import { displayHandle, useProfile } from "@/lib/day-of-music/profile";
 import { useT } from "@/lib/day-of-music/i18n";
 import {
   firstRound,
@@ -81,9 +81,8 @@ export function BestOfModal({
   const bestOf = useBestOf();
   const posterRef = useRef<HTMLDivElement>(null);
 
-  const activeThemeObj = themes.find((x) => x.id === activeTheme) ?? themes[0];
-  const themeLabel = `${activeThemeObj?.emoji ?? "🎧"} ${activeThemeObj?.name ?? "Daily"}`;
-  const handle = username.trim() || DEFAULT_USERNAME;
+  const themeLabel = formatThemeLabel(findTheme(themes, activeTheme));
+  const handle = displayHandle(username);
 
   // Snapshot the starting phase at mount (the modal only mounts when opened):
   // a saved result → show it; 0 contenders → empty; 1 → auto-champion; else pick.
