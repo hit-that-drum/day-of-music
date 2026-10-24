@@ -7,14 +7,8 @@
 "use client";
 
 import { useMemo, useRef } from "react";
-import dayjs from "dayjs";
 
-import {
-  MONTHS_LONG,
-  addDays,
-  fmtDate,
-  startOfWeek,
-} from "@/lib/day-of-music/data";
+import { MONTHS_LONG, fmtDate, isSameMonth, monthGrid } from "@/lib/day-of-music/data";
 import { periodSummary } from "@/lib/day-of-music/album-stats";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { displayHandle, useProfile } from "@/lib/day-of-music/profile";
@@ -41,16 +35,12 @@ export function MonthShareCard({
   const themeName = activeTheme.name;
   const themeLabel = formatThemeLabel(activeTheme);
 
-  const year = dayjs(anchor).year();
-  const month = dayjs(anchor).month();
+  const year = anchor.getFullYear();
+  const month = anchor.getMonth();
   const monthLabel = MONTHS_LONG[month];
 
   const payload = useMemo<MonthSharePayload>(() => {
-    const current = dayjs(anchor);
-    const lastOfMonth = current.endOf("month");
-    const calStart = startOfWeek(current.startOf("month").toDate());
-    const numWeeks = Math.ceil((lastOfMonth.diff(dayjs(calStart), "day") + 1) / 7);
-    const days = Array.from({ length: numWeeks * 7 }, (_, i) => addDays(calStart, i));
+    const { days, numWeeks } = monthGrid(anchor);
 
     const cells = days.map((d) => {
       const inMonth = d.getMonth() === month;
@@ -62,10 +52,7 @@ export function MonthShareCard({
       };
     });
 
-    const monthAlbums = albums.filter((a) => {
-      const d = dayjs(a.date);
-      return d.month() === month && d.year() === year;
-    });
+    const monthAlbums = albums.filter((a) => isSameMonth(a.date, anchor));
     return {
       v: 1,
       kind: "month",

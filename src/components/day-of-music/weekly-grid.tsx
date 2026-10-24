@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, CalendarSearch } from "lucide-react";
 
 import {
   fmtDate,
+  isSameMonth,
   parseDate,
   startOfWeek,
   weekOfMonth,
@@ -104,11 +105,9 @@ export function WeeklyGrid({
   };
   const monthLabel = names.monthLong(labelDate.getMonth());
   const weekNum = weekOfMonth(labelDate);
-  const labelMonth = labelDate.getMonth();
-  const labelYear = labelDate.getFullYear();
   // In split mode a day outside the labelled month is blanked (not interactive).
-  const isOutOfMonth = (d: Date) =>
-    splitByMonth && (d.getMonth() !== labelMonth || d.getFullYear() !== labelYear);
+  const isOutOfMonth = (d: Date) => splitByMonth && !isSameMonth(d, labelDate);
+  const todayKey = fmtDate(today);
 
   // Header segments: one per calendar month present among the active days. When
   // a continuous (non-split) week straddles two months we show both, e.g.
@@ -157,7 +156,7 @@ export function WeeklyGrid({
         {days.map((d) => {
           const outOfMonth = isOutOfMonth(d);
           const album = outOfMonth ? undefined : albumsByDate[fmtDate(d)];
-          const isToday = fmtDate(d) === fmtDate(today);
+          const isToday = fmtDate(d) === todayKey;
           const isFuture = d > today;
           return (
             <DayCell

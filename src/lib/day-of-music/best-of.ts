@@ -25,9 +25,7 @@ import {
   bestOfKey,
   findSavedChampion,
   monthKey,
-  monthLastDay,
   monthWeekSegments,
-  segmentDays,
   weekContenders,
   weekPeriodKey,
   type BestOfMap,
@@ -37,7 +35,7 @@ import {
 } from "@/lib/day-of-music/best-of-bracket";
 import { makeJsonStore, useStore } from "@/lib/day-of-music/local-store";
 import { getSupabaseBrowserClient, runQuery } from "@/lib/supabase/client";
-import { fmtDate, parseDate } from "@/lib/day-of-music/data";
+import { fmtDate, isSameMonth, monthEnd, segmentDays } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { resolveActiveTheme, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
 import { useT } from "@/lib/day-of-music/i18n";
@@ -289,9 +287,7 @@ export function useBestOfMonthStatus(
   const bestOf = useBestOf();
 
   const theme = resolveActiveTheme(themes, activeTheme);
-  const lastDay = monthLastDay(anchor);
-  const month = anchor.getMonth();
-  const year = anchor.getFullYear();
+  const lastDay = monthEnd(anchor);
 
   const contenders: Contender[] = [];
   let pendingWeeks = 0;
@@ -303,8 +299,7 @@ export function useBestOfMonthStatus(
       pendingWeeks += 1;
       continue;
     }
-    const d = parseDate(champion.date);
-    if (d.getMonth() === month && d.getFullYear() === year) contenders.push(champion);
+    if (isSameMonth(champion.date, anchor)) contenders.push(champion);
   }
 
   const champion = findSavedChampion(bestOf.get(bestOfKey("month", theme, monthKey(anchor))), contenders);

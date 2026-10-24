@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Album } from "@/lib/day-of-music/data";
+import { addDays, fmtDate, segmentDays, startOfWeek, type Album } from "@/lib/day-of-music/data";
 import {
   advance,
   createTourney,
@@ -9,7 +9,6 @@ import {
   monthWeekSegments,
   nextPow2,
   roundStage,
-  segmentDays,
   weekContenders,
   type Contender,
   type Tourney,
@@ -87,5 +86,28 @@ describe("the contender field", () => {
     expect(findSavedChampion(saved, field)?.album.id).toBe("thu");
     expect(findSavedChampion({ ...saved, winnerDate: "2026-07-03" }, field)).toBeUndefined();
     expect(findSavedChampion(undefined, field)).toBeUndefined();
+  });
+});
+
+describe("monthWeekSegments", () => {
+  // The segments' keys are stored keys (best_of.key, dom.bestof.v1), so they
+  // must not drift: compare with the computation used before data.ts's helpers.
+  it("keys every month 2024–2027 exactly as before, in both week modes", () => {
+    for (let i = 0; i < 48; i++) {
+      const anchor = new Date(2024, i, 15);
+      for (const split of [false, true]) {
+        const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+        const last = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+        const expected: string[] = [];
+        for (let ws = startOfWeek(first); ws <= last; ws = addDays(ws, 7)) {
+          const days = Array.from({ length: 7 }, (_, d) => addDays(ws, d));
+          const inMonth = days.filter(
+            (d) => d.getMonth() === first.getMonth() && d.getFullYear() === first.getFullYear(),
+          );
+          expected.push(fmtDate((split ? inMonth : days)[0] ?? ws));
+        }
+        expect(monthWeekSegments(anchor, split).map((s) => s.key)).toEqual(expected);
+      }
+    }
   });
 });

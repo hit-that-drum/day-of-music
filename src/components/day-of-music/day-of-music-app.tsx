@@ -15,7 +15,18 @@ import {
 import { X } from "lucide-react";
 import { toast } from "sonner";
 
-import { addDays, fmtDate, formatDisplayDate, parseDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
+import {
+  addDays,
+  fmtDate,
+  formatDisplayDate,
+  monthEnd,
+  monthStart,
+  parseDate,
+  segmentDays,
+  startOfWeek,
+  weekDays,
+  type Album,
+} from "@/lib/day-of-music/data";
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { useT } from "@/lib/day-of-music/i18n";
@@ -88,11 +99,11 @@ const guestBannerDismissed = makeSessionFlagStore("dom.guestBanner.dismissed.v1"
 function monthSegmentBounds(anchor: Date): { first: Date; last: Date } {
   const ws = startOfWeek(anchor);
   const weekEnd = addDays(ws, 6);
-  const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-  const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+  const first = monthStart(anchor);
+  const last = monthEnd(anchor);
   return {
-    first: ws < monthStart ? monthStart : ws,
-    last: weekEnd > monthEnd ? monthEnd : weekEnd,
+    first: ws < first ? first : ws,
+    last: weekEnd > last ? last : weekEnd,
   };
 }
 
@@ -178,10 +189,7 @@ export function DayOfMusicApp({
 
   // Monday of the anchor's ISO week, and the full Mon–Sun strip.
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
-  const fullWeek = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart],
-  );
+  const fullWeek = useMemo(() => weekDays(weekStart), [weekStart]);
 
   // The grid always shows the whole Mon–Sun week (7 cells). In split mode the
   // cells belonging to the *other* month are blanked out by WeeklyGrid rather
@@ -191,12 +199,10 @@ export function DayOfMusicApp({
   // Days that belong to the page's month. In split mode that's the subset
   // matching the anchor's month; otherwise the whole week. Used for the label
   // and the share card so they reflect only the labelled month.
-  const monthDays = useMemo(() => {
-    if (!tweaks.weekSplit) return fullWeek;
-    const m = anchor.getMonth();
-    const y = anchor.getFullYear();
-    return fullWeek.filter((d) => d.getMonth() === m && d.getFullYear() === y);
-  }, [fullWeek, anchor, tweaks.weekSplit]);
+  const monthDays = useMemo(
+    () => segmentDays(fullWeek, anchor, tweaks.weekSplit),
+    [fullWeek, anchor, tweaks.weekSplit],
+  );
 
   // The day whose month/week-number label the header shows: the first in-month
   // day in split mode, otherwise the week's Monday.

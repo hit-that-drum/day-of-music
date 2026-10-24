@@ -16,6 +16,7 @@ import {
   addDays,
   fmtDate,
   formatDisplayDate,
+  monthGrid,
   parseDate,
   startOfWeek,
 } from "@/lib/day-of-music/data";
@@ -43,18 +44,12 @@ function useCapturedEscape(onEscape: () => void) {
   }, [onEscape]);
 }
 
-// Mon-first week rows covering the cursor's month (moved verbatim out of WeekPicker).
+// Mon-first week rows covering the cursor's month (the month grid, by week).
 function useMonthWeeks(cursor: dayjs.Dayjs) {
   return useMemo(() => {
-    const monthIndex = cursor.month();
-    const calStart = startOfWeek(cursor.startOf("month").toDate());
-    const lastOfMonth = cursor.endOf("month");
-    // +1: diff is exclusive of the end day, so add it back to count the last day.
-    const numWeeks = Math.ceil((lastOfMonth.diff(dayjs(calStart), "day") + 1) / 7);
-    const weeks: Date[][] = Array.from({ length: numWeeks }, (_, w) =>
-      Array.from({ length: 7 }, (_, d) => addDays(calStart, w * 7 + d)),
-    );
-    return { weeks, monthIndex };
+    const { days, numWeeks } = monthGrid(cursor.toDate());
+    const weeks = Array.from({ length: numWeeks }, (_, w) => days.slice(w * 7, w * 7 + 7));
+    return { weeks, monthIndex: cursor.month() };
   }, [cursor]);
 }
 

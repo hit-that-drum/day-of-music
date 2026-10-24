@@ -4,7 +4,16 @@
 // (over monthly winners) reuse it. Persistence and the status hooks live in
 // best-of.ts; no React here.
 
-import { addDays, fmtDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
+import {
+  addDays,
+  fmtDate,
+  monthEnd,
+  monthStart,
+  segmentDays,
+  startOfWeek,
+  weekDays,
+  type Album,
+} from "@/lib/day-of-music/data";
 
 export type BestOfMethod = "sequential" | "random";
 export type BestOfPeriod = "week" | "month" | "year";
@@ -114,20 +123,8 @@ export function roundStage(tour: Tourney<unknown>): "final" | "semifinal" | "rou
 export type Contender = { date: string; album: Album };
 
 /**
- * The days this segment judges. Normally the whole Mon–Sun week; in
- * split-by-month mode only the days in labelDate's month — e.g. a week whose
- * July part starts Wednesday contends Wed→Sun, dropping the June Mon/Tue —
- * mirroring which cells the grid keeps active.
- */
-export function segmentDays(days: Date[], labelDate: Date, splitByMonth: boolean): Date[] {
-  if (!splitByMonth) return days;
-  const month = labelDate.getMonth();
-  const year = labelDate.getFullYear();
-  return days.filter((d) => d.getMonth() === month && d.getFullYear() === year);
-}
-
-/**
- * The tournament field for one week segment: its filled days, in day order.
+ * The tournament field for one week segment (see segmentDays in data.ts): its
+ * filled days, in day order.
  * Shared by the modal and the button's status so the two can never disagree
  * about who is in the running.
  */
@@ -162,12 +159,7 @@ export function weekPeriodKey(labelDate: Date): string {
 
 /** Canonical month id = the month's 1st (YYYY-MM-DD). */
 export function monthKey(anchor: Date): string {
-  return fmtDate(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
-}
-
-/** Last calendar day of the anchor's month. */
-export function monthLastDay(anchor: Date): Date {
-  return new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+  return fmtDate(monthStart(anchor));
 }
 
 /**
@@ -185,11 +177,11 @@ export function monthWeekSegments(
   anchor: Date,
   splitByMonth: boolean,
 ): { key: string; days: Date[]; labelDate: Date }[] {
-  const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-  const last = monthLastDay(anchor);
+  const first = monthStart(anchor);
+  const last = monthEnd(anchor);
   const segments: { key: string; days: Date[]; labelDate: Date }[] = [];
   for (let ws = startOfWeek(first); ws <= last; ws = addDays(ws, 7)) {
-    const days = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
+    const days = weekDays(ws);
     const labelDate = segmentDays(days, first, splitByMonth)[0] ?? ws;
     segments.push({ key: weekPeriodKey(labelDate), days, labelDate });
   }

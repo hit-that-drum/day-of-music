@@ -3,13 +3,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import dayjs from "dayjs";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import {
-  addDays,
   fmtDate,
-  startOfWeek,
+  isSameMonth,
+  monthEnd,
+  monthGrid,
+  parseDate,
   type Album,
 } from "@/lib/day-of-music/data";
 import { periodSummary } from "@/lib/day-of-music/album-stats";
@@ -61,40 +62,32 @@ export function MonthlyView({
   // Date currently hovered as a drag-and-drop target (for highlight).
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   // The month being viewed follows `anchor`; `today` is only for highlighting.
-  const current = dayjs(anchor);
-  const year = current.year();
-  const month = current.month();
-  const isCurrentMonth =
-    dayjs(today).month() === month && dayjs(today).year() === year;
+  const year = anchor.getFullYear();
+  const month = anchor.getMonth();
+  const isCurrentMonth = isSameMonth(today, anchor);
   // Phone-only swipe: finger left → next month, right → previous.
   const boardRef = useRef<HTMLDivElement>(null);
   useSwipeNav(boardRef, { onLeft: onNext, onRight: onPrev });
   // Phone-only slide-in when the month changes (DOW header + grid together).
   // Zero-padded so "2026-10" > "2026-09" and "2027-01" > "2026-12" lexically.
   const calRef = useRef<HTMLDivElement>(null);
-  useNavSlide(calRef, current.format("YYYY-MM"));
+  useNavSlide(calRef, fmtDate(anchor).slice(0, 7));
 
   // Mon-start month grid (5–6 rows).
-  const lastOfMonth = current.endOf("month");
-  const calStart = startOfWeek(current.startOf("month").toDate());
-  const numWeeks = Math.ceil((lastOfMonth.diff(dayjs(calStart), "day") + 1) / 7);
-  const totalDays = numWeeks * 7;
-  const days = Array.from({ length: totalDays }, (_, i) => addDays(calStart, i));
+  const { days, numWeeks } = monthGrid(anchor);
+  const todayKey = fmtDate(today);
 
-  const monthAlbums = albums.filter((a) => {
-    const d = dayjs(a.date);
-    return d.month() === month && d.year() === year;
-  });
+  const monthAlbums = albums.filter((a) => isSameMonth(a.date, anchor));
 
   // The same numbers the month share card shows. avgRating is "—" when empty.
   const { count: totalLogged, genres: genreCount, avg: avgRating } = periodSummary(monthAlbums);
-  const completion = Math.round((totalLogged / lastOfMonth.date()) * 100);
+  const completion = Math.round((totalLogged / monthEnd(anchor).getDate()) * 100);
 
   // The Best of Month button reports its state in colour, and explains any
   // blocker on click — mirroring the weekly button (see weekly-grid.tsx).
   const bestOfHint =
     bestOf.status === "done" && bestOf.winnerDate
-      ? t("bom.doneHint", { date: names.monthDayShort(dayjs(bestOf.winnerDate).toDate()) })
+      ? t("bom.doneHint", { date: names.monthDayShort(parseDate(bestOf.winnerDate)) })
       : bestOf.status === "locked"
         ? t("bom.lockedHint", { date: names.monthDayShort(bestOf.lastDay) })
         : bestOf.status === "pending"
@@ -180,15 +173,15 @@ export function MonthlyView({
         >
           {days.map((d, i) => {
             const inMonth = d.getMonth() === month;
+            const dayKey = fmtDate(d);
             // Days outside the viewed month are blacked out — no album, no
             // date, nothing leaking in from the neighbouring month.
-            const album = inMonth ? albumsByDate[fmtDate(d)] : undefined;
-            const isToday = fmtDate(d) === fmtDate(today);
+            const album = inMonth ? albumsByDate[dayKey] : undefined;
+            const isToday = dayKey === todayKey;
             const isFuture = d > today;
             // Empty in-month days up to today get a "+ log" affordance, like the
             // week view. Future days stay blank (can't log ahead).
             const canAdd = inMonth && !album && !isFuture;
-            const dayKey = fmtDate(d);
             return (
               <button
                 key={i}

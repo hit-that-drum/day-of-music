@@ -159,3 +159,50 @@ export function weekOfMonth(d: Date): number {
   const mondayOffset = (date.startOf("month").day() + 6) % 7;
   return Math.ceil((date.date() + mondayOffset) / 7);
 }
+
+// ── Calendar shapes ─────────────────────────────────────────────────────────
+// The week strips and month grids the boards, pickers and posters lay out, in
+// one place so they can't disagree about which days a period covers.
+
+/** The seven days of the Mon–Sun week that starts on `weekStart`. */
+export function weekDays(weekStart: Date): Date[] {
+  return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+}
+
+/** The 1st of `anchor`'s month. */
+export function monthStart(anchor: Date): Date {
+  return new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+}
+
+/** The last day of `anchor`'s month. */
+export function monthEnd(anchor: Date): Date {
+  return new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+}
+
+/** Whether `date` (a Date or "YYYY-MM-DD") falls in `anchor`'s month. */
+export function isSameMonth(date: Date | string, anchor: Date): boolean {
+  const d = typeof date === "string" ? parseDate(date) : date;
+  return d.getMonth() === anchor.getMonth() && d.getFullYear() === anchor.getFullYear();
+}
+
+/** The Mon-first grid showing `anchor`'s month: whole weeks from the Monday on
+ *  or before the 1st through the week holding the last day — 5 or 6 rows (4
+ *  for a February that starts on a Monday). */
+export function monthGrid(anchor: Date): { days: Date[]; numWeeks: number } {
+  const current = dayjs(anchor);
+  const calStart = startOfWeek(current.startOf("month").toDate());
+  // +1: diff is exclusive of the end day, so add it back to count the last day.
+  const numWeeks = Math.ceil((current.endOf("month").diff(dayjs(calStart), "day") + 1) / 7);
+  return { days: Array.from({ length: numWeeks * 7 }, (_, i) => addDays(calStart, i)), numWeeks };
+}
+
+/**
+ * The days of a week strip that belong to its page. Normally the whole Mon–Sun
+ * week; in split-by-month mode only the days in labelDate's month — e.g. a week
+ * whose July part starts Wednesday keeps Wed→Sun, dropping the June Mon/Tue.
+ * The board, its label and share card, and Best of Week all cut weeks this way.
+ */
+export function segmentDays(days: Date[], labelDate: Date, splitByMonth: boolean): Date[] {
+  if (!splitByMonth) return days;
+  return days.filter((d) => isSameMonth(d, labelDate));
+}

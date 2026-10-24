@@ -12,6 +12,7 @@ import {
   DOW,
   MONTHS_LONG,
   fmtDate,
+  isSameMonth,
   weekOfMonth,
 } from "@/lib/day-of-music/data";
 import { periodSummary } from "@/lib/day-of-music/album-stats";
@@ -49,12 +50,9 @@ export function ShareCard({
 
   const monthLabel = MONTHS_LONG[weekStart.getMonth()];
   const weekNum = weekOfMonth(weekStart);
-  const labelMonth = weekStart.getMonth();
-  const labelYear = weekStart.getFullYear();
 
   const payload = useMemo<WeekSharePayload>(() => {
-    const isOutOfMonth = (d: Date) =>
-      splitByMonth && (d.getMonth() !== labelMonth || d.getFullYear() !== labelYear);
+    const isOutOfMonth = (d: Date) => splitByMonth && !isSameMonth(d, weekStart);
 
     // One entry per visible day, mirroring the weekly grid (album, blank, or
     // out-of-month). Out-of-month days never carry an album.
@@ -86,8 +84,7 @@ export function ShareCard({
   }, [
     days,
     splitByMonth,
-    labelMonth,
-    labelYear,
+    weekStart,
     albumsByDate,
     monthLabel,
     weekNum,

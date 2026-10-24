@@ -13,6 +13,7 @@ import {
   formatDisplayDate,
   parseDate,
   startOfWeek,
+  weekDays,
   type Album,
 } from "@/lib/day-of-music/data";
 import {
@@ -105,10 +106,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
   // Show the week containing the currently-selected day, so a day picked from
   // the month view (outside the viewed week) still appears and stays selected.
   const weekStart = useMemo(() => startOfWeek(parseDate(weekAnchor)), [weekAnchor]);
-  const weekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart],
-  );
+  const pickerDays = useMemo(() => weekDays(weekStart), [weekStart]);
 
   return (
     <Modal label={t("addflow.modalLabel")} onClose={onClose}>
@@ -233,7 +231,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
               </button>
             </div>
             <div className="dom-addflow-datestack">
-              {weekDays.map((d) => {
+              {pickerDays.map((d) => {
                 const k = fmtDate(d);
                 return (
                   <button
