@@ -29,15 +29,18 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import { useEscapeLayer } from "@/lib/day-of-music/escape-layers";
 import { useT } from "@/lib/day-of-music/i18n";
+import { PHONE_BREAKPOINT } from "@/lib/day-of-music/phone";
+import { POSTER_WIDTH } from "@/lib/day-of-music/poster-size";
 
-/** The width posters are laid out at — matches --dom-modal-w and save-card.ts's
- *  EXPORT_WIDTH, so what's on screen is what gets saved. */
-const REFERENCE_WIDTH = 1100;
+/** The width posters are laid out at — the same one save-card.ts exports at,
+ *  so what's on screen is what gets saved. */
+const REFERENCE_WIDTH = POSTER_WIDTH;
 
 /** Below this available width the fluid layout stops holding together (it's the
  *  app's own phone breakpoint), so scale instead of reflowing. */
-const FIT_BELOW = 760;
+const FIT_BELOW = PHONE_BREAKPOINT;
 
 type Fit = { scale: number; height: number };
 
@@ -97,18 +100,21 @@ export function PosterFit({ children }: { children: ReactNode }) {
     return () => observer.disconnect();
   }, [measure, expanded]);
 
+  // Escape closes the zoom view, not the share modal underneath it.
+  useEscapeLayer(() => setZoomed(false), expanded);
+
+  // Focus follows the zoom: into the view as it opens (its opener, the zoom
+  // button, unmounts as the poster moves out), and back to that button —
+  // mounted again in the frame — once it closes.
+  const zoomViewRef = useRef<HTMLDivElement>(null);
+  const closeZoomRef = useRef<HTMLButtonElement>(null);
+  const wasExpanded = useRef(false);
   useEffect(() => {
-    if (!expanded) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key !== "Escape") return;
-      // Capture phase + stopPropagation so Escape dismisses the zoom view
-      // first; the share Modal's own Escape handler listens on window in the
-      // bubble phase and would otherwise close the whole modal underneath.
-      e.stopPropagation();
-      setZoomed(false);
+    if (expanded) zoomViewRef.current?.focus({ preventScroll: true });
+    else if (wasExpanded.current) {
+      frameRef.current?.querySelector<HTMLElement>(".dom-poster-zoom")?.focus();
     }
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
+    wasExpanded.current = expanded;
   }, [expanded]);
 
   const poster = (
@@ -154,16 +160,26 @@ export function PosterFit({ children }: { children: ReactNode }) {
         createPortal(
           <div
             className="dom-poster-zoom-view"
+            ref={zoomViewRef}
             role="dialog"
             aria-modal="true"
             aria-label={t("poster.zoomLabel")}
+            tabIndex={-1}
             // Tapping the margin around the 1:1 poster closes, like a lightbox.
             onClick={(e) => {
               if (e.target === e.currentTarget) setZoomed(false);
             }}
+            // The ✕ is the view's only control, so Tab stays on it rather than
+            // wandering to the board behind.
+            onKeyDown={(e) => {
+              if (e.key !== "Tab") return;
+              e.preventDefault();
+              closeZoomRef.current?.focus();
+            }}
           >
             {poster}
             <button
+              ref={closeZoomRef}
               type="button"
               className="dom-poster-zoom-close"
               onClick={() => setZoomed(false)}

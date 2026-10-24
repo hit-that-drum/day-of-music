@@ -6,7 +6,8 @@ import { useMemo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { getAlbumStats, type AlbumStats } from "@/lib/day-of-music/album-stats";
-import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
+import type { JournalAlbum } from "@/lib/day-of-music/journal";
+import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useThemes } from "@/lib/day-of-music/themes";
 import { useT } from "@/lib/day-of-music/i18n";
 import { StatsShareCard } from "@/components/day-of-music/stats-share-card";
@@ -75,24 +76,24 @@ export function ProfileStats() {
     ? Math.round((allStats.fives.length / allStats.total) * 100)
     : 0;
   const openTheme = openThemeId
-    ? (themeRecaps.find((t) => t.id === openThemeId) ?? null)
+    ? (themeRecaps.find((recap) => recap.id === openThemeId) ?? null)
     : null;
 
   return (
     <div className="dom-profile">
-      <div className="dom-week-hd">
-        <div className="dom-week-title">
+      <div className="dom-page-hd">
+        <div className="dom-page-title">
           <span className="dom-eyebrow">{t("stats.eyebrow", { year: currentYear })}</span>
           <h1>{t("stats.title")}</h1>
         </div>
-        <div className="dom-week-actions">
+        <div className="dom-page-actions">
           <Button onClick={() => setShareYear(true)}>{t("stats.shareCard").toUpperCase()}</Button>
         </div>
       </div>
 
       <div className="dom-stats-grid">
         <div className="dom-stat dom-stat-lg">
-          <div className="dom-stat-label">{t("stats.albumsLogged")}</div>
+          <div className="dom-label">{t("stats.albumsLogged")}</div>
           <div className="dom-stat-num">
             {String(allStats.total).padStart(2, "0")}
           </div>
@@ -101,19 +102,19 @@ export function ProfileStats() {
           </div>
         </div>
         <div className="dom-stat">
-          <div className="dom-stat-label">{t("stats.avgRatingFull")}</div>
+          <div className="dom-label">{t("stats.avgRatingFull")}</div>
           <div className="dom-stat-num">{allStats.avgRating}</div>
           <div className="dom-stat-sub">
             <Stars value={Math.round(allStats.avgRatingNum)} size={14} />
           </div>
         </div>
         <div className="dom-stat">
-          <div className="dom-stat-label">{t("stats.fivePicks")}</div>
+          <div className="dom-label">{t("stats.fivePicks")}</div>
           <div className="dom-stat-num">{allStats.fives.length}</div>
           <div className="dom-stat-sub">{t("stats.percentCatalog", { pct: fivesPct })}</div>
         </div>
         <div className="dom-stat dom-stat-wide">
-          <div className="dom-stat-label">{t("stats.topGenres")}</div>
+          <div className="dom-label">{t("stats.topGenres")}</div>
           <div className="dom-bars">
             {allStats.topTenGenres.length ? (
               allStats.topTenGenres.map(([g, n]) => (
@@ -157,7 +158,7 @@ export function ProfileStats() {
                   {theme.emoji}
                 </span>
                 <div>
-                  <div className="dom-stat-label">{t("stats.themeAnalysis")}</div>
+                  <div className="dom-label">{t("stats.themeAnalysis")}</div>
                   <h3>{theme.name}</h3>
                 </div>
               </div>

@@ -2,24 +2,34 @@
 
 "use client";
 
-import { useCallback, useRef, useState, type DragEvent } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { ArrowLeft, ArrowRight, CalendarSearch } from "lucide-react";
-import { toast } from "sonner";
 
 import {
   fmtDate,
+  isSameMonth,
   parseDate,
   startOfWeek,
   weekOfMonth,
   type Album,
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
+import { setAlbumDragData, useAlbumDropTarget } from "@/lib/day-of-music/album-dnd";
 import { useBestOfWeekStatus, type BestOfStatus } from "@/lib/day-of-music/best-of";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { useNavSlide, useSwipeNav } from "@/lib/day-of-music/use-swipe-nav";
+import { BestOfButton } from "@/components/day-of-music/best-of-button";
 import { Cover } from "@/components/day-of-music/cover";
 import { Button, IconButton, MetaLine } from "@/components/day-of-music/atoms";
 import { WeekPicker } from "@/components/day-of-music/week-picker";
+
+// How wide a day's cover is shown (7 columns, 4 at ≤1100px, 2 on phones, less
+// the board's gutters; fitted to the rendered widths), so its artwork loads at a
+// matching resolution. A few px off only changes which rendition is picked.
+const COVER_SIZES =
+  "(max-width: 760px) calc((100vw - 56px) / 2), " +
+  "(max-width: 1100px) calc((100vw - 112px) / 4), " +
+  "calc((100vw - 121px) / 7)";
 
 type WeeklyGridProps = {
   days: Date[];
@@ -104,11 +114,9 @@ export function WeeklyGrid({
   };
   const monthLabel = names.monthLong(labelDate.getMonth());
   const weekNum = weekOfMonth(labelDate);
-  const labelMonth = labelDate.getMonth();
-  const labelYear = labelDate.getFullYear();
   // In split mode a day outside the labelled month is blanked (not interactive).
-  const isOutOfMonth = (d: Date) =>
-    splitByMonth && (d.getMonth() !== labelMonth || d.getFullYear() !== labelYear);
+  const isOutOfMonth = (d: Date) => splitByMonth && !isSameMonth(d, labelDate);
+  const todayKey = fmtDate(today);
 
   // Header segments: one per calendar month present among the active days. When
   // a continuous (non-split) week straddles two months we show both, e.g.
@@ -140,7 +148,7 @@ export function WeeklyGrid({
       <div
         className="dom-grid"
         ref={gridRef}
-        style={{ ["--cols" as string]: days.length }}
+        style={{ "--cols": days.length } as CSSProperties}
       >
         {/* Label cell — only visible in the 2-column mobile grid. */}
         <div className="dom-grid-label">
@@ -157,7 +165,7 @@ export function WeeklyGrid({
         {days.map((d) => {
           const outOfMonth = isOutOfMonth(d);
           const album = outOfMonth ? undefined : albumsByDate[fmtDate(d)];
-          const isToday = fmtDate(d) === fmtDate(today);
+          const isToday = fmtDate(d) === todayKey;
           const isFuture = d > today;
           return (
             <DayCell
@@ -198,21 +206,13 @@ function BoardActions({ bestOfStatus, bestOfHint, locked, onBestOf, onShare }: B
   const t = useT();
   return (
     <div className="dom-board-actions">
-      <Button
-        variant="ghost"
-        onClick={locked ? () => toast(bestOfHint) : onBestOf}
-        data-bestof={bestOfStatus}
-        title={bestOfHint}
-        aria-disabled={locked || undefined}
-        aria-label={bestOfHint && `${t("bow.button")} — ${bestOfHint}`}
-      >
-        {bestOfStatus === "done" && (
-          <span className="dom-bestof-trophy" aria-hidden="true">
-            🏆
-          </span>
-        )}
-        {t("bow.button")}
-      </Button>
+      <BestOfButton
+        status={bestOfStatus}
+        hint={bestOfHint}
+        blocked={locked}
+        label={t("bow.button")}
+        onOpen={onBestOf}
+      />
       <Button onClick={onShare}>{t("week.shareWeek").toUpperCase()}</Button>
     </div>
   );
@@ -242,8 +242,8 @@ function WeekHeader({
   const t = useT();
 
   return (
-    <div className="dom-week-hd dom-week-hd-board">
-      <div className="dom-week-title">
+    <div className="dom-page-hd dom-page-hd-board">
+      <div className="dom-page-title">
         <span className="dom-eyebrow">{t("week.eyebrow")}</span>
         <div className="dom-week-title-anchor">
           <button
@@ -283,7 +283,7 @@ function WeekHeader({
       {/* DOM order = phone visual order: [←] [jump] [→] then Best-of/Share. On
           desktop the jump button is display:none and .dom-board-actions is
           display:contents, so the flex row stays ← → Best-of Share. */}
-      <div className="dom-week-actions">
+      <div className="dom-page-actions">
         <IconButton icon={ArrowLeft} onClick={onPrev} aria-label={t("aria.prevWeek")} />
         <Button
           variant="ghost"
@@ -333,40 +333,8 @@ function DayCell({
   const names = useDateNames();
   const day = date.getDate();
   const dow = names.weekdayShort(date);
-  const [dragOver, setDragOver] = useState(false);
-
   // Any in-month day is a drop target (empty → move, filled → swap dates).
-  const handleDragOver = useCallback(
-    (e: DragEvent) => {
-      if (outOfMonth) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      setDragOver(true);
-    },
-    [outOfMonth],
-  );
-  const handleDrop = useCallback(
-    (e: DragEvent) => {
-      if (outOfMonth) return;
-      e.preventDefault();
-      setDragOver(false);
-      try {
-        const { from } = JSON.parse(e.dataTransfer.getData("text/plain")) as {
-          id: string;
-          from: string;
-        };
-        if (from) onMove(from, fmtDate(date));
-      } catch {
-        /* ignore non-album drops */
-      }
-    },
-    [outOfMonth, onMove, date],
-  );
-  // Only clear the highlight when the cursor actually leaves the cell — not when
-  // it moves onto a child (album button, cover image), which would flicker it.
-  const handleDragLeave = useCallback((e: DragEvent) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false);
-  }, []);
+  const { dragOver, dropHandlers } = useAlbumDropTarget(fmtDate(date), !outOfMonth, onMove);
 
   return (
     <div
@@ -376,9 +344,7 @@ function DayCell({
       data-empty={album ? "0" : "1"}
       data-outmonth={outOfMonth ? "1" : "0"}
       data-dragover={dragOver ? "1" : "0"}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      {...dropHandlers}
     >
       <div className="dom-day-hd">
         <span className="dom-day-num">{day}</span>
@@ -391,18 +357,12 @@ function DayCell({
         <button
           className="dom-day-body dom-day-draggable"
           draggable
-          onDragStart={(e) => {
-            e.dataTransfer.setData(
-              "text/plain",
-              JSON.stringify({ id: album.id, from: album.date }),
-            );
-            e.dataTransfer.effectAllowed = "move";
-          }}
+          onDragStart={(e) => setAlbumDragData(e, album)}
           onClick={() => onOpen(album)}
           aria-label={t("aria.openAlbum", { title: album.title })}
         >
           <div className="dom-cover-wrap">
-            <Cover album={album} size="100%" />
+            <Cover album={album} size="100%" sizes={COVER_SIZES} />
           </div>
           <div className="dom-day-meta">
             <div className="dom-title">{album.title}</div>

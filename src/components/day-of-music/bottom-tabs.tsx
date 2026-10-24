@@ -14,8 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import type { ScreenId } from "@/components/day-of-music/day-of-music-app";
-import { SCREENS } from "@/components/day-of-music/top-bar";
+import { SCREENS, type ScreenId } from "@/components/day-of-music/top-bar";
 import { useT } from "@/lib/day-of-music/i18n";
 
 const ICONS: Record<ScreenId, LucideIcon> = {

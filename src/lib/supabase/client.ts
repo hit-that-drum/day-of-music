@@ -3,7 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 /** How long any one supabase-js call may stay pending before we treat it as
  *  failed. Generous next to a healthy round trip; the point is only to put a
  *  ceiling on calls that never settle at all. */
-export const AUTH_CALL_TIMEOUT_MS = 10_000;
+export const SUPABASE_CALL_TIMEOUT_MS = 10_000;
 
 /** Reject if `promise` hasn't settled within `ms`.
  *
@@ -32,6 +32,18 @@ export function withTimeout<T>(promise: PromiseLike<T>, ms: number, label: strin
       },
     );
   });
+}
+
+/** Run one table query — a supabase-js builder — under the call ceiling, with
+ *  its `error` turned into a rejection, so a hang and an error response fail
+ *  the same way. Resolves to the success response (`data`, `count`). */
+export async function runQuery<R extends { error: { message: string } | null }>(
+  label: string,
+  query: PromiseLike<R>,
+): Promise<Extract<R, { error: null }>> {
+  const response = await withTimeout(query, SUPABASE_CALL_TIMEOUT_MS, label);
+  if (response.error) throw new Error(response.error.message);
+  return response as Extract<R, { error: null }>;
 }
 
 /** True when the public Supabase env vars are present. When false the app runs

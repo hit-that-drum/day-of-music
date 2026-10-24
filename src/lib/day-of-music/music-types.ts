@@ -1,6 +1,6 @@
-// music-types.ts — shapes shared between the /api/music/album route (which
-// builds them from the iTunes Lookup response) and the client helpers in
-// music-search.ts (which consume the route's JSON). Kept in one place so the
+// music-types.ts — shapes shared between the /api/music routes (which build
+// them from iTunes Search / Lookup responses) and the client helpers in
+// music-search.ts (which consume the routes' JSON). Kept in one place so the
 // server and client can't drift.
 
 /** Version of the album route's track-title localization. Bump it when the
@@ -9,6 +9,18 @@
  *  version once. 2 = KR titles recovered by track id (KR tracklists saved
  *  before that are in the US store's English). */
 export const TRACKLIST_VERSION = 2;
+
+/** One /api/music/search result: album-level metadata, no tracklist. */
+export type MusicSearchResult = {
+  id: string;
+  title: string;
+  artist: string;
+  genre: string;
+  year: number;
+  releaseDate: string;
+  artworkUrl: string;
+  trackCount: number;
+};
 
 /** A single selectable track (for logging one track off an album). */
 export type TrackItem = { trackId: number; name: string; artist: string };

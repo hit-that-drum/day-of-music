@@ -1,6 +1,6 @@
 // atoms.tsx — small shared presentational atoms for Day of Music.
 
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps } from "react";
 import type { LucideIcon } from "lucide-react";
 
 import { normalizeGenre, type Album } from "@/lib/day-of-music/data";
@@ -42,15 +42,18 @@ export function Button({
   return <button type={type} className={buttonClass(variant, size, className)} {...props} />;
 }
 
+// The icon is aria-hidden and is the button's only content, so the label is
+// required by type — without it the button has no accessible name at all.
 export function IconButton({
   icon: Icon,
   iconSize = 18,
   type = "button",
   className,
   ...props
-}: Omit<ComponentProps<"button">, "children"> & {
+}: Omit<ComponentProps<"button">, "children" | "aria-label"> & {
   icon: LucideIcon;
   iconSize?: number;
+  "aria-label": string;
 }) {
   return (
     <button
@@ -74,22 +77,6 @@ export function BrandMark() {
   );
 }
 
-export function Chip({
-  children,
-  active,
-  onClick,
-}: {
-  children: ReactNode;
-  active?: boolean;
-  onClick?: () => void;
-}) {
-  return (
-    <button className="dom-chip" data-active={active ? "1" : "0"} onClick={onClick}>
-      {children}
-    </button>
-  );
-}
-
 export function Stars({
   value = 0,
   size = 12,
@@ -99,13 +86,17 @@ export function Stars({
   size?: number;
   color?: string;
 }) {
+  // One image named by its value: the five glyphs always read "★★★★★"
+  // otherwise. A number, not words — this also renders in the hook-free
+  // posters and the server-rendered share page, where there is no t().
   return (
-    <span style={{ display: "inline-flex", gap: size * 0.1 }}>
+    <span role="img" aria-label={`${value} / 5`} style={{ display: "inline-flex", gap: size * 0.1 }}>
       {Array.from({ length: 5 }, (_, i) => {
         const on = i + 1 <= value;
         return (
           <span
             key={i}
+            aria-hidden="true"
             style={{
               color: on ? color || "var(--ink)" : "var(--lineSoft)",
               fontSize: size,

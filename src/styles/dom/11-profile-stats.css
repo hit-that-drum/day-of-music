@@ -1,0 +1,332 @@
+/* ── Profile / Year in Listening ───────────────────────────────────────── */
+
+.dom-profile {
+  padding: 24px 28px 28px;
+}
+/* Profile (settings) page */
+.dom-profile-settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 8px;
+}
+.dom-settings-card {
+  border: 1px solid var(--line);
+  background-color: var(--bg);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* Small caps label, shared beyond this page: settings sections, stat cards,
+   the share posters, the public-link dialog. */
+.dom-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-settings-key {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink3);
+}
+.dom-settings-val {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--ink);
+  text-align: right;
+  word-break: break-all;
+}
+.dom-settings-note {
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink2);
+  margin: 0;
+}
+.dom-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+/* "Signed in with" value — provider icon + name, right-aligned in the row. */
+.dom-provider-val {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+.dom-provider-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dom-store-country-save-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+.dom-store-country-save-row > .dom-btn {
+  min-height: 48px;
+}
+@media (max-width: 720px) {
+  .dom-profile-settings {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 440px) {
+  .dom-store-country-save-row {
+    grid-template-columns: 1fr;
+  }
+  .dom-store-country-save-row > .dom-btn {
+    justify-self: start;
+  }
+}
+.dom-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+.dom-stat {
+  border: 1px solid var(--line);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: var(--bg);
+}
+.dom-stat-lg {
+  grid-column: span 2;
+  grid-row: span 2;
+  padding: 28px 30px;
+}
+.dom-stat-wide {
+  grid-column: span 2;
+}
+.dom-stat-num {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 96px;
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+}
+.dom-stat-lg .dom-stat-num {
+  font-size: 168px;
+}
+.dom-stat-sub {
+  font-family: var(--font-display);
+  font-size: 14px;
+  opacity: 0.7;
+  margin-top: auto;
+}
+.dom-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dom-bar {
+  display: grid;
+  grid-template-columns: 110px 1fr 30px;
+  gap: 10px;
+  align-items: center;
+}
+.dom-bar-label {
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+.dom-bar-track {
+  height: 8px;
+  background-color: var(--lineSoft);
+  position: relative;
+}
+.dom-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background-color: var(--accent);
+  transition: width 0.4s ease;
+}
+.dom-bar-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink3);
+  text-align: right;
+}
+.dom-profile-section {
+  margin-top: 28px;
+}
+.dom-profile-section-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 0 22px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-section-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0;
+}
+.dom-section-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.dom-stat-empty {
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink3);
+}
+.dom-theme-list {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.dom-theme-row {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 104px;
+  padding: 20px 0;
+  text-align: left;
+}
+.dom-theme-row + .dom-theme-row {
+  border-top: 1px solid var(--line);
+}
+.dom-theme-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.dom-theme-row-meta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.dom-theme-row-icon {
+  color: var(--ink3);
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+.dom-theme-row:hover .dom-theme-row-icon {
+  color: var(--ink);
+  transform: translateX(3px);
+}
+.dom-theme-recap-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 12px;
+}
+.dom-theme-recap-title > div {
+  min-width: 0;
+}
+.dom-theme-recap-title h3 {
+  margin: 3px 0 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+.dom-theme-recap-emoji {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 24px;
+}
+.dom-theme-recap-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.dom-stat-compact {
+  min-width: 0;
+  padding: 16px;
+}
+.dom-stat-compact .dom-stat-num {
+  font-size: 48px;
+  letter-spacing: 0;
+}
+.dom-theme-genre-card {
+  grid-column: span 1;
+}
+.dom-theme-genre-card .dom-bar {
+  grid-template-columns: minmax(74px, 0.9fr) minmax(58px, 1fr) 24px;
+  gap: 8px;
+}
+.dom-theme-genre-card .dom-bar-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dom-theme-fives-title {
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-fives {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+.dom-fives.dom-fives-compact {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+.dom-fives-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.dom-fives-item > div:first-child {
+  box-shadow: var(--coverShadow);
+}
+.dom-fives-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+}
+.dom-fives-artist {
+  font-family: var(--font-display);
+  font-size: 11px;
+  opacity: 0.7;
+}

@@ -1,0 +1,280 @@
+/* ── Buttons & inputs ───────────────────────────────────────────────────── */
+
+.dom-btn {
+  background-color: var(--ink);
+  color: var(--bg);
+  padding: 10px 16px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.005em;
+  border: 1px solid var(--ink);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    background-color 0.12s ease;
+  white-space: nowrap;
+}
+.dom-btn:hover {
+  transform: translateY(-1px);
+}
+.dom-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+.dom-btn-ghost {
+  background: transparent;
+  color: var(--ink);
+}
+.dom-btn-ghost:hover {
+  background-color: var(--chip);
+}
+.dom-btn-sm {
+  padding: 7px 12px;
+  font-size: 12px;
+}
+/* "Best of …" entry buttons (week board + month view) — the colour reports the
+   period's state before the modal is opened. `done` is an accent tint (a solid
+   fill would read as the SHARE button beside it); every blocked state — `locked`
+   (period still running), `pending` (weekly winners still missing) and `empty` —
+   shares one recessive treatment, since they all mean "not now", but stays
+   clickable so a tap can still reach the reason. Every state pairs its colour
+   with a 🏆 / tooltip, since the Minimal aesthetic's accent equals its ink. */
+.dom-btn[data-bestof="done"] {
+  background-color: color-mix(in oklab, var(--accent) 14%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.dom-btn[data-bestof="done"]:hover {
+  background-color: color-mix(in oklab, var(--accent) 24%, transparent);
+}
+.dom-btn[data-bestof="empty"],
+.dom-btn[data-bestof="locked"],
+.dom-btn[data-bestof="pending"] {
+  border-color: var(--lineSoft);
+  color: var(--ink3);
+}
+.dom-bestof-trophy {
+  margin-right: 5px;
+  font-size: 11px;
+}
+.dom-btn-danger {
+  background-color: #a3342a;
+  color: #fff;
+  border-color: #a3342a;
+}
+.dom-btn-danger:hover {
+  background-color: #8c2c23;
+}
+.dom-btn-danger-ghost {
+  color: #a3342a;
+}
+.dom-btn-danger-ghost:hover {
+  background-color: color-mix(in oklab, #a3342a 12%, transparent);
+}
+.dom-iconbtn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  transition: background-color 0.12s;
+}
+.dom-iconbtn:hover {
+  background-color: var(--chip);
+}
+.dom-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  border-radius: 0;
+  outline: none;
+}
+.dom-input:focus {
+  border-color: var(--accent);
+}
+.dom-input-lg {
+  padding: 18px 20px;
+  font-size: 18px;
+}
+.dom-textarea {
+  resize: vertical;
+  min-height: 90px;
+  font-family: var(--font-body);
+}
+
+/* dom-select — designed listbox that replaces the native <select> so dropdowns
+   match the editorial look (square corners, --line borders, accent highlight)
+   instead of the OS chrome. Styled to read as a sibling of .dom-input. */
+.dom-select {
+  position: relative;
+  width: 100%;
+}
+.dom-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+.dom-select-trigger:hover,
+.dom-select-trigger:focus-visible,
+.dom-select-trigger[data-open="1"] {
+  border-color: var(--accent);
+}
+.dom-select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dom-select-value[data-empty="1"] {
+  color: var(--ink3);
+}
+.dom-select-caret {
+  flex: none;
+  font-size: 11px;
+  color: var(--ink2);
+  transition: transform 0.15s ease;
+}
+.dom-select-trigger[data-open="1"] .dom-select-caret {
+  transform: rotate(180deg);
+}
+.dom-select-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  animation: dom-fade 0.12s ease;
+}
+.dom-select-search {
+  padding: 6px;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-select-search-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+}
+.dom-select-search-input:focus {
+  border-color: var(--accent);
+}
+.dom-select-list {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.dom-select-empty {
+  padding: 12px 10px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink3);
+  text-align: center;
+}
+.dom-select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.dom-select-option[data-active="1"] {
+  background-color: var(--accent);
+  color: var(--bg);
+}
+.dom-select-option[data-selected="1"] {
+  font-weight: 600;
+}
+.dom-select-check {
+  flex: none;
+  width: 14px;
+  font-size: 12px;
+  color: var(--accent);
+}
+.dom-select-option[data-active="1"] .dom-select-check {
+  color: var(--bg);
+}
+.dom-select-option-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Day-detail edit controls (rating/note/date/remove/replace). */
+.dom-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dom-edit-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-note-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.dom-note-saved {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+}
+.dom-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  /* Pin to the bottom of the right column so the action bar stays put across
+     tabs whose content heights differ (the modal height is now fixed). */
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--lineSoft);
+  flex-wrap: wrap;
+}
+.dom-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.dom-confirm-q {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink2);
+}

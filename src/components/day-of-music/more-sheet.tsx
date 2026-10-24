@@ -9,6 +9,7 @@ import { useEffect, useRef, type KeyboardEvent } from "react";
 
 import { Button, buttonClass } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
+import type { Account } from "@/components/day-of-music/top-bar";
 import { LOCALES, useLanguage, useT } from "@/lib/day-of-music/i18n";
 
 export function MoreSheet({
@@ -17,7 +18,7 @@ export function MoreSheet({
   showAuthLinks,
 }: {
   onClose: () => void;
-  account: { email: string; onSignOut: () => void } | null;
+  account: Account | null;
   showAuthLinks: boolean;
 }) {
   const t = useT();
@@ -26,12 +27,10 @@ export function MoreSheet({
   const checkedRef = useRef<HTMLButtonElement>(null);
   const groupRef = useRef<HTMLDivElement>(null);
 
-  // Initial focus + return focus to the ⋯ trigger on close (ref read inside an
-  // effect — allowed by react-hooks/refs).
+  // Initial focus on the checked radio (ref read inside an effect — allowed by
+  // react-hooks/refs). Modal returns focus to the ⋯ trigger on close.
   useEffect(() => {
-    const prev = document.activeElement as HTMLElement | null;
     checkedRef.current?.focus();
-    return () => prev?.focus();
   }, []);
 
   // APG radiogroup keyboard contract: roving tabindex (only the checked radio
@@ -63,8 +62,8 @@ export function MoreSheet({
       onClose={onClose}
       className="dom-sheet dom-more-sheet"
     >
-      <div className="dom-sheet-body">
-        <div className="dom-tweak-section">{t("lang.label")}</div>
+      <div className="dom-modal-panel dom-sheet-body">
+        <div className="dom-section-label">{t("lang.label")}</div>
         <div
           className="dom-menu-langs"
           role="radiogroup"
@@ -93,7 +92,7 @@ export function MoreSheet({
           })}
         </div>
 
-        <div className="dom-tweak-section">{t("profile.section.account")}</div>
+        <div className="dom-section-label">{t("profile.section.account")}</div>
         {account ? (
           <div className="dom-menu-row">
             <span className="dom-account-email" title={account.email}>

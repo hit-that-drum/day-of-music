@@ -10,6 +10,8 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
+import { useEscapeLayer } from "@/lib/day-of-music/escape-layers";
+import { useT } from "@/lib/day-of-music/i18n";
 import { cn } from "@/lib/utils";
 
 export type DomSelectOption = { value: string; label: string };
@@ -37,7 +39,7 @@ export function DomSelectField({
   className?: string;
   labelClassName?: string;
   variant?: "default" | "underline";
-  size?: "default" | "medium" | "large";
+  size?: "default" | "large";
 }) {
   return (
     <div className={cn("dom-select-field", className)} data-variant={variant} data-size={size}>
@@ -52,10 +54,11 @@ export function DomSelect({
   options,
   onChange,
   ariaLabel,
-  placeholder = "Select…",
+  placeholder,
   searchable = false,
-  searchPlaceholder = "Search…",
+  searchPlaceholder,
 }: DomSelectProps) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   // Index of the keyboard-highlighted option — into the *filtered* list below.
   const [active, setActive] = useState(-1);
@@ -115,20 +118,21 @@ export function DomSelect({
     if (focusTrigger) triggerRef.current?.focus();
   }
 
+  // An open list is the innermost Escape layer: Escape closes just the list —
+  // inside the Tweaks panel too, which stays open.
+  useEscapeLayer(() => close(true), open);
+
   function commit(i: number, focusTrigger = false) {
     const o = filtered[i];
     if (o) onChange(o.value);
     close(focusTrigger);
   }
 
-  // Shared arrow/Enter/Escape navigation, used by both the trigger (non-search)
-  // and the search input. Space is intentionally left out so it can be typed.
+  // Shared arrow/Enter navigation, used by both the trigger (non-search) and
+  // the search input (Escape is the layer's, above). Space is intentionally
+  // left out so it can be typed.
   function navKeys(e: React.KeyboardEvent) {
     switch (e.key) {
-      case "Escape":
-        e.preventDefault();
-        close(true);
-        return true;
       case "ArrowDown":
         e.preventDefault();
         setActive((i) => Math.min(filtered.length - 1, i + 1));
@@ -171,22 +175,35 @@ export function DomSelect({
     navKeys(e);
   }
 
+  // Without search, focus stays on the trigger while ↑/↓ move the highlight, so
+  // the trigger itself is the combobox (APG "select-only combobox") and points
+  // at the highlighted option. With search, the filter input is the combobox
+  // and the trigger is just the button that opens it.
+  const triggerAria = searchable
+    ? { "aria-expanded": open }
+    : {
+        role: "combobox",
+        "aria-haspopup": "listbox" as const,
+        "aria-expanded": open,
+        // The list only exists while open.
+        "aria-controls": open ? listId : undefined,
+        "aria-activedescendant": open && active >= 0 ? optionId(active) : undefined,
+      };
+
   return (
     <div className="dom-select" ref={rootRef}>
       <button
         ref={triggerRef}
         type="button"
         className="dom-select-trigger"
-        aria-haspopup="listbox"
-        aria-expanded={open}
+        {...triggerAria}
         aria-label={ariaLabel}
-        aria-activedescendant={open && !searchable && active >= 0 ? optionId(active) : undefined}
         data-open={open ? "1" : "0"}
         onClick={() => (open ? close() : openSelect())}
         onKeyDown={onTriggerKeyDown}
       >
         <span className="dom-select-value" data-empty={selected ? "0" : "1"}>
-          {selected ? selected.label : placeholder}
+          {selected ? selected.label : (placeholder ?? t("select.placeholder"))}
         </span>
         <span className="dom-select-caret" aria-hidden>
           ▾
@@ -206,8 +223,10 @@ export function DomSelect({
                 aria-controls={listId}
                 aria-autocomplete="list"
                 aria-activedescendant={active >= 0 ? optionId(active) : undefined}
-                aria-label={ariaLabel ? `Search ${ariaLabel}` : "Search"}
-                placeholder={searchPlaceholder}
+                aria-label={
+                  ariaLabel ? t("select.searchLabel", { label: ariaLabel }) : t("select.search")
+                }
+                placeholder={searchPlaceholder ?? t("select.searchPlaceholder")}
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);
@@ -221,7 +240,7 @@ export function DomSelect({
           <ul className="dom-select-list" role="listbox" aria-label={ariaLabel} id={listId} ref={listRef}>
             {filtered.length === 0 ? (
               <li className="dom-select-empty" role="presentation">
-                No matches
+                {t("select.noMatches")}
               </li>
             ) : (
               filtered.map((o, i) => (

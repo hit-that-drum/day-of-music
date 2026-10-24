@@ -9,8 +9,8 @@
 import { useMemo, useRef } from "react";
 
 import { type AlbumStats } from "@/lib/day-of-music/album-stats";
-import { DEFAULT_USERNAME, useProfile } from "@/lib/day-of-music/profile";
-import { type JournalAlbum } from "@/lib/day-of-music/use-journal";
+import { displayHandle, useProfile } from "@/lib/day-of-music/profile";
+import type { JournalAlbum } from "@/lib/day-of-music/journal";
 import { saveCardAsImage, shareFileName } from "@/lib/day-of-music/save-card";
 import { buildStatsSharePayload } from "@/lib/day-of-music/share-links";
 import { StatsPoster } from "@/components/day-of-music/share-posters";
@@ -46,7 +46,7 @@ export function StatsShareCard({
     () =>
       buildStatsSharePayload({
         title,
-        username: username.trim() || DEFAULT_USERNAME,
+        username: displayHandle(username),
         themeLabel,
         sub,
         showFives,
@@ -55,9 +55,9 @@ export function StatsShareCard({
     [title, username, themeLabel, sub, showFives, stats],
   );
 
-  function handleSaveImage() {
-    if (!cardRef.current) return;
-    void saveCardAsImage(cardRef.current, shareFileName(filenameParts));
+  async function handleSaveImage() {
+    if (!cardRef.current) return false;
+    return saveCardAsImage(cardRef.current, shareFileName(filenameParts));
   }
 
   return (

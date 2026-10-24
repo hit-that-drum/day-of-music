@@ -4,15 +4,15 @@
 // fonts if they can't be fetched, so the save never hard-fails.
 
 import { toPng } from "html-to-image";
-import { toast } from "sonner";
 
-import { googleFontsHref } from "@/lib/day-of-music/theme";
+import { POSTER_WIDTH } from "@/lib/day-of-music/poster-size";
+import { googleFontsHref } from "@/lib/day-of-music/appearance";
 
 // The reference export width — matches --dom-modal-w (the poster's full-size
 // desktop layout). Every export is rendered at this width so the saved image is
 // identical regardless of the viewer's screen size, instead of shrinking with
 // the modal on narrow screens.
-const EXPORT_WIDTH = 1100;
+const EXPORT_WIDTH = POSTER_WIDTH;
 
 // ── Web-font embedding ──────────────────────────────────────────────────────
 //
@@ -144,7 +144,9 @@ function untransformedAncestor(from: HTMLElement | null): HTMLElement | null {
   return el;
 }
 
-export async function saveCardAsImage(node: HTMLElement, filename: string): Promise<void> {
+/** Download `node` as a PNG. Resolves true once the download is triggered and
+ *  false if rendering failed — the caller tells the user (in their language). */
+export async function saveCardAsImage(node: HTMLElement, filename: string): Promise<boolean> {
   // Render the poster on an off-screen stage locked to the reference width. The
   // stage hangs off the node's own ancestry, so the clone stays inside the
   // themed .dom-root subtree and inherits every CSS var (--panel, --line, the
@@ -174,7 +176,7 @@ export async function saveCardAsImage(node: HTMLElement, filename: string): Prom
     // Make sure web fonts are ready before we measure, so the frozen box sizes
     // match the rasterized text.
     try {
-      await (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
+      await document.fonts?.ready;
     } catch {
       /* fonts API unavailable — continue */
     }
@@ -192,9 +194,9 @@ export async function saveCardAsImage(node: HTMLElement, filename: string): Prom
     link.download = filename;
     link.href = dataUrl;
     link.click();
-    toast.success("Image saved");
+    return true;
   } catch {
-    toast.error("Couldn't save image");
+    return false;
   } finally {
     parent.removeChild(stage);
   }

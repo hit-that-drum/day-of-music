@@ -3,13 +3,13 @@
 
 "use client";
 
-import { Fragment, useEffect, useRef } from "react";
+import { Fragment, type CSSProperties } from "react";
 import Link from "next/link";
 
 import type { Album } from "@/lib/day-of-music/data";
-import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
+import { themeStyleVars } from "@/lib/day-of-music/appearance";
 import { useT } from "@/lib/day-of-music/i18n";
-import { useAuth } from "@/components/day-of-music/auth-provider";
+import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { BrandMark } from "@/components/day-of-music/atoms";
 import { Button, buttonClass } from "@/components/day-of-music/atoms";
 import { Cover } from "@/components/day-of-music/cover";
@@ -69,24 +69,23 @@ const REPORT_EMAIL_HREF = `mailto:dayofmusic365@gmail.com?subject=${encodeURICom
   "이용 중 불편했던 점이나 개선 의견을 자유롭게 적어주세요.\n\n내용:\n\n사용 환경(선택):\n",
 )}`;
 
+// The landing always shows the default look, whatever the visitor's Tweaks.
+const LANDING_THEME = themeStyleVars("editorial", "editorial") as CSSProperties;
+
 export function HomeLanding() {
-  const rootRef = useRef<HTMLDivElement>(null);
   const { configured, user, signOut } = useAuth();
   const t = useT();
-
-  useEffect(() => {
-    ensureFonts();
-    applyTheme(rootRef.current, "editorial", "editorial");
-  }, []);
+  // Empty in English, which shows just the wordmark (as the header does).
+  const tagline = t("brand.tagline");
 
   return (
-    <div className="dom-stage" ref={rootRef}>
+    <div className="dom-stage" style={LANDING_THEME}>
       <div className="dom-root" data-grid="1">
         <header className="dom-topbar">
           <div className="dom-brand">
             <BrandMark />
             <span className="dom-brand-name">Day of Music</span>
-            <span className="dom-brand-ko">{t("brand.tagline")}</span>
+            {tagline && <span className="dom-brand-ko">{tagline}</span>}
           </div>
           <div className="dom-topbar-actions">
             {configured && user ? (
@@ -116,7 +115,7 @@ export function HomeLanding() {
           style={{ display: "grid", placeItems: "center" }}
         >
           <div className="dom-home-hero">
-            <div className="dom-signin-eyebrow">{t("home.eyebrow")}</div>
+            <div className="dom-eyebrow">{t("home.eyebrow")}</div>
             <h1 className="dom-home-title">
               {t("home.title")
                 .split("\n")

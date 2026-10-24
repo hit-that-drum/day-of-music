@@ -7,12 +7,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { formatDisplayDate, type Album } from "@/lib/day-of-music/data";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { useT } from "@/lib/day-of-music/i18n";
-import { useThemes } from "@/lib/day-of-music/themes";
+import { formatThemeLabel, useThemes } from "@/lib/day-of-music/themes";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { Cover } from "@/components/day-of-music/cover";
 import { MetaLine, Stars } from "@/components/day-of-music/atoms";
 
 const RESULT_PAGE_SIZE = 10;
+// A result's artwork is a fixed 135px square (.dom-search-result, 12-search.css).
+const COVER_SIZES = "135px";
 
 export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
   const { allAlbums } = useJournal();
@@ -28,7 +30,7 @@ export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
   const themeLabels = useMemo(
     () =>
       new Map(
-        themes.map((t) => [t.id, t.emoji ? `${t.emoji} ${t.name}` : t.name]),
+        themes.map((theme) => [theme.id, formatThemeLabel(theme)]),
       ),
     [themes],
   );
@@ -87,8 +89,8 @@ export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
 
   return (
     <div className="dom-search">
-      <div className="dom-week-hd">
-        <div className="dom-week-title">
+      <div className="dom-page-hd">
+        <div className="dom-page-title">
           <span className="dom-eyebrow">{t("journal.eyebrow")}</span>
           <h1>{t("journal.title")}</h1>
         </div>
@@ -113,7 +115,7 @@ export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
               onClick={() => onOpen(a)}
             >
               <div>
-                <Cover album={a} size="100%" />
+                <Cover album={a} size="100%" sizes={COVER_SIZES} />
               </div>
               <div className="dom-search-result-info">
                 <div className="dom-search-result-title">{a.title}</div>

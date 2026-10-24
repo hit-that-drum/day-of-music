@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import "../styles/day-of-music.css";
+import "../styles/day-of-music";
+import { googleFontsHref } from "@/lib/day-of-music/appearance";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   applicationName: "Day of Music",
-  title: "Day of Music",
+  // Child pages set just their own part ("Week", a shared card's title).
+  title: { default: "Day of Music", template: "%s — Day of Music" },
   description: "A music calendar image maker for weekly album picks.",
   appleWebApp: {
     capable: true,
@@ -50,6 +52,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
+      <head>
+        {/* Every typography pair's Google Fonts, on every route — auth and
+            legal pages too, which would otherwise fall back to Georgia. Saved
+            card images embed the same URL (save-card.ts). */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="stylesheet" href={googleFontsHref()} />
+      </head>
       <body className="flex min-h-full flex-col">
         <Providers>{children}</Providers>
       </body>

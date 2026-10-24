@@ -10,10 +10,10 @@ import { notFound } from "next/navigation";
 
 import {
   decodeGuestShareParam,
-  shareDescription,
+  sharedCardMetadata,
   weekSharePayloadSchema,
   type WeekSharePayload,
-} from "@/lib/day-of-music/share-links";
+} from "@/lib/day-of-music/share-payload";
 import { SharedCardView } from "@/components/day-of-music/shared-card-view";
 
 export const dynamic = "force-dynamic";
@@ -36,24 +36,7 @@ async function payloadFromSearch(props: Props): Promise<WeekSharePayload | null>
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
-  const payload = await payloadFromSearch(props);
-  const base: Metadata = {
-    robots: { index: false, follow: false },
-    referrer: "no-referrer",
-  };
-  if (!payload) return { ...base, title: "Shared card — Day of Music" };
-  const description = shareDescription(payload);
-  return {
-    ...base,
-    title: `${payload.title} — Day of Music`,
-    description,
-    openGraph: {
-      title: payload.title,
-      description,
-      siteName: "Day of Music",
-      type: "website",
-    },
-  };
+  return sharedCardMetadata(await payloadFromSearch(props));
 }
 
 export default async function GuestSharedCardPage(props: Props) {

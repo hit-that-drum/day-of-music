@@ -6,11 +6,11 @@
 
 import { useMemo } from "react";
 
-import { MONTHS_LONG, fmtDate, weekOfMonth } from "@/lib/day-of-music/data";
+import { MONTHS_LONG, weekOfMonth } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
-import { useActiveTheme, useThemes, resolveActiveTheme } from "@/lib/day-of-music/themes";
-import { useT } from "@/lib/day-of-music/i18n";
-import { bestOfKey, weekContenders } from "@/lib/day-of-music/best-of";
+import { useActiveThemeObject } from "@/lib/day-of-music/themes";
+import { useDateNames, useT } from "@/lib/day-of-music/i18n";
+import { bestOfKey, weekContenders, weekPeriodKey } from "@/lib/day-of-music/best-of-bracket";
 import { shareFileName } from "@/lib/day-of-music/save-card";
 import { BestOfModal } from "@/components/day-of-music/best-of-modal";
 
@@ -31,9 +31,9 @@ export function BestOfWeekModal({
   onClose: () => void;
 }) {
   const t = useT();
+  const names = useDateNames();
   const { albumsByDate } = useJournal();
-  const { themes } = useThemes();
-  const { activeTheme } = useActiveTheme();
+  const activeTheme = useActiveThemeObject();
 
   const contenders = useMemo(
     () => weekContenders(days, albumsByDate, labelDate, splitByMonth),
@@ -42,22 +42,17 @@ export function BestOfWeekModal({
 
   const monthLabel = MONTHS_LONG[labelDate.getMonth()];
   const weekNum = weekOfMonth(labelDate);
-  const theme = resolveActiveTheme(themes, activeTheme);
-  const themeName = themes.find((x) => x.id === theme)?.name ?? "Daily";
 
   return (
     <BestOfModal
       contenders={contenders}
-      // Period key = the segment's first in-view day: the week's Monday when
-      // continuous, or the first in-month day when split — so the two segments
-      // of a month-straddling week are judged and persisted independently.
-      storeKey={bestOfKey("week", theme, fmtDate(labelDate))}
+      storeKey={bestOfKey("week", activeTheme.id, weekPeriodKey(labelDate))}
       title={t("bow.title")}
-      periodLabel={`${monthLabel} · Week ${weekNum}`}
+      periodLabel={`${names.monthLong(labelDate.getMonth())} · ${t("week.weekN", { n: weekNum })}`}
       championKicker={t("bow.champion")}
       emptyText={t("bow.empty")}
       emptyHint={t("bow.emptyHint")}
-      fileName={shareFileName(["Best-of-Week", themeName, monthLabel, weekNum])}
+      fileName={shareFileName(["Best-of-Week", activeTheme.name, monthLabel, weekNum])}
       onClose={onClose}
     />
   );

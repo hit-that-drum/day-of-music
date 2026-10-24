@@ -3,25 +3,23 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
-import { useAuth } from "@/components/day-of-music/auth-provider";
-import {
-  Button,
-  IconButton,
-  buttonClass,
-} from "@/components/day-of-music/atoms";
+import { useAuth, type AuthResult } from "@/lib/day-of-music/auth-provider";
+import { Button, IconButton } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
 import { DomSelectField } from "@/components/day-of-music/dom-select";
-import { PASSWORD_RULES, passwordIssues } from "@/lib/day-of-music/password";
+import { passwordIssues } from "@/lib/day-of-music/password";
+import { PasswordRules } from "@/components/day-of-music/password-rules";
 import { GoogleIcon, KakaoIcon } from "@/components/day-of-music/brand-icons";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { SharedLinksSummaryCard } from "@/components/day-of-music/shared-links-manager";
 import {
   countriesForLocale,
   DEFAULT_USERNAME,
+  displayHandle,
   useProfile,
   type ProfilePatch,
 } from "@/lib/day-of-music/profile";
@@ -52,8 +50,8 @@ export function ProfilePage() {
 
   return (
     <div className="dom-profile">
-      <div className="dom-week-hd">
-        <div className="dom-week-title">
+      <div className="dom-page-hd">
+        <div className="dom-page-title">
           <span className="dom-eyebrow">{t("profile.kicker")}</span>
           <h1>{t("profile.title")}</h1>
         </div>
@@ -61,7 +59,7 @@ export function ProfilePage() {
 
       <div className="dom-profile-settings">
         <section className="dom-settings-card">
-          <div className="dom-settings-label">{t("profile.section.account")}</div>
+          <div className="dom-label">{t("profile.section.account")}</div>
           {user ? (
             <>
               <div className="dom-settings-row">
@@ -102,7 +100,7 @@ export function ProfilePage() {
         </section>
 
         <section className="dom-settings-card">
-          <div className="dom-settings-label">{t("profile.section.preferences")}</div>
+          <div className="dom-label">{t("profile.section.preferences")}</div>
           {/* Re-seed the form whenever the canonical values change (auth load,
               after save, or device switch). */}
           <SettingsForm
@@ -115,9 +113,9 @@ export function ProfilePage() {
         </section>
 
         <section className="dom-settings-card">
-          <div className="dom-settings-label">{t("profile.section.themes")}</div>
+          <div className="dom-label">{t("profile.section.themes")}</div>
           <ThemeManager
-            key={themes.map((t) => t.id).join("|")}
+            key={themes.map((theme) => theme.id).join("|")}
             initial={themes}
             synced={synced}
             onSave={saveThemes}
@@ -143,6 +141,7 @@ function AccountActions({
   const { updatePassword, deleteAccount } = useAuth();
   const router = useRouter();
   const t = useT();
+  const deleteTitleId = useId();
 
   const [pwOpen, setPwOpen] = useState(false);
   const [password, setPassword] = useState("");
@@ -164,7 +163,7 @@ function AccountActions({
       toast.error(error);
       return;
     }
-    toast.success("비밀번호가 변경되었어요.");
+    toast.success(t("profile.pw.changed"));
     setPassword("");
     setPwOpen(false);
   }
@@ -178,7 +177,7 @@ function AccountActions({
       toast.error(error);
       return;
     }
-    toast.success("계정이 삭제되었습니다.");
+    toast.success(t("profile.delete.done"));
     router.replace("/");
   }
 
@@ -191,7 +190,7 @@ function AccountActions({
             onClick={() => setPwOpen((v) => !v)}
             aria-expanded={pwOpen}
           >
-            {pwOpen ? t("profile.cancel") : t("profile.changePassword")}
+            {pwOpen ? t("action.cancel") : t("profile.changePassword")}
           </Button>
         )}
         <Button variant="danger-ghost" onClick={() => setConfirmOpen(true)}>
@@ -208,7 +207,7 @@ function AccountActions({
           <input
             className="dom-input"
             type="password"
-            placeholder="New password"
+            placeholder={t("profile.pw.placeholder")}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
@@ -216,52 +215,28 @@ function AccountActions({
             aria-describedby="dom-change-pw-rules"
             required
           />
-          <ul
-            className="dom-pw-rules"
-            id="dom-change-pw-rules"
-            aria-label={t("auth.pwRulesAria")}
-          >
-            {PASSWORD_RULES.map((rule) => {
-              const met = rule.test(password);
-              return (
-                <li
-                  key={rule.id}
-                  className="dom-pw-rule"
-                  data-met={met ? "1" : "0"}
-                >
-                  <span className="dom-pw-rule-mark" aria-hidden="true">
-                    {met ? "✓" : "○"}
-                  </span>
-                  <span>{t(`pw.${rule.id}`)}</span>
-                  <span className="dom-visually-hidden">
-                    {met ? ` ${t("auth.met")}` : ` ${t("auth.notMet")}`}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+          <PasswordRules password={password} id="dom-change-pw-rules" />
           <Button type="submit" disabled={pwInvalid || pwBusy}>
-            {pwBusy ? "One moment…" : "Update password"}
+            {pwBusy ? t("auth.oneMoment") : t("profile.pw.submit")}
           </Button>
         </form>
       )}
 
       {confirmOpen && (
         <Modal
-          label="Delete account confirmation"
-          className="dom-danger-modal-wrap"
+          labelledBy={deleteTitleId}
+          width={420}
           onClose={() => {
             if (!delBusy) setConfirmOpen(false);
           }}
         >
-          <div className="dom-danger-modal">
-            <h2 className="dom-danger-modal-title">
-              회원 탈퇴 · Delete account
+          <div className="dom-modal-panel dom-danger-modal">
+            <h2 className="dom-danger-modal-title" id={deleteTitleId}>
+              {t("profile.deleteAccount")}
             </h2>
             <p className="dom-danger-modal-body">
-              This permanently deletes your account and all of its journal
-              entries and shared cards. This <strong>cannot be undone</strong>.
-              Type <strong>{email}</strong> to confirm.
+              {t("profile.delete.body")} <strong>{t("profile.delete.irreversible")}</strong>{" "}
+              <EmphasizedEmail template={t("profile.delete.typeEmail")} email={email} />
             </p>
             <input
               className="dom-input"
@@ -271,7 +246,7 @@ function AccountActions({
               autoComplete="off"
               autoCapitalize="off"
               spellCheck={false}
-              aria-label="Type your email to confirm deletion"
+              aria-label={t("profile.delete.inputAria")}
             />
             <div className="dom-settings-actions" style={{ marginTop: 4 }}>
               <Button
@@ -279,14 +254,14 @@ function AccountActions({
                 onClick={() => setConfirmOpen(false)}
                 disabled={delBusy}
               >
-                Cancel
+                {t("action.cancel")}
               </Button>
               <Button
                 variant="danger"
                 onClick={handleDelete}
                 disabled={!confirmed || delBusy}
               >
-                {delBusy ? "Deleting…" : "Delete forever"}
+                {delBusy ? t("action.deleting") : t("profile.delete.submit")}
               </Button>
             </div>
           </div>
@@ -296,323 +271,16 @@ function AccountActions({
   );
 }
 
-const MAX_SHARED_CARDS = 200;
-
-type SharedCardRow = {
-  id: string;
-  token: string;
-  kind: "week" | "month" | "stats";
-  created_at: string;
-};
-
-const SHARED_CARD_KIND_LABEL: Record<SharedCardRow["kind"], string> = {
-  week: "주간 카드",
-  month: "월간 카드",
-  stats: "통계 카드",
-};
-
-function SharedLinksSummaryCard({ userId }: { userId: string }) {
-  const [open, setOpen] = useState(false);
-  const [total, setTotal] = useState<number | null>(null);
-  const t = useT();
-
-  const loadTotal = useCallback(async () => {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
-
-    const { count, error } = await supabase
-      .from("shared_cards")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId);
-
-    if (!error) setTotal(count ?? 0);
-  }, [userId]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => void loadTotal(), 0);
-    return () => window.clearTimeout(timer);
-  }, [loadTotal]);
-
-  const usagePercent =
-    total === null ? 0 : Math.min(100, (total / MAX_SHARED_CARDS) * 100);
-
+// A translated sentence with its {email} token in bold. Split on the token
+// instead of interpolating, so the markup survives each language's word order.
+function EmphasizedEmail({ template, email }: { template: string; email: string }) {
+  const [before = "", after = ""] = template.split("{email}");
   return (
-    <section className="dom-settings-card dom-share-summary-card">
-      <div className="dom-settings-label">{t("profile.section.sharedLinks")}</div>
-
-      <div className="dom-share-summary-main">
-        <div
-          className="dom-share-summary-count"
-          aria-live="polite"
-          aria-label={
-            total === null
-              ? "공유 링크 개수를 불러오는 중"
-              : `공유 링크 ${total}개, 최대 ${MAX_SHARED_CARDS}개`
-          }
-        >
-          <strong>{total ?? "—"}</strong>
-          <span>/</span>
-          <strong>{MAX_SHARED_CARDS}</strong>
-        </div>
-        <div
-          className="dom-share-manager-meter"
-          role="progressbar"
-          aria-label="공유 링크 사용량"
-          aria-valuemin={0}
-          aria-valuemax={MAX_SHARED_CARDS}
-          aria-valuenow={total ?? undefined}
-        >
-          <span style={{ width: `${usagePercent}%` }} />
-        </div>
-      </div>
-
-      <p className="dom-settings-note">{t("profile.sharedLinks.note")}</p>
-
-      <div className="dom-share-summary-action">
-        <Button variant="ghost" onClick={() => setOpen(true)}>
-          {t("profile.sharedLinks.manage")}
-        </Button>
-      </div>
-
-      {open && (
-        <SharedLinksModal
-          userId={userId}
-          onTotalChange={setTotal}
-          onClose={() => setOpen(false)}
-        />
-      )}
-    </section>
-  );
-}
-
-function formatSharedCardDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function SharedLinksModal({
-  userId,
-  onTotalChange,
-  onClose,
-}: {
-  userId: string;
-  onTotalChange: (total: number) => void;
-  onClose: () => void;
-}) {
-  const [cards, setCards] = useState<SharedCardRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const loadCards = useCallback(async () => {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) {
-      setLoadError(
-        "공유 링크를 불러올 수 없습니다. Supabase 설정을 확인해 주세요.",
-      );
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setLoadError("");
-    const { data, count, error } = await supabase
-      .from("shared_cards")
-      .select("id, token, kind, created_at", { count: "exact" })
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(MAX_SHARED_CARDS);
-
-    if (error) {
-      setLoadError(
-        "공유 링크를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-      );
-      setLoading(false);
-      return;
-    }
-
-    const nextTotal = count ?? data?.length ?? 0;
-    setCards((data ?? []) as SharedCardRow[]);
-    setTotal(nextTotal);
-    onTotalChange(nextTotal);
-    setLoading(false);
-  }, [onTotalChange, userId]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => void loadCards(), 0);
-    return () => window.clearTimeout(timer);
-  }, [loadCards]);
-
-  async function copyLink(token: string) {
-    try {
-      await navigator.clipboard.writeText(
-        `${window.location.origin}/s/${token}`,
-      );
-      toast.success("공유 링크를 복사했어요.");
-    } catch {
-      toast.error("링크를 복사하지 못했습니다.");
-    }
-  }
-
-  async function deleteLink(id: string) {
-    if (deletingId) return;
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) {
-      toast.error("공유 링크를 삭제할 수 없습니다.");
-      return;
-    }
-
-    setDeletingId(id);
-    const { error } = await supabase
-      .from("shared_cards")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", userId);
-
-    if (error) {
-      toast.error("공유 링크를 삭제하지 못했습니다.");
-      setDeletingId(null);
-      return;
-    }
-
-    const nextTotal = Math.max(0, total - 1);
-    setCards((current) => current.filter((card) => card.id !== id));
-    setTotal(nextTotal);
-    onTotalChange(nextTotal);
-    setConfirmDeleteId(null);
-    setDeletingId(null);
-    toast.success("공유 링크가 삭제되었습니다.");
-  }
-
-  const usagePercent = Math.min(100, (total / MAX_SHARED_CARDS) * 100);
-
-  return (
-    <Modal
-      label="공유 링크 관리"
-      className="dom-share-manager-wrap"
-      onClose={() => {
-        if (!deletingId) onClose();
-      }}
-    >
-      <section className="dom-share-manager">
-        <header className="dom-share-manager-header">
-          <div>
-            <span className="dom-settings-label">shared links · 공유 링크</span>
-            <h2>공유 링크 관리</h2>
-          </div>
-          <strong className="dom-share-manager-count">
-            {total} / {MAX_SHARED_CARDS}
-          </strong>
-        </header>
-
-        <div
-          className="dom-share-manager-meter"
-          role="progressbar"
-          aria-label="공유 링크 사용량"
-          aria-valuemin={0}
-          aria-valuemax={MAX_SHARED_CARDS}
-          aria-valuenow={Math.min(total, MAX_SHARED_CARDS)}
-        >
-          <span style={{ width: `${usagePercent}%` }} />
-        </div>
-
-        <p className="dom-share-manager-note">
-          계정당 최대 {MAX_SHARED_CARDS}개의 링크를 보관할 수 있습니다. 링크를
-          삭제하면 해당 주소는 즉시 열리지 않지만, 다른 사람이 이미 저장한
-          이미지는 삭제되지 않습니다.
-        </p>
-
-        {loading ? (
-          <div className="dom-share-manager-state" role="status">
-            공유 링크를 불러오는 중…
-          </div>
-        ) : loadError ? (
-          <div className="dom-share-manager-state">
-            <p>{loadError}</p>
-            <Button variant="ghost" size="sm" onClick={() => void loadCards()}>
-              다시 시도
-            </Button>
-          </div>
-        ) : cards.length === 0 ? (
-          <div className="dom-share-manager-state">
-            아직 만든 공유 링크가 없습니다.
-          </div>
-        ) : (
-          <ul className="dom-share-list">
-            {cards.map((card) => {
-              const confirming = confirmDeleteId === card.id;
-              const deleting = deletingId === card.id;
-              return (
-                <li className="dom-share-list-item" key={card.id}>
-                  <div className="dom-share-list-info">
-                    <strong>{SHARED_CARD_KIND_LABEL[card.kind]}</strong>
-                    <span>{formatSharedCardDate(card.created_at)}</span>
-                    <code title={card.token}>…{card.token.slice(-8)}</code>
-                  </div>
-                  <div className="dom-share-list-actions">
-                    {confirming ? (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setConfirmDeleteId(null)}
-                          disabled={deleting}
-                        >
-                          취소
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => void deleteLink(card.id)}
-                          disabled={deleting}
-                        >
-                          {deleting ? "삭제 중…" : "링크 삭제"}
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <a
-                          className={buttonClass("ghost", "sm")}
-                          href={`/s/${card.token}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          열기
-                        </a>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => void copyLink(card.token)}
-                        >
-                          복사
-                        </Button>
-                        <Button
-                          variant="danger-ghost"
-                          size="sm"
-                          onClick={() => setConfirmDeleteId(card.id)}
-                          disabled={Boolean(deletingId)}
-                        >
-                          삭제
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-    </Modal>
+    <>
+      {before}
+      <strong>{email}</strong>
+      {after}
+    </>
   );
 }
 
@@ -625,11 +293,18 @@ function SettingsForm({
   initialName: string;
   initialCountry: string;
   synced: boolean;
-  onSave: (patch: ProfilePatch) => void;
+  onSave: (patch: ProfilePatch) => Promise<AuthResult>;
 }) {
   const [name, setName] = useState(initialName);
   const [country, setCountry] = useState(initialCountry);
   const t = useT();
+
+  // A save that lands re-keys this form with the new values; a rejected one
+  // leaves the edits in place to try again.
+  async function save() {
+    const { error } = await onSave({ username: name.trim(), country });
+    if (error) toast.error(t("toast.saveFailed"), { description: error });
+  }
   const { locale } = useLanguage();
   // Country names + collation follow the current UI language. { code, label } →
   // { value, label } for DomSelectField; rebuilt only when the locale changes.
@@ -637,7 +312,7 @@ function SettingsForm({
     () => countriesForLocale(locale).map((c) => ({ value: c.code, label: c.label })),
     [locale],
   );
-  const handle = name.trim() || DEFAULT_USERNAME;
+  const handle = displayHandle(name);
   const dirty =
     name.trim() !== initialName.trim() || country !== initialCountry;
 
@@ -665,11 +340,10 @@ function SettingsForm({
           searchable
           searchPlaceholder={t("profile.searchCountry")}
           variant="underline"
-          size="medium"
         />
         <Button
           disabled={!dirty}
-          onClick={() => onSave({ username: name.trim(), country })}
+          onClick={() => void save()}
         >
           {t("profile.save")}
         </Button>
@@ -689,10 +363,16 @@ function ThemeManager({
 }: {
   initial: Theme[];
   synced: boolean;
-  onSave: (themes: Theme[]) => void;
+  onSave: (themes: Theme[]) => Promise<AuthResult>;
 }) {
   const [list, setList] = useState<Theme[]>(initial);
   const t = useT();
+
+  // As in SettingsForm: a rejected save keeps the edited list.
+  async function save() {
+    const { error } = await onSave(list);
+    if (error) toast.error(t("toast.saveFailed"), { description: error });
+  }
   // `initial` is fixed for a given mount (the parent re-keys on theme-id change),
   // so memoize against `list` to avoid stringifying both lists every render.
   const dirty = useMemo(
@@ -701,7 +381,7 @@ function ThemeManager({
   );
 
   const update = (i: number, patch: Partial<Theme>) =>
-    setList((l) => l.map((t, idx) => (idx === i ? { ...t, ...patch } : t)));
+    setList((l) => l.map((theme, idx) => (idx === i ? { ...theme, ...patch } : theme)));
   const move = (i: number, dir: 1 | -1) =>
     setList((l) => {
       const j = i + dir;
@@ -715,7 +395,7 @@ function ThemeManager({
   const add = () =>
     setList((l) => [
       ...l,
-      { id: crypto.randomUUID(), name: "New theme", emoji: "🎵" },
+      { id: crypto.randomUUID(), name: t("profile.themes.newName"), emoji: "🎵" },
     ]);
 
   return (
@@ -761,7 +441,7 @@ function ThemeManager({
           <Plus size={16} strokeWidth={2} aria-hidden="true" />
           {t("profile.themes.add")}
         </Button>
-        <Button disabled={!dirty} onClick={() => onSave(list)}>
+        <Button disabled={!dirty} onClick={() => void save()}>
           {t("profile.themes.save")}
         </Button>
       </div>

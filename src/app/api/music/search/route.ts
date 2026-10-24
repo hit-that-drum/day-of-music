@@ -6,24 +6,35 @@
 //
 // The iTunes catalog IDs are Apple Music catalog IDs, so this can later be
 // swapped for the (paid) Apple Music API without changing the client.
+//
+// `type` defaults to album, the only kind the app's own client (searchMusic)
+// asks for today. Artist and track searches are served, and localized the same
+// way, for callers that need them — kept on purpose (379bfab), not dead code.
 
-import dayjs from "dayjs";
 import { z } from "zod";
 
+import { badRequest, countryParam } from "@/app/api/music/_shared";
 import {
+  hiResArtwork,
+  itunesFetch,
   localizeAlbumsInto,
   localizeArtistsInto,
   localizeTracksInto,
+  storefrontsFor,
+  withItunesCalls,
+  yearOf,
+  type ITunesRow,
 } from "@/lib/day-of-music/itunes-lookup";
+import type { MusicSearchResult } from "@/lib/day-of-music/music-types";
 
+// Bounded: the route is public, and every distinct query spends the shared
+// iTunes budget and a Data Cache entry. 50 is the most the app's own client
+// asks for ("See all" in use-music-search.ts).
 const searchParamsSchema = z.object({
-  q: z.string().trim().min(1),
+  q: z.string().trim().min(1).max(200),
   type: z.enum(["album", "artist", "track"]).default("album"),
-  limit: z.coerce.number().int().min(1).max(200).default(12),
-  country: z
-    .string()
-    .regex(/^[a-zA-Z]{2}$/, "country must be a 2-letter code")
-    .default("US"),
+  limit: z.coerce.number().int().min(1).max(50).default(12),
+  country: countryParam,
 });
 
 const ENTITY_BY_TYPE = {
@@ -32,33 +43,8 @@ const ENTITY_BY_TYPE = {
   track: "song",
 } as const;
 
-type ITunesResult = {
-  wrapperType?: string;
-  collectionId?: number;
-  trackId?: number;
-  artistId?: number;
-  collectionName?: string;
-  trackName?: string;
-  artistName?: string;
-  primaryGenreName?: string;
-  releaseDate?: string;
-  artworkUrl100?: string;
-  trackCount?: number;
-};
-
-export type MusicSearchResult = {
-  id: string;
-  title: string;
-  artist: string;
-  genre: string;
-  year: number;
-  releaseDate: string;
-  artworkUrl: string;
-  trackCount: number;
-};
-
 function mapResult(
-  r: ITunesResult,
+  r: ITunesRow,
   type: keyof typeof ENTITY_BY_TYPE,
 ): MusicSearchResult | null {
   // A song row also carries its album's id and name; a track search is after
@@ -75,29 +61,26 @@ function mapResult(
     title,
     artist: r.artistName ?? "",
     genre: r.primaryGenreName ?? "—",
-    year: releaseDate ? dayjs(releaseDate).year() : 0,
+    year: yearOf(releaseDate),
     releaseDate,
-    // Artwork URLs are templated; request a sharper 600x600 variant.
-    artworkUrl: r.artworkUrl100?.replace("100x100bb", "600x600bb") ?? "",
+    artworkUrl: hiResArtwork(r),
     trackCount: r.trackCount ?? 0,
   };
 }
 
-export async function GET(request: Request) {
+// All of one search's iTunes calls share a scope, so a 403 midway stops the
+// rest (see withItunesCalls).
+export function GET(request: Request) {
+  return withItunesCalls(() => search(request));
+}
+
+async function search(request: Request) {
   const url = new URL(request.url);
   const parsed = searchParamsSchema.safeParse(
     Object.fromEntries(url.searchParams),
   );
 
-  if (!parsed.success) {
-    return Response.json(
-      {
-        error: "Invalid search parameters.",
-        issues: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 },
-    );
-  }
+  if (!parsed.success) return badRequest("Invalid search parameters.", parsed.error);
 
   const { q, type, limit, country } = parsed.data;
 
@@ -105,28 +88,20 @@ export async function GET(request: Request) {
   // common stores (deduped). Returns the first store that yields any results,
   // so a region-specific release surfaces even if the preferred store is empty.
   const preferred = country.toUpperCase();
-  const storefronts = [...new Set([preferred, "US", "KR", "JP", "GB"])];
+  const storefronts = storefrontsFor(country);
 
   async function searchIn(store: string): Promise<MusicSearchResult[] | null> {
-    const itunesUrl = new URL("https://itunes.apple.com/search");
-    itunesUrl.searchParams.set("term", q);
-    itunesUrl.searchParams.set("media", "music");
-    itunesUrl.searchParams.set("entity", ENTITY_BY_TYPE[type]);
-    itunesUrl.searchParams.set("limit", String(limit));
-    itunesUrl.searchParams.set("country", store);
-    // Normalize text (e.g. genre names) to English regardless of storefront.
-    itunesUrl.searchParams.set("lang", "en_us");
-    try {
-      // Cache identical queries for an hour (iTunes rate limit is ~20/min).
-      const resp = await fetch(itunesUrl, { next: { revalidate: 3600 } });
-      if (!resp.ok) return null;
-      const body = JSON.parse(await resp.text()) as { results?: ITunesResult[] };
-      return (body.results ?? [])
-        .map((r) => mapResult(r, type))
-        .filter((r): r is MusicSearchResult => r !== null);
-    } catch {
-      return null;
-    }
+    const rows = await itunesFetch("search", {
+      term: q,
+      media: "music",
+      entity: ENTITY_BY_TYPE[type],
+      limit: String(limit),
+      country: store,
+      // Normalize text (e.g. genre names) to English regardless of storefront.
+      lang: "en_us",
+    });
+    if (!rows) return null;
+    return rows.map((r) => mapResult(r, type)).filter((r): r is MusicSearchResult => r !== null);
   }
 
   // The album SEARCH returns a storefront's *romanized* title (e.g.
@@ -140,31 +115,26 @@ export async function GET(request: Request) {
     store: string,
   ): Promise<MusicSearchResult[]> {
     if (type !== "album" || results.length === 0) return results;
-    try {
-      const songUrl = new URL("https://itunes.apple.com/search");
-      songUrl.searchParams.set("term", q);
-      songUrl.searchParams.set("media", "music");
-      songUrl.searchParams.set("entity", "song");
-      songUrl.searchParams.set("limit", "200");
-      songUrl.searchParams.set("country", store);
-      // No lang override → song rows carry the storefront's localized album name.
-      const resp = await fetch(songUrl, { next: { revalidate: 3600 } });
-      if (!resp.ok) return results;
-      const songs = (JSON.parse(await resp.text()).results ?? []) as ITunesResult[];
-      const titleByCollection = new Map<number, string>();
-      for (const s of songs) {
-        if (s.collectionId != null && s.collectionName && !titleByCollection.has(s.collectionId)) {
-          titleByCollection.set(s.collectionId, s.collectionName);
-        }
+    // No lang override → song rows carry the storefront's localized album name.
+    const songs = await itunesFetch("search", {
+      term: q,
+      media: "music",
+      entity: "song",
+      limit: "200",
+      country: store,
+    });
+    if (!songs) return results;
+    const titleByCollection = new Map<number, string>();
+    for (const s of songs) {
+      if (s.collectionId != null && s.collectionName && !titleByCollection.has(s.collectionId)) {
+        titleByCollection.set(s.collectionId, s.collectionName);
       }
-      if (titleByCollection.size === 0) return results;
-      return results.map((r) => {
-        const localized = titleByCollection.get(Number(r.id.replace("itunes-", "")));
-        return localized ? { ...r, title: localized } : r;
-      });
-    } catch {
-      return results;
     }
+    if (titleByCollection.size === 0) return results;
+    return results.map((r) => {
+      const localized = titleByCollection.get(Number(r.id.replace("itunes-", "")));
+      return localized ? { ...r, title: localized } : r;
+    });
   }
 
   // Name the results the way the listener's store does (see itunes-lookup.ts).

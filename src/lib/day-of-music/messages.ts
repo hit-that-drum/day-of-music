@@ -1,16 +1,18 @@
 // messages.ts — UI copy for the five supported languages (EN · KO · JP · CN · SP).
 // Key-first so each string's five translations sit together (easy to review and
-// spot gaps). Typed as Record<Locale, string> per key so a missing translation
-// is a compile error. `{name}` tokens are filled by translate() in i18n.ts.
+// spot gaps). `satisfies Record<Locale, string>` per key makes a missing
+// translation a compile error, and MessageKey (below) does the same for an
+// unknown key at the t() call. `{name}` tokens are filled by translate() in
+// i18n-core.ts.
 //
-// Scope: the always-visible app chrome — header, Tweaks panel, and the Profile
-// settings surface. Deeper flows (add-flow, day detail, share, auth, the
-// Profile modals/toasts) still carry their original copy and migrate to these
-// keys incrementally using the same t() calls.
+// Keys are namespaced by surface (nav.*, profile.*, share.*, …). Generic
+// actions that read the same everywhere live once (action.cancel, modal.close);
+// a label that only happens to match another today (a button and the title it
+// opens) keeps its own key so its translation can diverge.
 
-import type { Locale } from "@/lib/day-of-music/i18n";
+import type { Locale } from "@/lib/day-of-music/i18n-core";
 
-export const MESSAGES: Record<string, Record<Locale, string>> = {
+export const MESSAGES = {
   // ── Header nav ──────────────────────────────────────────────────────────
   "nav.week": { en: "Week", ko: "주간", ja: "週間", zh: "周", es: "Semana" },
   "nav.month": { en: "Month", ko: "월간", ja: "月間", zh: "月", es: "Mes" },
@@ -65,7 +67,6 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   },
   "tweaks.on": { en: "On", ko: "켜짐", ja: "オン", zh: "开", es: "Sí" },
   "tweaks.off": { en: "Off", ko: "꺼짐", ja: "オフ", zh: "关", es: "No" },
-  "tweaks.close": { en: "Close", ko: "닫기", ja: "閉じる", zh: "关闭", es: "Cerrar" },
 
   // ── Profile: headings & sections ────────────────────────────────────────
   "profile.kicker": { en: "profile", ko: "프로필", ja: "プロフィール", zh: "个人资料", es: "perfil" },
@@ -130,12 +131,28 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
 
   // ── Profile: account actions ────────────────────────────────────────────
   "profile.changePassword": { en: "Change password", ko: "비밀번호 변경", ja: "パスワード変更", zh: "修改密码", es: "Cambiar contraseña" },
-  "profile.cancel": { en: "Cancel", ko: "취소", ja: "キャンセル", zh: "取消", es: "Cancelar" },
   "profile.deleteAccount": { en: "Delete account", ko: "회원 탈퇴", ja: "アカウント削除", zh: "注销账户", es: "Eliminar cuenta" },
+  "profile.pw.placeholder": { en: "New password", ko: "새 비밀번호", ja: "新しいパスワード", zh: "新密码", es: "Nueva contraseña" },
+  "profile.pw.submit": { en: "Update password", ko: "비밀번호 변경", ja: "パスワードを更新", zh: "更新密码", es: "Actualizar contraseña" },
+  "profile.pw.changed": { en: "Password changed.", ko: "비밀번호가 변경되었어요.", ja: "パスワードを変更しました。", zh: "密码已修改。", es: "Contraseña cambiada." },
+  "profile.delete.body": {
+    en: "This permanently deletes your account and all of its journal entries and shared cards.",
+    ko: "계정과 모든 저널 기록, 공유 카드가 영구히 삭제됩니다.",
+    ja: "アカウントと、すべてのジャーナル記録・共有カードが完全に削除されます。",
+    zh: "这将永久删除你的账户及其所有日志记录和分享卡片。",
+    es: "Esto elimina para siempre tu cuenta y todas sus entradas del diario y tarjetas compartidas.",
+  },
+  "profile.delete.irreversible": { en: "This cannot be undone.", ko: "되돌릴 수 없어요.", ja: "元に戻すことはできません。", zh: "此操作无法撤销。", es: "No se puede deshacer." },
+  // {email} is rendered in bold, so every translation must keep the token.
+  "profile.delete.typeEmail": { en: "Type {email} to confirm.", ko: "확인하려면 {email} 주소를 입력해 주세요.", ja: "確認のため {email} と入力してください。", zh: "请输入 {email} 以确认。", es: "Escribe {email} para confirmar." },
+  "profile.delete.inputAria": { en: "Type your email to confirm deletion", ko: "탈퇴를 확인하려면 이메일을 입력하세요", ja: "削除を確認するためメールアドレスを入力", zh: "输入邮箱以确认删除", es: "Escribe tu correo para confirmar la eliminación" },
+  "profile.delete.submit": { en: "Delete forever", ko: "영구 삭제", ja: "完全に削除", zh: "永久删除", es: "Eliminar para siempre" },
+  "profile.delete.done": { en: "Your account has been deleted.", ko: "계정이 삭제되었습니다.", ja: "アカウントを削除しました。", zh: "账户已删除。", es: "Tu cuenta se ha eliminado." },
 
   // ── Profile: theme manager ──────────────────────────────────────────────
   "profile.themes.add": { en: "Add theme", ko: "테마 추가", ja: "テーマを追加", zh: "添加主题", es: "Añadir tema" },
   "profile.themes.save": { en: "Save themes", ko: "테마 저장", ja: "テーマを保存", zh: "保存主题", es: "Guardar temas" },
+  "profile.themes.newName": { en: "New theme", ko: "새 테마", ja: "新しいテーマ", zh: "新主题", es: "Nuevo tema" },
   "profile.themes.note": {
     en: "Each theme is its own daily lane. {syncNote} Deleting one hides its entries without erasing them from the server.",
     ko: "각 테마는 하나의 하루 레인입니다. {syncNote} 삭제해도 그 테마의 기록은 서버에서 지워지지 않고 숨겨집니다.",
@@ -153,6 +170,33 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
     zh: "在一处查看并管理你创建的所有分享链接。",
     es: "Consulta y gestiona en un solo lugar todos los enlaces que has creado.",
   },
+
+  // ── Profile: share link manager (modal) ─────────────────────────────────
+  "profile.sharedLinks.title": { en: "Manage share links", ko: "공유 링크 관리", ja: "共有リンクの管理", zh: "管理分享链接", es: "Gestionar enlaces compartidos" },
+  "profile.sharedLinks.countLoading": { en: "Loading share link count", ko: "공유 링크 개수를 불러오는 중", ja: "共有リンクの数を読み込み中", zh: "正在加载分享链接数量", es: "Cargando el número de enlaces" },
+  "profile.sharedLinks.countAria": { en: "{count} of {max} share links", ko: "공유 링크 {count}개, 최대 {max}개", ja: "共有リンク {count}件(最大{max}件)", zh: "分享链接 {count} 个，最多 {max} 个", es: "{count} de {max} enlaces compartidos" },
+  "profile.sharedLinks.usageAria": { en: "Share link usage", ko: "공유 링크 사용량", ja: "共有リンクの使用量", zh: "分享链接用量", es: "Uso de enlaces compartidos" },
+  "profile.sharedLinks.limitNote": {
+    en: "Each account can keep up to {max} links. Deleting a link stops its address from opening right away, but images other people already saved stay with them.",
+    ko: "계정당 최대 {max}개의 링크를 보관할 수 있습니다. 링크를 삭제하면 해당 주소는 즉시 열리지 않지만, 다른 사람이 이미 저장한 이미지는 삭제되지 않습니다.",
+    ja: "1アカウントにつき最大{max}件のリンクを保存できます。リンクを削除するとそのアドレスはすぐに開けなくなりますが、他の人がすでに保存した画像は削除されません。",
+    zh: "每个账户最多可保留 {max} 个链接。删除链接后该地址将立即无法打开，但他人已保存的图片不会被删除。",
+    es: "Cada cuenta puede guardar hasta {max} enlaces. Al eliminar uno, su dirección deja de abrirse al instante, pero las imágenes que otros ya guardaron no se borran.",
+  },
+  "profile.sharedLinks.loading": { en: "Loading share links…", ko: "공유 링크를 불러오는 중…", ja: "共有リンクを読み込み中…", zh: "正在加载分享链接…", es: "Cargando enlaces…" },
+  "profile.sharedLinks.loadFailed": { en: "Couldn't load share links. Please try again in a moment.", ko: "공유 링크를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.", ja: "共有リンクを読み込めませんでした。しばらくしてからもう一度お試しください。", zh: "无法加载分享链接。请稍后重试。", es: "No se pudieron cargar los enlaces. Inténtalo de nuevo en un momento." },
+  "profile.sharedLinks.empty": { en: "You haven't created any share links yet.", ko: "아직 만든 공유 링크가 없습니다.", ja: "まだ共有リンクを作成していません。", zh: "你还没有创建分享链接。", es: "Aún no has creado enlaces compartidos." },
+  // Rendered as profile.sharedLinks.kind.<shared_cards.kind>.
+  "profile.sharedLinks.kind.week": { en: "Week card", ko: "주간 카드", ja: "週間カード", zh: "周卡片", es: "Tarjeta semanal" },
+  "profile.sharedLinks.kind.month": { en: "Month card", ko: "월간 카드", ja: "月間カード", zh: "月卡片", es: "Tarjeta mensual" },
+  "profile.sharedLinks.kind.stats": { en: "Stats card", ko: "통계 카드", ja: "統計カード", zh: "统计卡片", es: "Tarjeta de estadísticas" },
+  "profile.sharedLinks.open": { en: "Open", ko: "열기", ja: "開く", zh: "打开", es: "Abrir" },
+  "profile.sharedLinks.copy": { en: "Copy", ko: "복사", ja: "コピー", zh: "复制", es: "Copiar" },
+  "profile.sharedLinks.delete": { en: "Delete link", ko: "링크 삭제", ja: "リンクを削除", zh: "删除链接", es: "Eliminar enlace" },
+  "profile.sharedLinks.copied": { en: "Share link copied.", ko: "공유 링크를 복사했어요.", ja: "共有リンクをコピーしました。", zh: "已复制分享链接。", es: "Enlace copiado." },
+  "profile.sharedLinks.copyFailed": { en: "Couldn't copy the link.", ko: "링크를 복사하지 못했습니다.", ja: "リンクをコピーできませんでした。", zh: "无法复制链接。", es: "No se pudo copiar el enlace." },
+  "profile.sharedLinks.deleteFailed": { en: "Couldn't delete the share link.", ko: "공유 링크를 삭제하지 못했습니다.", ja: "共有リンクを削除できませんでした。", zh: "无法删除分享链接。", es: "No se pudo eliminar el enlace." },
+  "profile.sharedLinks.deleted": { en: "Share link deleted.", ko: "공유 링크가 삭제되었습니다.", ja: "共有リンクを削除しました。", zh: "分享链接已删除。", es: "Enlace eliminado." },
 
   // ── Shared aria labels (theme editor rows) ──────────────────────────────
   "aria.themeEmoji": { en: "Theme emoji", ko: "테마 이모지", ja: "テーマの絵文字", zh: "主题表情", es: "Emoji del tema" },
@@ -201,7 +245,6 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "bow.progress": { en: "{cur} / {total}", ko: "{cur} / {total}", ja: "{cur} / {total}", zh: "{cur} / {total}", es: "{cur} / {total}" },
   "bow.champion": { en: "Best of Week", ko: "이 주의 베스트", ja: "今週のベスト", zh: "本周最佳", es: "Mejor de la semana" },
   "bow.redo": { en: "Start over", ko: "다시 하기", ja: "やり直す", zh: "重新开始", es: "Reiniciar" },
-  "bow.saveImage": { en: "Save image", ko: "이미지 저장", ja: "画像を保存", zh: "保存图片", es: "Guardar imagen" },
   "bow.empty": {
     en: "No albums logged this week.",
     ko: "이 주에 기록된 앨범이 없어요.",
@@ -281,6 +324,9 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "action.back": { en: "Back", ko: "뒤로", ja: "戻る", zh: "返回", es: "Atrás" },
   "action.continue": { en: "Continue", ko: "계속", ja: "次へ", zh: "继续", es: "Continuar" },
   "action.cancel": { en: "Cancel", ko: "취소", ja: "キャンセル", zh: "取消", es: "Cancelar" },
+  "action.retry": { en: "Try again", ko: "다시 시도", ja: "再試行", zh: "重试", es: "Reintentar" },
+  "action.delete": { en: "Delete", ko: "삭제", ja: "削除", zh: "删除", es: "Eliminar" },
+  "action.deleting": { en: "Deleting…", ko: "삭제 중…", ja: "削除中…", zh: "正在删除…", es: "Eliminando…" },
   "action.remove": { en: "Remove", ko: "삭제", ja: "削除", zh: "移除", es: "Quitar" },
   "action.move": { en: "Move", ko: "이동", ja: "移動", zh: "移动", es: "Mover" },
   "action.swap": { en: "Swap", ko: "바꾸기", ja: "入れ替える", zh: "交换", es: "Intercambiar" },
@@ -290,6 +336,7 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "field.artist": { en: "Artist", ko: "아티스트", ja: "アーティスト", zh: "艺人", es: "Artista" },
   "field.genre": { en: "Genre", ko: "장르", ja: "ジャンル", zh: "流派", es: "Género" },
   "field.year": { en: "Year", ko: "연도", ja: "年", zh: "年份", es: "Año" },
+  "field.rating": { en: "Rating", ko: "별점", ja: "評価", zh: "评分", es: "Valoración" },
   "field.note": { en: "Note", ko: "메모", ja: "メモ", zh: "备注", es: "Nota" },
   "field.cover": { en: "Cover image", ko: "커버 이미지", ja: "カバー画像", zh: "封面图片", es: "Portada" },
 
@@ -298,7 +345,6 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "aria.nextWeek": { en: "Next week", ko: "다음 주", ja: "次の週", zh: "下一周", es: "Semana siguiente" },
   "aria.prevMonth": { en: "Previous month", ko: "이전 달", ja: "前の月", zh: "上个月", es: "Mes anterior" },
   "aria.nextMonth": { en: "Next month", ko: "다음 달", ja: "次の月", zh: "下个月", es: "Mes siguiente" },
-  "aria.rateStars": { en: "Rate {n} stars", ko: "별점 {n}점", ja: "{n}つ星で評価", zh: "评 {n} 星", es: "Calificar con {n} estrellas" },
   "aria.starsN": { en: "{n} stars", ko: "별 {n}개", ja: "{n}つ星", zh: "{n} 星", es: "{n} estrellas" },
   "aria.openAlbum": { en: "Open {title}", ko: "{title} 열기", ja: "{title}を開く", zh: "打开 {title}", es: "Abrir {title}" },
   "aria.logForDate": {
@@ -322,6 +368,13 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
     zh: "还没有记录的流派。",
     es: "Aún no hay géneros registrados.",
   },
+
+  // ── Select dropdown (dom-select) defaults ───────────────────────────────
+  "select.placeholder": { en: "Select…", ko: "선택…", ja: "選択…", zh: "请选择…", es: "Seleccionar…" },
+  "select.searchPlaceholder": { en: "Search…", ko: "검색…", ja: "検索…", zh: "搜索…", es: "Buscar…" },
+  "select.search": { en: "Search", ko: "검색", ja: "検索", zh: "搜索", es: "Buscar" },
+  "select.searchLabel": { en: "Search {label}", ko: "{label} 검색", ja: "{label}を検索", zh: "搜索{label}", es: "Buscar {label}" },
+  "select.noMatches": { en: "No matches", ko: "일치하는 항목이 없어요", ja: "一致する項目がありません", zh: "没有匹配项", es: "Sin coincidencias" },
 
   // ── Legal link labels ───────────────────────────────────────────────────
   "legal.termsLink": { en: "Terms of Service", ko: "이용약관", ja: "利用規約", zh: "服务条款", es: "Términos del servicio" },
@@ -448,6 +501,7 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "daydetail.modalLabel": { en: "{title} detail", ko: "{title} 상세", ja: "{title} の詳細", zh: "{title} 详情", es: "Detalle de {title}" },
   "daydetail.eyebrowTrack": { en: "track of the day", ko: "오늘의 곡", ja: "今日の曲", zh: "每日单曲", es: "pista del día" },
   "daydetail.eyebrowAlbum": { en: "album of the day", ko: "오늘의 앨범", ja: "今日のアルバム", zh: "每日专辑", es: "álbum del día" },
+  "daydetail.tabsAria": { en: "Album details", ko: "앨범 정보", ja: "アルバム情報", zh: "专辑信息", es: "Detalles del álbum" },
   "daydetail.tabTracklist": { en: "Tracklist", ko: "트랙리스트", ja: "トラックリスト", zh: "曲目", es: "Lista de pistas" },
   "daydetail.tabJournal": { en: "Journal", ko: "저널", ja: "ジャーナル", zh: "日志", es: "Diario" },
   "daydetail.tabInfo": { en: "Info", ko: "정보", ja: "情報", zh: "信息", es: "Info" },
@@ -603,6 +657,40 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "auth.google": { en: "Continue with Google", ko: "Google로 계속", ja: "Google で続ける", zh: "使用 Google 继续", es: "Continuar con Google" },
   "auth.kakao": { en: "Continue with Kakao", ko: "카카오로 계속", ja: "Kakao で続ける", zh: "使用 Kakao 继续", es: "Continuar con Kakao" },
   "auth.guestContinue": { en: "Continue as guest", ko: "게스트로 계속", ja: "ゲストとして続ける", zh: "以访客身份继续", es: "Continuar como invitado" },
+  // /auth/callback — finishing an OAuth or email-confirmation redirect.
+  "auth.callback.eyebrow": { en: "Signing in", ko: "로그인", ja: "ログイン", zh: "登录", es: "Iniciando sesión" },
+  "auth.callback.body": { en: "Signing you in… just a moment.", ko: "로그인 처리 중이에요… 잠시만 기다려 주세요.", ja: "ログインしています… 少々お待ちください。", zh: "正在登录… 请稍候。", es: "Iniciando sesión… un momento." },
+  "auth.callback.failed": { en: "Sign-in didn't complete: {reason}", ko: "로그인이 완료되지 않았어요: {reason}", ja: "ログインが完了しませんでした: {reason}", zh: "登录未完成：{reason}", es: "No se completó el inicio de sesión: {reason}" },
+  "auth.callback.confirmedElsewhere": {
+    en: "Your email is confirmed. Please sign in again on this device.",
+    ko: "이메일 확인이 완료되었어요. 이 기기에서 다시 로그인해 주세요.",
+    ja: "メールアドレスの確認が完了しました。この端末でもう一度ログインしてください。",
+    zh: "邮箱已确认。请在此设备上重新登录。",
+    es: "Tu correo está confirmado. Vuelve a iniciar sesión en este dispositivo.",
+  },
+  // Only seen in a local dev setup without Supabase keys.
+  "auth.notConfigured": {
+    en: "Auth isn't configured yet — add Supabase keys to .env.local.",
+    ko: "로그인이 아직 설정되지 않았어요 — .env.local에 Supabase 키를 추가하세요.",
+    ja: "ログインはまだ設定されていません — .env.local に Supabase のキーを追加してください。",
+    zh: "尚未配置登录 — 请在 .env.local 中添加 Supabase 密钥。",
+    es: "El inicio de sesión aún no está configurado: añade las claves de Supabase a .env.local.",
+  },
+  // Sign-out notices (AuthProvider).
+  "auth.signOutLocalOnly": {
+    en: "Couldn't reach the server, but you're signed out on this device.",
+    ko: "서버 로그아웃에 실패했지만 이 기기에서는 로그아웃했어요.",
+    ja: "サーバーからはログアウトできませんでしたが、この端末ではログアウトしました。",
+    zh: "无法从服务器退出登录，但已在此设备上退出。",
+    es: "No se pudo cerrar la sesión en el servidor, pero se cerró en este dispositivo.",
+  },
+  "auth.idleSignedOut": {
+    en: "You've been signed out after a long time without activity.",
+    ko: "장시간 활동이 없어 자동 로그아웃되었어요.",
+    ja: "長時間操作がなかったため、自動的にログアウトしました。",
+    zh: "由于长时间没有操作，已自动退出登录。",
+    es: "Se cerró tu sesión tras un largo periodo sin actividad.",
+  },
   "auth.terms": {
     en: "By creating an account, you agree to Day of Music's {terms} and can review the {privacy}.",
     ko: "계정을 만들면 Day of Music {terms}에 동의하는 것으로 보며, {privacy}을 확인할 수 있습니다.",
@@ -667,6 +755,9 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   // ── Share actions (link + confirm modal + toasts) ───────────────────────
   "share.createLink": { en: "Create public link", ko: "공개 링크 만들기", ja: "公開リンクを作成", zh: "创建公开链接", es: "Crear enlace público" },
   "share.signInToShare": { en: "Sign in to share", ko: "공유하려면 로그인", ja: "共有するにはサインイン", zh: "登录后分享", es: "Inicia sesión para compartir" },
+  "share.imageSaved": { en: "Image saved", ko: "이미지를 저장했어요", ja: "画像を保存しました", zh: "图片已保存", es: "Imagen guardada" },
+  "share.imageFailed": { en: "Couldn't save image", ko: "이미지를 저장하지 못했어요", ja: "画像を保存できませんでした", zh: "无法保存图片", es: "No se pudo guardar la imagen" },
+  "share.makeYourOwn": { en: "Make your own →", ko: "나도 만들어 보기 →", ja: "自分でも作ってみる →", zh: "我也来做一张 →", es: "Crea el tuyo →" },
   "share.saveImage": { en: "Save image", ko: "이미지 저장", ja: "画像を保存", zh: "保存图片", es: "Guardar imagen" },
   "share.guestWarning": {
     en: "Guest share links can't be deleted or revoked. Anyone with the link can view it.",
@@ -675,7 +766,6 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
     zh: "访客分享链接无法删除或撤回。任何拥有链接的人都可查看。",
     es: "Los enlaces de invitado no se pueden eliminar ni revocar. Cualquiera con el enlace puede verlo.",
   },
-  "share.confirmModalLabel": { en: "Confirm public link creation", ko: "공개 링크 생성 확인", ja: "公開リンク作成の確認", zh: "确认创建公开链接", es: "Confirmar creación de enlace público" },
   "share.publicLinkLabel": { en: "public link", ko: "공개 링크", ja: "公開リンク", zh: "公开链接", es: "enlace público" },
   "share.confirmTitle": { en: "Create a public link?", ko: "공개 링크를 만들까요?", ja: "公開リンクを作成しますか？", zh: "要创建公开链接吗？", es: "¿Crear un enlace público?" },
   "share.confirmBody": {
@@ -705,6 +795,17 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "share.createCopy": { en: "Create & copy", ko: "생성 후 복사", ja: "作成してコピー", zh: "创建并复制", es: "Crear y copiar" },
   "share.toastCopied": { en: "Link copied", ko: "링크를 복사했어요", ja: "リンクをコピーしました", zh: "已复制链接", es: "Enlace copiado" },
   "share.toastError": { en: "Couldn't create share link", ko: "공유 링크를 만들지 못했어요", ja: "共有リンクを作成できませんでした", zh: "无法创建分享链接", es: "No se pudo crear el enlace" },
+  // Shown in the dialog when the link was created but the clipboard refused it.
+  "share.createdTitle": { en: "Link created", ko: "링크를 만들었어요", ja: "リンクを作成しました", zh: "链接已创建", es: "Enlace creado" },
+  "share.copyFailedBody": {
+    en: "It couldn't be copied automatically, so copy it from the box below. There's no need to create it again.",
+    ko: "자동으로 복사하지 못했어요. 아래 칸에서 직접 복사해 주세요. 다시 만들 필요는 없어요.",
+    ja: "自動でコピーできませんでした。下の欄からコピーしてください。作り直す必要はありません。",
+    zh: "无法自动复制，请从下方的框中复制。无需重新创建。",
+    es: "No se pudo copiar automáticamente: cópialo del cuadro de abajo. No hace falta crearlo de nuevo.",
+  },
+  "share.copyLink": { en: "Copy link", ko: "링크 복사", ja: "リンクをコピー", zh: "复制链接", es: "Copiar enlace" },
+  "share.toastCopyFailed": { en: "Couldn't copy the link", ko: "링크를 복사하지 못했어요", ja: "リンクをコピーできませんでした", zh: "无法复制链接", es: "No se pudo copiar el enlace" },
 
   // ── Poster zoom (phone-only: the preview is a scaled-down miniature) ────
   "poster.zoom": { en: "Actual size", ko: "원본 크기", ja: "原寸大", zh: "原始尺寸", es: "Tamaño real" },
@@ -717,6 +818,10 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "toast.logged": { en: "Logged {title}", ko: "{title} 기록됨", ja: "{title} を記録しました", zh: "已记录 {title}", es: "Registrado: {title}" },
   "toast.loggedDaysDesc": { en: "{count} days · {rating}★", ko: "{count}일 · {rating}★", ja: "{count}日 · {rating}★", zh: "{count} 天 · {rating}★", es: "{count} días · {rating}★" },
   "toast.loggedDateDesc": { en: "{date} · {rating}★", ko: "{date} · {rating}★", ja: "{date} · {rating}★", zh: "{date} · {rating}★", es: "{date} · {rating}★" },
+  "toast.loadFailed": { en: "Couldn't load your journal: {reason}", ko: "기록을 불러오지 못했어요: {reason}", ja: "記録を読み込めませんでした: {reason}", zh: "无法加载记录：{reason}", es: "No se pudo cargar tu diario: {reason}" },
+  "toast.saveFailed": { en: "Couldn't save", ko: "저장하지 못했어요", ja: "保存できませんでした", zh: "保存失败", es: "No se pudo guardar" },
+  // The removal is rolled back, so the entry is on the board again.
+  "toast.removeFailed": { en: "Couldn't remove it — it's back on the board", ko: "삭제하지 못했어요 — 보드에 다시 표시했어요", ja: "削除できませんでした — ボードに戻しました", zh: "无法移除——已恢复到看板上", es: "No se pudo quitar: vuelve a estar en el tablero" },
 
   // ── Toasts (move / swap from Day Detail) ───────────────────────────────
   "toast.moved": { en: "Moved to {date}", ko: "{date}로 옮겼어요", ja: "{date}に移動しました", zh: "已移到 {date}", es: "Movido al {date}" },
@@ -728,4 +833,8 @@ export const MESSAGES: Record<string, Record<Locale, string>> = {
   "aria.tabbar": { en: "Main navigation", ko: "주 메뉴", ja: "メインナビゲーション", zh: "主导航", es: "Navegación principal" },
   "guest.bannerShort": { en: "Guest mode — edits aren't saved.", ko: "게스트 모드 — 나가면 기록이 초기화됩니다", ja: "ゲストモード — 離れるとリセット", zh: "访客模式 — 离开后将重置", es: "Modo invitado: nada se guarda" },
   "modal.close": { en: "Close", ko: "닫기", ja: "閉じる", zh: "关闭", es: "Cerrar" },
-};
+} satisfies Record<string, Record<Locale, string>>;
+
+/** Every key t() accepts, so a typo or a key that doesn't exist yet fails to
+ *  compile instead of rendering the raw key. */
+export type MessageKey = keyof typeof MESSAGES;

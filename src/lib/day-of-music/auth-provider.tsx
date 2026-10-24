@@ -18,13 +18,23 @@ import { toast } from "sonner";
 import type { Session, User } from "@supabase/supabase-js";
 
 import {
-  AUTH_CALL_TIMEOUT_MS,
+  DEFAULT_LANGUAGE,
+  effectiveLocale,
+  translate,
+  type Locale,
+} from "@/lib/day-of-music/i18n-core";
+import { detectStorefront } from "@/lib/day-of-music/storefront";
+import { useIdleSignOut } from "@/lib/day-of-music/use-idle-sign-out";
+import { readUserMetadata, type UserMetadata } from "@/lib/day-of-music/user-metadata";
+import {
+  SUPABASE_CALL_TIMEOUT_MS,
   getSupabaseBrowserClient,
   isSupabaseConfigured,
   withTimeout,
 } from "@/lib/supabase/client";
 
-type AuthResult = { error: string | null };
+export type AuthResult = { error: string | null };
+export type OAuthProvider = "google" | "kakao";
 
 type AuthContextValue = {
   configured: boolean;
@@ -33,36 +43,37 @@ type AuthContextValue = {
   accessToken: string | null;
   signUpWithPassword: (email: string, password: string) => Promise<AuthResult>;
   signInWithPassword: (email: string, password: string) => Promise<AuthResult>;
-  signInWithGoogle: () => Promise<void>;
-  signInWithKakao: () => Promise<void>;
+  /** Leaves for the provider's sign-in page; resolves (with the error) only
+   *  when that redirect couldn't start. */
+  signInWithOAuth: (provider: OAuthProvider) => Promise<AuthResult>;
   signOut: () => Promise<void>;
   /** Set/change the signed-in user's password (no re-auth; session-based). */
   updatePassword: (password: string) => Promise<AuthResult>;
   /** Permanently delete the account + its data (server route, service role). */
   deleteAccount: () => Promise<AuthResult>;
   /** Merge keys into the account's user_metadata so profile prefs sync. */
-  updateUserMetadata: (patch: Record<string, unknown>) => Promise<void>;
+  updateUserMetadata: (patch: Partial<UserMetadata>) => Promise<AuthResult>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// --- Idle auto-logout -------------------------------------------------------
-// Sign the user out after IDLE_TIMEOUT_MS with no API activity. "Activity" is
-// any fetch to our own API or Supabase's data layer; Supabase's /auth/v1/
-// traffic (background token refresh + session reads) is deliberately EXCLUDED
-// so an idle-but-open tab actually times out instead of being kept alive
-// forever by the autoRefreshToken heartbeat. The last-activity timestamp is
-// mirrored to localStorage so activity in one tab keeps the others alive.
-const IDLE_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour of no API calls → sign out
-const IDLE_CHECK_MS = 60 * 1000; // how often we re-evaluate the idle window
-const IDLE_PERSIST_THROTTLE_MS = 15 * 1000; // cap the localStorage write rate
-const IDLE_STORAGE_KEY = "dom:last-activity";
+/** The language an account reads the app in: useLanguage's rule, applied to
+ *  the account itself. AuthProvider sits above the profile hooks (they read
+ *  the account through it), so its own notices can't call useT. */
+function accountLocale(user: User | null): Locale {
+  const meta: UserMetadata = user ? readUserMetadata(user) : {};
+  return effectiveLocale(meta.language ?? DEFAULT_LANGUAGE, meta.country ?? detectStorefront());
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const configured = isSupabaseConfigured();
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(configured);
+  const user = session?.user ?? null;
+  // The sign-out notices below appear while the account is still the one on
+  // screen, so they speak its language.
+  const locale = useMemo(() => accountLocale(user), [user]);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -73,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Bounded for the same reason as signOut below: a getSession() that never
     // settles would leave `loading` true forever, and the whole app waits on it.
     // Treat a stalled read as "no session" rather than as "still deciding".
-    withTimeout(supabase.auth.getSession(), AUTH_CALL_TIMEOUT_MS, "getSession")
+    withTimeout(supabase.auth.getSession(), SUPABASE_CALL_TIMEOUT_MS, "getSession")
       .then(({ data }) => {
         if (!active) return;
         setSession(data.session);
@@ -115,26 +126,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null };
   }, []);
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithOAuth = useCallback(async (provider: OAuthProvider) => {
     const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
-    // Google redirects back to /auth/callback, which exchanges the PKCE code
-    // for a session before sending the user on to /week.
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
+    if (!supabase) return { error: "Supabase is not configured." };
+    // Google and Kakao both redirect back to /auth/callback, which exchanges
+    // the PKCE code for a session before sending the user on to /week.
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-  }, []);
-
-  const signInWithKakao = useCallback(async () => {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
-    // Same flow as Google — Kakao redirects back to /auth/callback, which
-    // exchanges the PKCE code for a session before sending the user to /week.
-    await supabase.auth.signInWithOAuth({
-      provider: "kakao",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
+    return { error: error?.message ?? null };
   }, []);
 
   const signOut = useCallback(async () => {
@@ -150,100 +151,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await withTimeout(
         supabase.auth.signOut(),
-        AUTH_CALL_TIMEOUT_MS,
+        SUPABASE_CALL_TIMEOUT_MS,
         "signOut",
       );
       if (error) console.warn("signOut: server call failed", error);
     } catch (e) {
       console.warn("signOut: did not complete", e);
-      toast.error("서버 로그아웃에 실패했지만 이 기기에서는 로그아웃했어요.");
+      toast.error(translate(locale, "auth.signOutLocalOnly"));
     } finally {
       setSession(null);
       // Send the user back to the sign-in page (mirrors /auth/callback's use of
       // router.replace so the signed-out state isn't left in history).
       router.replace("/signin");
     }
-  }, [router]);
+  }, [router, locale]);
 
-  // Auto sign-out after an hour of no API activity. Gated on a stable boolean
-  // (not `session`) so a background token refresh — which swaps in a new session
-  // object hourly — does NOT tear down and restart the timer.
+  // Auto sign-out after an hour of no API activity (see use-idle-sign-out.ts).
   const signedIn = configured && Boolean(session);
-  useEffect(() => {
-    if (!signedIn) return;
-
-    const readStored = (): number => {
-      try {
-        return Number(window.localStorage.getItem(IDLE_STORAGE_KEY)) || 0;
-      } catch {
-        return 0; // storage blocked (private mode) → fall back to in-memory
-      }
-    };
-    const writeStored = (ts: number) => {
-      try {
-        window.localStorage.setItem(IDLE_STORAGE_KEY, String(ts));
-      } catch {
-        /* storage unavailable — in-memory tracking still works for this tab */
-      }
-    };
-
-    // Opening/reloading the app is itself activity, so start a fresh window.
-    let lastActivity = Date.now();
-    let lastPersist = 0;
-    let triggered = false;
-    writeStored(lastActivity);
-
-    const markActive = () => {
-      lastActivity = Date.now();
-      if (lastActivity - lastPersist >= IDLE_PERSIST_THROTTLE_MS) {
-        lastPersist = lastActivity;
-        writeStored(lastActivity);
-      }
-    };
-
-    // supabase-js resolves globalThis.fetch at call time, so patching
-    // window.fetch catches its DB queries too — not just our /api/* fetches.
-    const originalFetch = window.fetch;
-    window.fetch = (...args: Parameters<typeof fetch>) => {
-      const input = args[0];
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.href
-            : input instanceof Request
-              ? input.url
-              : "";
-      // Exclude auth traffic (token refresh/session reads) — that's the app
-      // keeping itself alive, not the user doing something.
-      if (!url.includes("/auth/v1/")) markActive();
-      return originalFetch.apply(window, args);
-    };
-
-    const evaluate = () => {
-      if (triggered) return;
-      // Newest activity across any open tab keeps this session alive.
-      const last = Math.max(lastActivity, readStored());
-      if (Date.now() - last >= IDLE_TIMEOUT_MS) {
-        triggered = true;
-        toast("장시간 활동이 없어 자동 로그아웃되었어요.");
-        void signOut();
-      }
-    };
-
-    const interval = window.setInterval(evaluate, IDLE_CHECK_MS);
-    // A backgrounded/suspended tab misses interval ticks — re-check on return.
-    const onVisible = () => {
-      if (document.visibilityState === "visible") evaluate();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-
-    return () => {
-      window.fetch = originalFetch;
-      window.clearInterval(interval);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [signedIn, signOut]);
+  useIdleSignOut(signedIn, () => {
+    toast(translate(locale, "auth.idleSignedOut"));
+    void signOut();
+  });
 
   const updatePassword = useCallback(async (password: string) => {
     const supabase = getSupabaseBrowserClient();
@@ -277,25 +205,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null };
   }, []);
 
-  const updateUserMetadata = useCallback(async (patch: Record<string, unknown>) => {
+  const updateUserMetadata = useCallback(async (patch: Partial<UserMetadata>) => {
     const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
+    if (!supabase) return { error: "Supabase is not configured." };
     // GoTrue merges these keys into user_metadata.
     const { data, error } = await supabase.auth.updateUser({ data: patch });
+    if (error) return { error: error.message };
     // Reflect the new metadata immediately (onAuthStateChange also fires).
-    if (!error && data.user) setSession((s) => (s ? { ...s, user: data.user } : s));
+    if (data.user) setSession((s) => (s ? { ...s, user: data.user } : s));
+    return { error: null };
   }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       configured,
       loading,
-      user: session?.user ?? null,
+      user,
       accessToken: session?.access_token ?? null,
       signUpWithPassword,
       signInWithPassword,
-      signInWithGoogle,
-      signInWithKakao,
+      signInWithOAuth,
       signOut,
       updatePassword,
       deleteAccount,
@@ -305,10 +234,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       configured,
       loading,
       session,
+      user,
       signUpWithPassword,
       signInWithPassword,
-      signInWithGoogle,
-      signInWithKakao,
+      signInWithOAuth,
       signOut,
       updatePassword,
       deleteAccount,

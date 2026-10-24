@@ -1,0 +1,139 @@
+/* ── Select field wrapper — label + DomSelect variants. */
+.dom-select-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.dom-select-field-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dom-select-field[data-variant="underline"] .dom-select {
+  width: 100%;
+}
+.dom-select-field[data-variant="underline"][data-size="large"] .dom-select {
+  width: min(420px, 100%);
+}
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger {
+  min-height: 48px;
+  padding: 0 0 0 14px;
+  overflow: hidden;
+  border: 0;
+  border-bottom: 1px solid var(--lineSoft);
+  background-color: var(--panel);
+  box-shadow: inset 0 -2px 0 var(--lineSoft);
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0;
+}
+.dom-select-field[data-variant="underline"] .dom-select-value {
+  padding: 12px 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+.dom-select-field[data-variant="underline"] .dom-select-caret {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  margin-left: 12px;
+  background-color: var(--ink);
+  color: var(--bg);
+  font-size: 13px;
+}
+.dom-root .dom-select-field[data-variant="underline"] .dom-select-trigger:hover,
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger:focus-visible,
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger[data-open="1"] {
+  border: 0;
+  border-bottom: 1px solid var(--lineSoft);
+}
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger:hover
+  .dom-select-caret,
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger:focus-visible
+  .dom-select-caret,
+.dom-root
+  .dom-select-field[data-variant="underline"]
+  .dom-select-trigger[data-open="1"]
+  .dom-select-caret {
+  background-color: var(--accent);
+}
+.dom-root
+  .dom-select-field[data-variant="underline"][data-size="large"]
+  .dom-select-trigger {
+  min-height: 56px;
+  font-size: 22px;
+}
+.dom-select-field[data-variant="underline"][data-size="large"]
+  .dom-select-value {
+  padding: 13px 0;
+  font-size: 22px;
+}
+.dom-select-field[data-variant="underline"][data-size="large"]
+  .dom-select-caret {
+  width: 56px;
+  margin-left: 14px;
+}
+
+/* Theme selector (active lane) — sits at the top of the main panel. */
+.dom-theme-select {
+  gap: 8px;
+  padding: 18px 28px 0;
+}
+
+/* Theme manager rows (Profile) */
+.dom-theme-editor-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) repeat(3, 36px);
+  align-items: center;
+  gap: 8px;
+}
+.dom-theme-editor-row .dom-input {
+  min-width: 0;
+}
+.dom-theme-editor-row .dom-theme-emoji {
+  width: 48px;
+  text-align: center;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.dom-theme-editor-row .dom-iconbtn {
+  width: 36px;
+}
+.dom-btn-with-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+@media (max-width: 520px) {
+  .dom-theme-editor-row {
+    grid-template-columns: 48px minmax(0, 1fr) repeat(3, 36px);
+  }
+  .dom-theme-editor-row .dom-input:not(.dom-theme-emoji) {
+    grid-column: 2 / -1;
+  }
+  .dom-theme-editor-row .dom-iconbtn {
+    grid-row: 2;
+  }
+  .dom-theme-editor-row .dom-iconbtn:nth-child(3) {
+    grid-column: 3;
+  }
+  .dom-theme-editor-row .dom-iconbtn:nth-child(4) {
+    grid-column: 4;
+  }
+  .dom-theme-editor-row .dom-iconbtn:nth-child(5) {
+    grid-column: 5;
+  }
+}

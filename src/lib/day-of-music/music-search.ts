@@ -1,22 +1,12 @@
 // music-search.ts — client-side helpers for /api/music/search (iTunes proxy).
 // Converts a search result into a full Album so it can be logged in the
-// journal alongside the static catalog.
+// journal.
 
-import type { Album, CoverSpec, CoverStyle } from "@/lib/day-of-music/data";
-import type { AlbumDetail, TrackItem } from "@/lib/day-of-music/music-types";
+import type { Album } from "@/lib/day-of-music/data";
+import { coverFromSeed } from "@/lib/day-of-music/cover-seed";
+import type { AlbumDetail, MusicSearchResult, TrackItem } from "@/lib/day-of-music/music-types";
 
-export type { AlbumDetail, TrackItem };
-
-export type MusicSearchResult = {
-  id: string;
-  title: string;
-  artist: string;
-  genre: string;
-  year: number;
-  releaseDate: string;
-  artworkUrl: string;
-  trackCount: number;
-};
+export type { AlbumDetail, MusicSearchResult, TrackItem };
 
 export async function searchMusic(
   query: string,
@@ -77,38 +67,6 @@ export function parseAppleMusicLink(input: string): AppleMusicLink | null {
   return {
     id: numeric[numeric.length - 1],
     country: countryMatch ? countryMatch[1].toUpperCase() : "US",
-  };
-}
-
-// ── Deterministic typographic cover for albums without a hand-made CoverSpec.
-// (Cover renders real artwork when artworkUrl is set; this is the fallback.)
-
-const STYLES: CoverStyle[] = ["stack", "diag", "center", "split", "edge", "ring", "block", "ticker"];
-
-const PALETTES: Array<Omit<CoverSpec, "style">> = [
-  { bg: "#b9a3d9", fg: "#1a1430", accent: "#f6e6ff" },
-  { bg: "#1d1a18", fg: "#f4d35e", accent: "#c75146" },
-  { bg: "#e8e3d8", fg: "#23211c", accent: "#b4552d" },
-  { bg: "#10243a", fg: "#dce9f5", accent: "#5fa8d3" },
-  { bg: "#f3d9c9", fg: "#3a2418", accent: "#a8623c" },
-  { bg: "#222a22", fg: "#d9e8d4", accent: "#8aa86e" },
-  { bg: "#f5efe0", fg: "#1f1d33", accent: "#d94f4f" },
-  { bg: "#2d2433", fg: "#ecdff5", accent: "#c98bd9" },
-];
-
-function hashSeed(seed: string): number {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) {
-    h = (h * 31 + seed.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
-}
-
-export function coverFromSeed(seed: string): CoverSpec {
-  const h = hashSeed(seed);
-  return {
-    style: STYLES[h % STYLES.length],
-    ...PALETTES[(h >> 3) % PALETTES.length],
   };
 }
 
@@ -174,6 +132,34 @@ export function albumFromTrack(d: AlbumDetail, track: TrackItem): Album {
     releaseDate: d.releaseDate || undefined,
     kind: "track",
     albumTitle: d.title,
+    note: "",
+    rating: 0,
+    tracks: [],
+  };
+}
+
+/** Build a journal-ready Album the listener typed in themselves. The caller
+ *  owns the id (stable while the form is open), and artwork is the optional
+ *  cover they picked from their device. */
+export function albumFromManual(m: {
+  id: string;
+  title: string;
+  artist: string;
+  genre: string;
+  artworkUrl?: string;
+}): Album {
+  return {
+    id: m.id,
+    date: "", // assigned when the entry is logged
+    title: m.title.trim(),
+    titleKo: "",
+    artist: m.artist.trim() || "Unknown artist",
+    genre: m.genre.trim(),
+    year: new Date().getFullYear(),
+    format: "Manual",
+    cover: coverFromSeed(m.id),
+    artworkUrl: m.artworkUrl,
+    kind: "album",
     note: "",
     rating: 0,
     tracks: [],

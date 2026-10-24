@@ -6,22 +6,18 @@
 import { useEffect, useRef } from "react";
 
 import { DomSelectField } from "@/components/day-of-music/dom-select";
+import { useEscapeLayer } from "@/lib/day-of-music/escape-layers";
 import { useT } from "@/lib/day-of-music/i18n";
 import {
   AESTHETICS,
   TYPE_PAIRS,
   type AestheticKey,
   type TypeKey,
-} from "@/lib/day-of-music/theme";
+} from "@/lib/day-of-music/appearance";
+import type { Tweaks } from "@/lib/day-of-music/tweaks";
 
-export type Tweaks = {
-  aesthetic: AestheticKey;
-  typography: TypeKey;
-  /** When on, weeks never span two months: a week that crosses a month
-   *  boundary is shown as two separate pages (e.g. "December — Week 5" then
-   *  "January — Week 1"). Off keeps the continuous Mon–Sun week. */
-  weekSplit: boolean;
-};
+/** id of the open panel — the header's Tweaks triggers aria-control it. */
+export const TWEAKS_PANEL_ID = "dom-tweaks-panel";
 
 export function TweaksPanel({
   open,
@@ -35,6 +31,8 @@ export function TweaksPanel({
   onChange: <K extends keyof Tweaks>(key: K, value: Tweaks[K]) => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  // Set when a click elsewhere closes the panel (see the focus effect below).
+  const closedByPointer = useRef(false);
   const t = useT();
 
   // Dismiss when a pointer-down lands outside the panel. The header's Tweaks
@@ -47,24 +45,53 @@ export function TweaksPanel({
       if (!target) return;
       if (panelRef.current?.contains(target)) return;
       if (target.closest("[data-dom-tweaks-trigger]")) return;
+      closedByPointer.current = true;
       onClose();
     }
     window.addEventListener("pointerdown", onPointerDown, true);
     return () => window.removeEventListener("pointerdown", onPointerDown, true);
   }, [open, onClose]);
 
+  useEscapeLayer(onClose, open);
+
+  // Focus moves into the panel when it opens and back to the Tweaks button
+  // when it closes (✕, Escape) — but not when a click elsewhere closed it:
+  // that click is on its way to its own target, and moving focus in the
+  // middle of it swallowed it (an empty day's "+ log" stopped opening the Add
+  // flow). Non-modal, so Tab may still leave the panel.
+  useEffect(() => {
+    if (!open) return;
+    const panel = panelRef.current;
+    const opener = document.activeElement as HTMLElement | null;
+    closedByPointer.current = false;
+    panel?.focus();
+    return () => {
+      if (closedByPointer.current) return;
+      const active = document.activeElement;
+      const lost = !active || active === document.body || panel?.contains(active);
+      if (lost && opener?.isConnected) opener.focus();
+    };
+  }, [open]);
+
   if (!open) return null;
 
   return (
-    <div className="dom-tweaks-panel" role="dialog" aria-label={t("tweaks.title")} ref={panelRef}>
+    <div
+      className="dom-tweaks-panel"
+      id={TWEAKS_PANEL_ID}
+      role="dialog"
+      aria-label={t("tweaks.title")}
+      ref={panelRef}
+      tabIndex={-1}
+    >
       <div className="dom-tweaks-panel-hd">
-        <span className="dom-tweak-section dom-tweaks-panel-title">{t("tweaks.title")}</span>
-        <button className="dom-tweaks-close" onClick={onClose} aria-label={t("tweaks.close")}>
+        <span className="dom-section-label dom-tweaks-panel-title">{t("tweaks.title")}</span>
+        <button className="dom-tweaks-close" onClick={onClose} aria-label={t("modal.close")}>
           ✕
         </button>
       </div>
 
-      <div className="dom-tweak-section">{t("tweaks.aesthetic")}</div>
+      <div className="dom-section-label">{t("tweaks.aesthetic")}</div>
       <DomSelectField
         label={t("tweaks.theme")}
         value={tweaks.aesthetic}
@@ -82,7 +109,7 @@ export function TweaksPanel({
         labelClassName="dom-tweak-label"
       />
 
-      <div className="dom-tweak-section">{t("tweaks.layout")}</div>
+      <div className="dom-section-label">{t("tweaks.layout")}</div>
       <div className="dom-tweak-toggle-row">
         <span className="dom-tweak-label">{t("tweaks.splitWeeks")}</span>
         <button

@@ -5,6 +5,7 @@
 
 import type { CSSProperties } from "react";
 
+import { artworkAt, artworkSrcSet } from "@/lib/day-of-music/artwork-size";
 import type { Album } from "@/lib/day-of-music/data";
 
 const NATIVE = 240;
@@ -16,6 +17,15 @@ type CoverProps = {
   album: Album;
   /** Pixel size, or "100%" to fill the container fluidly (1:1). */
   size?: number | "100%";
+  /** How wide a fluid cover is shown, as an img `sizes` value, so real artwork
+   *  loads at a matching resolution (see artwork-size.ts). A pixel `size`
+   *  already says it. Without either (or artworkWidth) the stored artwork loads
+   *  as is — Day Detail and the Best-of champion want the full size. */
+  sizes?: string;
+  /** Load real artwork at this one width instead, with no srcset: for covers
+   *  exported as a PNG (the share posters), since html-to-image reads `src` and
+   *  drops any srcset (see save-card.ts). */
+  artworkWidth?: number;
 };
 
 type StyleArgs = {
@@ -27,16 +37,22 @@ type StyleArgs = {
   bg: string;
 };
 
-export function Cover({ album, size = 240 }: CoverProps) {
+export function Cover({ album, size = 240, sizes, artworkWidth }: CoverProps) {
   const { cover, title, artist, artworkUrl } = album;
   const { style, bg, fg, accent } = cover;
   const args: StyleArgs = { s: NATIVE, title, artist, fg, accent, bg };
+  const shownAt = typeof size === "number" ? `${size}px` : sizes;
+  const src = artworkUrl && artworkWidth ? artworkAt(artworkUrl, artworkWidth) : artworkUrl;
+  const srcSet =
+    artworkUrl && shownAt && !artworkWidth ? artworkSrcSet(artworkUrl) : undefined;
 
   // Real artwork (e.g. iTunes search results) wins over the typographic tile.
   const inner = artworkUrl ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={artworkUrl}
+      src={src}
+      srcSet={srcSet}
+      sizes={srcSet ? shownAt : undefined}
       alt={`${title} — ${artist}`}
       width={NATIVE}
       height={NATIVE}

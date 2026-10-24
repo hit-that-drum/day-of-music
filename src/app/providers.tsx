@@ -5,8 +5,9 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "sonner";
 
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
-import { AuthProvider } from "@/components/day-of-music/auth-provider";
-import { JournalProvider } from "@/lib/day-of-music/use-journal";
+import { AuthProvider } from "@/lib/day-of-music/auth-provider";
+import { useLanguage } from "@/lib/day-of-music/i18n";
+import { PHONE_QUERY } from "@/lib/day-of-music/phone";
 
 type ProvidersProps = {
   children: ReactNode;
@@ -16,7 +17,6 @@ type ProvidersProps = {
 // modal's action row lives — a "기록됨" toast landed right on top of the
 // add-flow's 계속 / 기록 저장 buttons. Top-center is out of the way there (and
 // is where phones put system banners anyway).
-const MOBILE_QUERY = "(max-width: 760px)";
 
 function useToastPosition(): "bottom-center" | "top-center" {
   // Server + first paint assume desktop; the effect corrects it before any
@@ -24,7 +24,7 @@ function useToastPosition(): "bottom-center" | "top-center" {
   const [mobile, setMobile] = useState(false);
 
   useEffect(() => {
-    const mq = window.matchMedia(MOBILE_QUERY);
+    const mq = window.matchMedia(PHONE_QUERY);
     const sync = () => setMobile(mq.matches);
     sync();
     mq.addEventListener("change", sync);
@@ -32,6 +32,18 @@ function useToastPosition(): "bottom-center" | "top-center" {
   }, []);
 
   return mobile ? "top-center" : "bottom-center";
+}
+
+// <html lang> follows the UI language on every page, not just the board. The
+// layout renders lang="en" (the DEFAULT_LOCALE server snapshot); this corrects
+// it once the client resolves the stored preference. Inside AuthProvider: the
+// language preference syncs with the account.
+function HtmlLangSync() {
+  const { locale } = useLanguage();
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+  return null;
 }
 
 export function Providers({ children }: ProvidersProps) {
@@ -52,7 +64,8 @@ export function Providers({ children }: ProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <ServiceWorkerRegister />
       <AuthProvider>
-        <JournalProvider>{children}</JournalProvider>
+        <HtmlLangSync />
+        {children}
       </AuthProvider>
       <Toaster position={toastPosition} richColors closeButton />
     </QueryClientProvider>

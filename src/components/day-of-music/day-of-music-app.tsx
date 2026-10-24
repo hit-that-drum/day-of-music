@@ -8,22 +8,29 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   useSyncExternalStore,
+  type CSSProperties,
 } from "react";
+import Link from "next/link";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 
-import { addDays, fmtDate, formatDisplayDate, parseDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
-import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
+import { fmtDate, formatDisplayDate, parseDate, type Album } from "@/lib/day-of-music/data";
+import { AESTHETICS, themeStyleVars } from "@/lib/day-of-music/appearance";
 import { useCountry } from "@/lib/day-of-music/profile";
-import { useLanguage, useT } from "@/lib/day-of-music/i18n";
-import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
+import { useT } from "@/lib/day-of-music/i18n";
+import type { JournalAlbum } from "@/lib/day-of-music/journal";
+import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useActiveTheme } from "@/lib/day-of-music/themes";
-import { isLocalStorageAvailable, makeSessionFlagStore } from "@/lib/day-of-music/local-store";
+import {
+  isLocalStorageAvailable,
+  makeSessionFlagStore,
+  useStore,
+} from "@/lib/day-of-music/local-store";
 import { rememberTimeZone } from "@/lib/day-of-music/today";
-import { useAuth } from "@/components/day-of-music/auth-provider";
+import { useAuth } from "@/lib/day-of-music/auth-provider";
+import { useBoardNav } from "@/lib/day-of-music/use-board-nav";
 import { AddFlow, type NewEntry } from "@/components/day-of-music/add-flow";
 import { IconButton } from "@/components/day-of-music/atoms";
 import { BottomTabs } from "@/components/day-of-music/bottom-tabs";
@@ -38,11 +45,10 @@ import { MoreSheet } from "@/components/day-of-music/more-sheet";
 import { BestOfWeekModal } from "@/components/day-of-music/best-of-week-modal";
 import { BestOfMonthModal } from "@/components/day-of-music/best-of-month-modal";
 import { ThemeTabs } from "@/components/day-of-music/theme-tabs";
-import { TopBar } from "@/components/day-of-music/top-bar";
-import { TweaksPanel, type Tweaks } from "@/components/day-of-music/tweaks-panel";
+import { TopBar, type ScreenId } from "@/components/day-of-music/top-bar";
+import { TweaksPanel } from "@/components/day-of-music/tweaks-panel";
+import { setTweak, useTweaks } from "@/lib/day-of-music/tweaks";
 import { WeeklyGrid } from "@/components/day-of-music/weekly-grid";
-
-export type ScreenId = "week" | "month" | "search" | "logs" | "profile";
 
 // "Today" is the listener's local calendar date, as YYYY-MM-DD. (The sample
 // catalog covers Jan 5–18, 2026 — navigate back to that week to see the demo
@@ -65,16 +71,6 @@ function getLocalTodayKey(): string {
   return localTodayKey;
 }
 
-// Tweaks are persisted client-side so the user's layout/theme choices survive
-// reloads. Bump the version suffix if the Tweaks shape changes incompatibly.
-const TWEAKS_KEY = "dom.tweaks.v1";
-
-const DEFAULT_TWEAKS: Tweaks = {
-  aesthetic: "editorial",
-  typography: "editorial",
-  weekSplit: false,
-};
-
 // Snapshot fns for the blocked-storage probe — module-level so their identity
 // is stable across renders (useSyncExternalStore resubscribes when it changes).
 // Whether storage works can't change within a page's life, so nothing to
@@ -88,68 +84,15 @@ const getStorageBlockedServer = () => false;
 // snapshot is false, so SSR renders the banner and the client flips after mount.
 const guestBannerDismissed = makeSessionFlagStore("dom.guestBanner.dismissed.v1");
 
-function loadTweaks(): Tweaks {
-  if (typeof window === "undefined") return DEFAULT_TWEAKS;
-  try {
-    const raw = window.localStorage.getItem(TWEAKS_KEY);
-    if (!raw) return DEFAULT_TWEAKS;
-    const saved = JSON.parse(raw) as Partial<Tweaks>;
-    // Copy only active settings so retired keys from older saved blobs do not
-    // remain in the live snapshot.
-    return {
-      aesthetic: saved.aesthetic ?? DEFAULT_TWEAKS.aesthetic,
-      typography: saved.typography ?? DEFAULT_TWEAKS.typography,
-      weekSplit: saved.weekSplit ?? DEFAULT_TWEAKS.weekSplit,
-    };
-  } catch {
-    return DEFAULT_TWEAKS;
-  }
-}
-
-// Tweaks live in a tiny external store so they can be read with
-// useSyncExternalStore — that loads the persisted value on the client without
-// a hydration mismatch (server renders defaults, client swaps in after mount)
-// and avoids calling setState inside an effect.
-let tweaksSnapshot: Tweaks | null = null;
-const tweaksListeners = new Set<() => void>();
-
-function getTweaksSnapshot(): Tweaks {
-  if (tweaksSnapshot === null) tweaksSnapshot = loadTweaks();
-  return tweaksSnapshot;
-}
-
-function getTweaksServerSnapshot(): Tweaks {
-  return DEFAULT_TWEAKS;
-}
-
-function subscribeTweaks(cb: () => void): () => void {
-  tweaksListeners.add(cb);
-  return () => tweaksListeners.delete(cb);
-}
-
-function writeTweaks(next: Tweaks): void {
-  tweaksSnapshot = next;
-  try {
-    window.localStorage.setItem(TWEAKS_KEY, JSON.stringify(next));
-  } catch {
-    /* storage unavailable (private mode / quota) — ignore */
-  }
-  tweaksListeners.forEach((l) => l());
-}
-
-// First and last day of the anchor's Mon–Sun week that still belong to the
-// anchor's month. Used by week nav in split mode to step just past the visible
-// segment without materialising the whole 7-day array.
-function monthSegmentBounds(anchor: Date): { first: Date; last: Date } {
-  const ws = startOfWeek(anchor);
-  const weekEnd = addDays(ws, 6);
-  const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-  const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
-  return {
-    first: ws < monthStart ? monthStart : ws,
-    last: weekEnd > monthEnd ? monthEnd : weekEnd,
-  };
-}
+// The overlay open over the board — one at a time: opening one replaces the
+// other. Day Detail holds its slot and the album it opened on (not a copy):
+// the album is read from the journal on every render, and a different album
+// later logged on that date won't reopen it. The Add flow always opens on a
+// day — an empty cell's, or the replaced entry's.
+type Overlay =
+  | { kind: "detail"; date: string; albumId: string }
+  | { kind: "add"; date: string; /** Saving replaces this day's entry. */ replaceTarget?: string }
+  | { kind: "share" | "monthShare" | "bestOf" | "bestOfMonth" | "more" };
 
 export function DayOfMusicApp({
   initialToday,
@@ -158,23 +101,16 @@ export function DayOfMusicApp({
    *  the tz cookie was present, otherwise the server's (see app/week/page.tsx). */
   initialToday: string;
 }) {
-  const rootRef = useRef<HTMLDivElement>(null);
   const { logAlbum, updateSlot, moveSlot, removeSlot, enrichSlot, albumsByDate } = useJournal();
   const { setActiveTheme } = useActiveTheme();
   const { configured, loading: authLoading, user, signOut } = useAuth();
   // Storefront country drives date formatting so every displayed date matches
   // the listener's locale (see formatDisplayDate).
   const country = useCountry();
-  // Effective UI language (derived from the language preference / country).
-  const { locale } = useLanguage();
   const t = useT();
 
-  // Persisted across reloads via localStorage (see the store helpers above).
-  const tweaks = useSyncExternalStore(
-    subscribeTweaks,
-    getTweaksSnapshot,
-    getTweaksServerSnapshot,
-  );
+  // Persisted across reloads via localStorage (see lib/day-of-music/tweaks.ts).
+  const tweaks = useTweaks();
   // Server value during SSR + hydration, the browser's own date after mount
   // (see the store above). The server snapshot closes over the prop; only the
   // `subscribe` identity matters for resubscribing, so an inline arrow is fine.
@@ -184,54 +120,21 @@ export function DayOfMusicApp({
   // everything derived from it keeps a stable identity.
   const today = useMemo(() => parseDate(todayKey), [todayKey]);
   const [screen, setScreen] = useState<ScreenId>("week");
-  // `anchor` is any day inside the currently-viewed page. The Monday-based
-  // `weekStart` and the visible `days` are derived from it (see below). null
-  // means "follow today": the board opens on today's week and still tracks it
-  // if the post-hydration correction moves today (first visit from a zone a
-  // day ahead of the server, across a week boundary). Once the user has
-  // navigated, the page they picked stays put — including a navigation that
-  // beats the correction (a click replayed during hydration), which keeps the
-  // server's week.
-  const [pickedAnchor, setAnchor] = useState<Date | null>(null);
-  const anchor = pickedAnchor ?? today;
-  const [openAlbum, setOpenAlbum] = useState<Album | null>(null);
-  const [showAdd, setShowAdd] = useState(false);
-  // When set, the add-flow opens with this date preselected (empty-day click).
-  const [addDate, setAddDate] = useState<string | null>(null);
-  // When set, saving the add-flow replaces (removes) this album's entry.
-  const [replaceTarget, setReplaceTarget] = useState<string | null>(null);
-  const [showShare, setShowShare] = useState(false);
-  const [showMonthShare, setShowMonthShare] = useState(false);
-  const [showBestOf, setShowBestOf] = useState(false);
-  const [showBestOfMonth, setShowBestOfMonth] = useState(false);
+  // The page on screen and ←/→ (see use-board-nav.ts).
+  const { anchor, setAnchor, days, labelDate, prevWeek, nextWeek, prevMonth, nextMonth } =
+    useBoardNav(today, tweaks.weekSplit);
+  const [overlay, setOverlay] = useState<Overlay | null>(null);
+  // Stable, for the modals' onClose (Modal re-registers its Esc listener on change).
+  const closeOverlay = useCallback(() => setOverlay(null), []);
+  // The Tweaks popover isn't a modal overlay: it sits beside the board.
   const [showTweaks, setShowTweaks] = useState(false);
-  // Phone "⋯ More" overflow sheet (language / account / legal).
-  const [showMore, setShowMore] = useState(false);
 
-  // Single place that dismisses every overlay + resets the transient add/replace
-  // state. Centralised so new overlays only have to be added here (and so the
-  // Esc handler can't drift out of sync with the individual onClose handlers).
-  const closeAll = useCallback(() => {
-    setOpenAlbum(null);
-    setShowAdd(false);
-    setShowShare(false);
-    setShowMonthShare(false);
-    setShowBestOf(false);
-    setShowBestOfMonth(false);
-    setShowTweaks(false);
-    setShowMore(false);
-    setReplaceTarget(null);
-  }, []);
-
-  const setTweak = useCallback(
-    <K extends keyof Tweaks>(key: K, value: Tweaks[K]) =>
-      writeTweaks({ ...getTweaksSnapshot(), [key]: value }),
-    [],
-  );
-
-  useEffect(() => {
-    ensureFonts();
-  }, []);
+  // Day Detail's album, read live from the journal: an edit, an enrichment or
+  // a rolled-back write shows at once, and a slot emptied under it (another
+  // device, a refetch) closes it rather than showing a stale copy.
+  const slotAlbum = overlay?.kind === "detail" ? albumsByDate[overlay.date] : undefined;
+  const openAlbum =
+    overlay?.kind === "detail" && slotAlbum?.id === overlay.albumId ? slotAlbum : undefined;
 
   // Leave the browser's zone in a cookie so the next server render can start
   // from the listener's date instead of its own (no post-hydration correction).
@@ -239,92 +142,18 @@ export function DayOfMusicApp({
     rememberTimeZone();
   }, []);
 
-  useEffect(() => {
-    applyTheme(rootRef.current, tweaks.aesthetic, tweaks.typography);
-  }, [tweaks.aesthetic, tweaks.typography]);
-
-  // Reflect the active language on <html lang> for a11y/SEO. The layout renders
-  // lang="en" server-side (matching the DEFAULT_LOCALE snapshot); this updates
-  // it once the client resolves the stored preference.
-  useEffect(() => {
-    document.documentElement.lang = locale;
-  }, [locale]);
-
-  // Monday of the anchor's ISO week, and the full Mon–Sun strip.
-  const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
-  const fullWeek = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart],
+  // The chosen look, as the frame's inline CSS variables (see .dom-stage).
+  const themeVars = useMemo(
+    () => themeStyleVars(tweaks.aesthetic, tweaks.typography) as CSSProperties,
+    [tweaks.aesthetic, tweaks.typography],
   );
 
-  // The grid always shows the whole Mon–Sun week (7 cells). In split mode the
-  // cells belonging to the *other* month are blanked out by WeeklyGrid rather
-  // than removed, so the 7-column layout stays intact.
-  const days = fullWeek;
-
-  // Days that belong to the page's month. In split mode that's the subset
-  // matching the anchor's month; otherwise the whole week. Used for the label
-  // and the share card so they reflect only the labelled month.
-  const monthDays = useMemo(() => {
-    if (!tweaks.weekSplit) return fullWeek;
-    const m = anchor.getMonth();
-    const y = anchor.getFullYear();
-    return fullWeek.filter((d) => d.getMonth() === m && d.getFullYear() === y);
-  }, [fullWeek, anchor, tweaks.weekSplit]);
-
-  // The day whose month/week-number label the header shows: the first in-month
-  // day in split mode, otherwise the week's Monday.
-  const labelDate = monthDays[0] ?? weekStart;
-
-  // The updaters resolve a null (follow-today) anchor themselves: `a ?? today`.
-  const prevWeek = useCallback(() => {
-    setAnchor((a) => {
-      const cur = a ?? today;
-      // Step to the day before the current segment's first visible day.
-      return tweaks.weekSplit ? addDays(monthSegmentBounds(cur).first, -1) : addDays(cur, -7);
-    });
-  }, [tweaks.weekSplit, today]);
-
-  const nextWeek = useCallback(() => {
-    setAnchor((a) => {
-      const cur = a ?? today;
-      // Step to the day after the current segment's last visible day.
-      return tweaks.weekSplit ? addDays(monthSegmentBounds(cur).last, 1) : addDays(cur, 7);
-    });
-  }, [tweaks.weekSplit, today]);
-
-  // Month nav (Monthly view). Anchor on the 1st of the target month; native
-  // Date handles year rollover (month -1 / +12).
-  const prevMonth = useCallback(() => {
-    setAnchor((a) => {
-      const cur = a ?? today;
-      return new Date(cur.getFullYear(), cur.getMonth() - 1, 1);
-    });
-  }, [today]);
-
-  const nextMonth = useCallback(() => {
-    setAnchor((a) => {
-      const cur = a ?? today;
-      return new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
-    });
-  }, [today]);
-
-  // Keyboard nav: Esc closes modal; ←/→ change week when nothing is open.
+  // Keyboard: ←/→ step the board when nothing is open over it. (Escape is each
+  // overlay's own — see escape-layers.ts.)
+  const overlayOpen = overlay !== null || showTweaks;
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (
-        openAlbum ||
-        showAdd ||
-        showShare ||
-        showMonthShare ||
-        showBestOf ||
-        showBestOfMonth ||
-        showTweaks ||
-        showMore
-      ) {
-        if (e.key === "Escape") closeAll();
-        return;
-      }
+      if (overlayOpen) return;
       // ←/→ step the week on the Week board and the month on the Month view.
       if (screen === "week") {
         if (e.key === "ArrowLeft") prevWeek();
@@ -336,12 +165,12 @@ export function DayOfMusicApp({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openAlbum, showAdd, showShare, showMonthShare, showBestOf, showBestOfMonth, showTweaks, showMore, screen, prevWeek, nextWeek, prevMonth, nextMonth, closeAll]);
+  }, [overlayOpen, screen, prevWeek, nextWeek, prevMonth, nextMonth]);
 
   const handleOpen = useCallback(
     (album: Album | JournalAlbum) => {
       if ("theme" in album) setActiveTheme(album.theme);
-      setOpenAlbum(album);
+      setOverlay({ kind: "detail", date: album.date, albumId: album.id });
     },
     [setActiveTheme],
   );
@@ -349,37 +178,14 @@ export function DayOfMusicApp({
   // Drag-and-drop reschedule (onMove={moveSlot}): dropping onto an empty day
   // moves the album there; dropping onto a filled day swaps the two days.
   // moveSlot is a stable ref, so it's passed straight through (its Promise
-  // result is ignored there). Day Detail's reschedule arrives via handleMove
-  // below instead, so the `date` branch in handleUpdate is legacy — kept for
-  // safety in case a patch still carries a different date.
-
-  // `date` identifies the slot. A patch carrying `date` is a reschedule (move);
-  // otherwise it's a rating/note edit on the same slot.
-  const handleUpdate = useCallback(
-    (date: string, patch: Partial<Album>) => {
-      if (patch.date && patch.date !== date) {
-        moveSlot(date, patch.date);
-      } else {
-        updateSlot(date, patch);
-      }
-      setOpenAlbum((prev) => (prev && prev.date === date ? { ...prev, ...patch } : prev));
-    },
-    [moveSlot, updateSlot],
-  );
-
-  // Lazily-fetched album metadata (tracklist, release date) from iTunes Lookup.
-  const handleEnrich = useCallback(
-    (date: string, patch: Partial<Album>) => {
-      enrichSlot(date, patch);
-      setOpenAlbum((prev) => (prev && prev.date === date ? { ...prev, ...patch } : prev));
-    },
-    [enrichSlot],
-  );
+  // result is ignored there). Day Detail's reschedule arrives via handleMove;
+  // its edits and lazy enrichment go straight to updateSlot / enrichSlot, and
+  // the open detail follows the journal (see openAlbum).
 
   const handleRemove = useCallback(
     (date: string) => {
       removeSlot(date);
-      setOpenAlbum(null);
+      setOverlay(null);
       toast.success(t("toast.removed"));
     },
     [removeSlot, t],
@@ -397,13 +203,14 @@ export function DayOfMusicApp({
       // The slot can vanish under an open modal (removed on another device, or
       // a refetch dropped it). Nothing to stage → report it, don't celebrate.
       if (!albumsByDate[from]) {
-        setOpenAlbum(null);
+        setOverlay(null);
         toast.error(t("toast.moveFailed"));
         return;
       }
       const displaced = albumsByDate[to];
       const settled = moveSlot(from, to);
-      setOpenAlbum(null);
+      // Closed, not left open on `from`: a swap puts another album there.
+      setOverlay(null);
       if (screen === "week" || screen === "month") setAnchor(parseDate(to));
       const date = formatDisplayDate(to, country);
       toast.success(
@@ -415,31 +222,29 @@ export function DayOfMusicApp({
         if (!ok) toast.error(t("toast.moveFailed"));
       });
     },
-    [albumsByDate, moveSlot, screen, country, t],
+    [albumsByDate, moveSlot, screen, setAnchor, country, t],
   );
 
   // Replace: reopen the add-flow on the same day. Logging the new album at that
   // date overwrites the slot, so no separate removal is needed.
   const handleReplace = useCallback((album: Album) => {
-    setOpenAlbum(null);
-    setAddDate(album.date);
-    setReplaceTarget(album.date);
-    setShowAdd(true);
+    setOverlay({ kind: "add", date: album.date, replaceTarget: album.date });
   }, []);
+
+  // Open the Add flow on a day (an empty board cell). Not memoized: none of
+  // the boards it's passed to is a memo component.
+  const openAddFor = (date: string) => setOverlay({ kind: "add", date });
+
+  // Set while the Add flow is replacing an entry (opened from Day Detail).
+  const replaceTarget = overlay?.kind === "add" ? overlay.replaceTarget : undefined;
 
   const handleSave = useCallback(
     (entry: NewEntry) => {
-      // Log the same album to every selected day (one album per day per theme).
-      for (const date of entry.dates) {
-        logAlbum(entry.album, {
-          date,
-          rating: entry.rating,
-          note: entry.note,
-        });
-      }
+      // Log the same album to every selected day (one album per day per theme)
+      // in a single write.
+      logAlbum(entry.album, { dates: entry.dates, rating: entry.rating, note: entry.note });
       // If replacing and the original day wasn't among the chosen ones, clear it.
       if (replaceTarget && !entry.dates.includes(replaceTarget)) removeSlot(replaceTarget);
-      setReplaceTarget(null);
 
       const count = entry.dates.length;
       const rating = entry.rating || "—";
@@ -470,20 +275,18 @@ export function DayOfMusicApp({
     getStorageBlockedServer,
   );
 
-  const guestDismissed = useSyncExternalStore(
-    guestBannerDismissed.subscribe,
-    guestBannerDismissed.getSnapshot,
-    guestBannerDismissed.getServerSnapshot,
-  );
+  // The signed-in account, for the top bar and the More sheet.
+  const account = configured && user ? { email: user.email ?? "", onSignOut: signOut } : null;
+  const guestDismissed = useStore(guestBannerDismissed);
   const showGuestBanner = isGuest && !guestDismissed;
 
   return (
     // Theme vars are applied to the stage so the modals (scrim/add-flow/share),
     // which render outside .dom-root, inherit them too.
-    <div className="dom-stage" ref={rootRef}>
+    <div className="dom-stage" style={themeVars}>
       <div
         className="dom-root"
-        data-grid={tweaks.aesthetic === "editorial" || tweaks.aesthetic === "dark" ? "1" : "0"}
+        data-grid={AESTHETICS[tweaks.aesthetic].tokens.gridShow ? "1" : "0"}
         // Number of in-flow banners above <main>, so the grid rows match.
         data-banners={String((showGuestBanner ? 1 : 0) + (storageBlocked ? 1 : 0))}
       >
@@ -491,8 +294,10 @@ export function DayOfMusicApp({
           screen={screen}
           onScreen={setScreen}
           onTweaks={() => setShowTweaks((v) => !v)}
-          onMore={() => setShowMore(true)}
-          account={configured && user ? { email: user.email ?? "", onSignOut: signOut } : null}
+          tweaksOpen={showTweaks}
+          onMore={() => setOverlay({ kind: "more" })}
+          moreOpen={overlay?.kind === "more"}
+          account={account}
           showAuthLinks={isGuest}
         />
 
@@ -501,12 +306,12 @@ export function DayOfMusicApp({
             {/* Long copy on desktop, one-line short copy + ✕ on phones (CSS). */}
             <span className="dom-guest-banner-long">{t("guest.banner")}</span>
             <span className="dom-guest-banner-short">{t("guest.bannerShort")}</span>
-            <a href="/signup" className="dom-guest-banner-cta-long">
+            <Link href="/signup" className="dom-guest-banner-cta-long">
               {t("guest.signup")}
-            </a>
-            <a href="/signup" className="dom-guest-banner-cta-short">
+            </Link>
+            <Link href="/signup" className="dom-guest-banner-cta-short">
               {t("actions.signUp")}
-            </a>
+            </Link>
             <IconButton
               icon={X}
               iconSize={16}
@@ -535,16 +340,13 @@ export function DayOfMusicApp({
               splitByMonth={tweaks.weekSplit}
               today={today}
               onOpen={handleOpen}
-              onAdd={(date) => {
-                setAddDate(date);
-                setShowAdd(true);
-              }}
+              onAdd={openAddFor}
               onPrev={prevWeek}
               onNext={nextWeek}
               // Jump the week view to whatever date the user picks in the mini calendar.
               onJump={setAnchor}
-              onShare={() => setShowShare(true)}
-              onBestOf={() => setShowBestOf(true)}
+              onShare={() => setOverlay({ kind: "share" })}
+              onBestOf={() => setOverlay({ kind: "bestOf" })}
               onMove={moveSlot}
             />
           )}
@@ -554,15 +356,12 @@ export function DayOfMusicApp({
               today={today}
               splitByMonth={tweaks.weekSplit}
               onOpen={handleOpen}
-              onAdd={(date) => {
-                setAddDate(date);
-                setShowAdd(true);
-              }}
+              onAdd={openAddFor}
               onPrev={prevMonth}
               onNext={nextMonth}
               onJump={setAnchor}
-              onShare={() => setShowMonthShare(true)}
-              onBestOf={() => setShowBestOfMonth(true)}
+              onShare={() => setOverlay({ kind: "monthShare" })}
+              onBestOf={() => setOverlay({ kind: "bestOfMonth" })}
               onMove={moveSlot}
             />
           )}
@@ -582,62 +381,46 @@ export function DayOfMusicApp({
           key={`${openAlbum.id}:${openAlbum.date}`}
           album={openAlbum}
           today={today}
-          onClose={() => setOpenAlbum(null)}
-          onUpdate={handleUpdate}
+          onClose={closeOverlay}
+          onUpdate={updateSlot}
           onMove={handleMove}
-          onEnrich={handleEnrich}
+          onEnrich={enrichSlot}
           onRemove={handleRemove}
           onReplace={handleReplace}
         />
       )}
-      {showAdd && (
-        <AddFlow
-          onClose={() => {
-            setShowAdd(false);
-            setReplaceTarget(null);
-          }}
-          onSave={handleSave}
-          defaultWeekStart={weekStart}
-          // Clicked day wins; otherwise preselect today when it's in view.
-          defaultDate={
-            addDate ?? (days.some((d) => fmtDate(d) === todayKey) ? todayKey : undefined)
-          }
-        />
+      {overlay?.kind === "add" && (
+        <AddFlow onClose={closeOverlay} onSave={handleSave} initialDate={overlay.date} />
       )}
-      {showShare && (
+      {overlay?.kind === "share" && (
         <ShareCard
           weekStart={labelDate}
           days={days}
           splitByMonth={tweaks.weekSplit}
-          onClose={() => setShowShare(false)}
+          onClose={closeOverlay}
         />
       )}
-      {showMonthShare && (
-        <MonthShareCard
-          anchor={anchor}
-          onClose={() => setShowMonthShare(false)}
-        />
-      )}
-      {showBestOf && (
+      {overlay?.kind === "monthShare" && <MonthShareCard anchor={anchor} onClose={closeOverlay} />}
+      {overlay?.kind === "bestOf" && (
         <BestOfWeekModal
           days={days}
           labelDate={labelDate}
           splitByMonth={tweaks.weekSplit}
-          onClose={() => setShowBestOf(false)}
+          onClose={closeOverlay}
         />
       )}
-      {showBestOfMonth && (
+      {overlay?.kind === "bestOfMonth" && (
         <BestOfMonthModal
           anchor={anchor}
           splitByMonth={tweaks.weekSplit}
           today={today}
-          onClose={() => setShowBestOfMonth(false)}
+          onClose={closeOverlay}
         />
       )}
-      {showMore && (
+      {overlay?.kind === "more" && (
         <MoreSheet
-          onClose={() => setShowMore(false)}
-          account={configured && user ? { email: user.email ?? "", onSignOut: signOut } : null}
+          onClose={closeOverlay}
+          account={account}
           showAuthLinks={isGuest}
         />
       )}

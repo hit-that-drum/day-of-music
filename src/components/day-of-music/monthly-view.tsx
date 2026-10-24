@@ -1,27 +1,32 @@
-// monthly-view.tsx — Monthly Overview: editorial calendar with featured picks.
+// monthly-view.tsx — Monthly Overview: editorial calendar of the month.
 
-import { useRef, useState } from "react";
-import dayjs from "dayjs";
+"use client";
+
+import { useRef } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { toast } from "sonner";
 
 import {
-  // DOW, — used only by the temporarily-disabled feature section below
-  // DOW_KO / MONTHS_LONG — now localized via useDateNames (Intl)
-  // MONTHS,
-  addDays,
   fmtDate,
-  normalizeGenre,
-  // parseDate,
-  startOfWeek,
+  isSameMonth,
+  monthEnd,
+  monthGrid,
+  parseDate,
   type Album,
 } from "@/lib/day-of-music/data";
+import { periodSummary } from "@/lib/day-of-music/album-stats";
 import { useJournal } from "@/lib/day-of-music/use-journal";
+import { setAlbumDragData, useAlbumDropTarget } from "@/lib/day-of-music/album-dnd";
 import { useBestOfMonthStatus } from "@/lib/day-of-music/best-of";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { useNavSlide, useSwipeNav } from "@/lib/day-of-music/use-swipe-nav";
 import { Button, IconButton } from "@/components/day-of-music/atoms";
+import { BestOfButton } from "@/components/day-of-music/best-of-button";
 import { Cover } from "@/components/day-of-music/cover";
+
+// How wide a day's cover is shown (a seventh of the board less its gutters,
+// fitted to the rendered widths; at most 76px on phones), so its artwork loads
+// at a matching resolution. A few px off only changes which rendition is picked.
+const COVER_SIZES = "(max-width: 760px) 76px, calc((100vw - 120px) / 7)";
 
 export function MonthlyView({
   anchor,
@@ -60,52 +65,33 @@ export function MonthlyView({
   const t = useT();
   const names = useDateNames();
   const bestOf = useBestOfMonthStatus(anchor, splitByMonth, today);
-  // Date currently hovered as a drag-and-drop target (for highlight).
-  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   // The month being viewed follows `anchor`; `today` is only for highlighting.
-  const current = dayjs(anchor);
-  const year = current.year();
-  const month = current.month();
-  const isCurrentMonth =
-    dayjs(today).month() === month && dayjs(today).year() === year;
+  const year = anchor.getFullYear();
+  const month = anchor.getMonth();
+  const isCurrentMonth = isSameMonth(today, anchor);
   // Phone-only swipe: finger left → next month, right → previous.
   const boardRef = useRef<HTMLDivElement>(null);
   useSwipeNav(boardRef, { onLeft: onNext, onRight: onPrev });
   // Phone-only slide-in when the month changes (DOW header + grid together).
   // Zero-padded so "2026-10" > "2026-09" and "2027-01" > "2026-12" lexically.
   const calRef = useRef<HTMLDivElement>(null);
-  useNavSlide(calRef, current.format("YYYY-MM"));
+  useNavSlide(calRef, fmtDate(anchor).slice(0, 7));
 
   // Mon-start month grid (5–6 rows).
-  const lastOfMonth = current.endOf("month");
-  const calStart = startOfWeek(current.startOf("month").toDate());
-  const numWeeks = Math.ceil((lastOfMonth.diff(dayjs(calStart), "day") + 1) / 7);
-  const totalDays = numWeeks * 7;
-  const days = Array.from({ length: totalDays }, (_, i) => addDays(calStart, i));
+  const { days, numWeeks } = monthGrid(anchor);
+  const todayKey = fmtDate(today);
 
-  const monthAlbums = albums.filter((a) => {
-    const d = dayjs(a.date);
-    return d.month() === month && d.year() === year;
-  });
+  const monthAlbums = albums.filter((a) => isSameMonth(a.date, anchor));
 
-  // Feature section temporarily disabled (to be moved elsewhere):
-  // const featured = monthAlbums.filter((a) => a.rating === 5);
-  // const heroPick = featured[0] ?? monthAlbums[0];
-  // const restFeatured = featured.slice(1, 4);
-
-  const totalLogged = monthAlbums.length;
-  const completion = Math.round((totalLogged / lastOfMonth.date()) * 100);
-  const genreCount = new Set(monthAlbums.map((a) => normalizeGenre(a.genre)).filter(Boolean)).size;
-  // Average rating across the month (mirrors the share card). "—" when empty.
-  const avgRating = monthAlbums.length
-    ? (monthAlbums.reduce((s, a) => s + a.rating, 0) / monthAlbums.length).toFixed(1)
-    : "—";
+  // The same numbers the month share card shows. avgRating is "—" when empty.
+  const { count: totalLogged, genres: genreCount, avg: avgRating } = periodSummary(monthAlbums);
+  const completion = Math.round((totalLogged / monthEnd(anchor).getDate()) * 100);
 
   // The Best of Month button reports its state in colour, and explains any
   // blocker on click — mirroring the weekly button (see weekly-grid.tsx).
   const bestOfHint =
     bestOf.status === "done" && bestOf.winnerDate
-      ? t("bom.doneHint", { date: names.monthDayShort(dayjs(bestOf.winnerDate).toDate()) })
+      ? t("bom.doneHint", { date: names.monthDayShort(parseDate(bestOf.winnerDate)) })
       : bestOf.status === "locked"
         ? t("bom.lockedHint", { date: names.monthDayShort(bestOf.lastDay) })
         : bestOf.status === "pending"
@@ -138,21 +124,13 @@ export function MonthlyView({
                 {t("month.thisMonth").toUpperCase()}
               </Button>
             )}
-            <Button
-              variant="ghost"
-              onClick={bestOfBlocked ? () => toast(bestOfHint) : onBestOf}
-              data-bestof={bestOf.status}
-              title={bestOfHint}
-              aria-disabled={bestOfBlocked || undefined}
-              aria-label={bestOfHint && `${t("bom.button")} — ${bestOfHint}`}
-            >
-              {bestOf.status === "done" && (
-                <span className="dom-bestof-trophy" aria-hidden="true">
-                  🏆
-                </span>
-              )}
-              {t("bom.button")}
-            </Button>
+            <BestOfButton
+              status={bestOf.status}
+              hint={bestOfHint}
+              blocked={bestOfBlocked}
+              label={t("bom.button")}
+              onOpen={onBestOf}
+            />
             <Button onClick={onShare}>{t("month.shareMonth").toUpperCase()}</Button>
           </div>
           <div className="dom-month-arrows">
@@ -185,62 +163,6 @@ export function MonthlyView({
         </div>
       </div>
 
-      {/* PICK OF THE MONTH / ALSO FIVE-STARS — temporarily disabled, to be moved
-          elsewhere. Re-enable the DOW / MONTHS / parseDate imports and the
-          featured / heroPick / restFeatured vars above when restoring.
-      {heroPick && (
-        <div className="dom-month-feature">
-          <div
-            className="dom-month-feature-hero"
-            onClick={() => onOpen(heroPick)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") onOpen(heroPick);
-            }}
-          >
-            <Cover album={heroPick} size={280} />
-            <div className="dom-month-feature-meta">
-              <div className="dom-feature-eyebrow">★ pick of the month · 이달의 픽</div>
-              <div className="dom-feature-title">{heroPick.title}</div>
-              <div className="dom-feature-artist">
-                {heroPick.artist}
-                {heroPick.titleKo && <span> · {heroPick.titleKo}</span>}
-              </div>
-              <p className="dom-feature-note">&ldquo;{heroPick.note}&rdquo;</p>
-              <div className="dom-feature-meta-line">
-                <span>{heroPick.genre}</span>
-                <span className="dom-dot">·</span>
-                <span>{heroPick.year}</span>
-                <span className="dom-dot">·</span>
-                <span>
-                  {String(parseDate(heroPick.date).getDate()).padStart(2, "0")} {MONTHS[month]}
-                </span>
-              </div>
-            </div>
-          </div>
-          {restFeatured.length > 0 && (
-            <div className="dom-month-feature-side">
-              <div className="dom-feature-side-label">also five-stars · 다섯별</div>
-              {restFeatured.map((a) => (
-                <button key={a.id} className="dom-feature-side-item" onClick={() => onOpen(a)}>
-                  <Cover album={a} size={72} />
-                  <div>
-                    <div className="dom-feature-side-title">{a.title}</div>
-                    <div className="dom-feature-side-artist">{a.artist}</div>
-                  </div>
-                  <div className="dom-feature-side-date">
-                    <span>{String(parseDate(a.date).getDate()).padStart(2, "0")}</span>
-                    <span className="dom-feature-side-dow">{DOW[parseDate(a.date).getDay()]}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-      */}
-
       <div className="dom-month-cal" ref={calRef}>
         <div className="dom-month-cal-hd">
           {names.weekdayRowMonFirst().map((d, i) => (
@@ -255,123 +177,125 @@ export function MonthlyView({
         >
           {days.map((d, i) => {
             const inMonth = d.getMonth() === month;
+            const dayKey = fmtDate(d);
             // Days outside the viewed month are blacked out — no album, no
             // date, nothing leaking in from the neighbouring month.
-            const album = inMonth ? albumsByDate[fmtDate(d)] : undefined;
-            const isToday = fmtDate(d) === fmtDate(today);
+            const album = inMonth ? albumsByDate[dayKey] : undefined;
+            const isToday = dayKey === todayKey;
             const isFuture = d > today;
             // Empty in-month days up to today get a "+ log" affordance, like the
             // week view. Future days stay blank (can't log ahead).
             const canAdd = inMonth && !album && !isFuture;
-            const dayKey = fmtDate(d);
             return (
-              <button
+              <MonthCell
                 key={i}
-                className="dom-month-cal-cell"
-                data-inmonth={inMonth ? "1" : "0"}
-                data-today={isToday ? "1" : "0"}
-                data-empty={album ? "0" : "1"}
-                data-add={canAdd ? "1" : "0"}
-                data-dragover={dragOverDate === dayKey ? "1" : "0"}
-                // Drag a logged album onto any in-month day: empty → move,
-                // filled → swap the two albums' dates.
-                draggable={Boolean(album)}
-                onDragStart={
-                  album
-                    ? (e) => {
-                        e.dataTransfer.setData(
-                          "text/plain",
-                          JSON.stringify({ id: album.id, from: album.date }),
-                        );
-                        e.dataTransfer.effectAllowed = "move";
-                      }
-                    : undefined
-                }
-                onDragOver={
-                  inMonth
-                    ? (e) => {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = "move";
-                        setDragOverDate(dayKey);
-                      }
-                    : undefined
-                }
-                onDragLeave={
-                  inMonth
-                    ? () => setDragOverDate((cur) => (cur === dayKey ? null : cur))
-                    : undefined
-                }
-                onDrop={
-                  inMonth
-                    ? (e) => {
-                        e.preventDefault();
-                        setDragOverDate(null);
-                        try {
-                          const { from } = JSON.parse(
-                            e.dataTransfer.getData("text/plain"),
-                          ) as { id: string; from: string };
-                          if (from) onMove(from, dayKey);
-                        } catch {
-                          /* ignore non-album drops */
-                        }
-                      }
-                    : undefined
-                }
-                onClick={() => {
-                  if (album) onOpen(album);
-                  else if (canAdd) onAdd(fmtDate(d));
-                }}
-                // Disable cells with no action (out-of-month, or in-month future
-                // empties) so they don't become keyboard tab stops; only album
-                // (open) and canAdd (log) cells stay focusable.
-                disabled={!album && !canAdd}
-              >
-                {inMonth && (
-                  <>
-                    <div className="dom-month-cal-date">
-                      <span className="dom-month-cal-num">{d.getDate()}</span>
-                      <span className="dom-month-cal-date-right">
-                        {isToday && <span className="dom-month-cal-today">{t("common.today")}</span>}
-                        {album && album.rating > 0 && (
-                          <span className="dom-month-cal-rating">
-                            <span className="dom-month-cal-rating-star">★</span>
-                            {album.rating}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                    {album && (
-                      <div className="dom-month-cal-cover">
-                        <Cover album={album} size="100%" />
-                      </div>
-                    )}
-                    {album && (
-                      <div className="dom-month-cal-info">
-                        <div className="dom-month-cal-title">{album.title}</div>
-                        <div className="dom-month-cal-artist">
-                          {album.artist}
-                          {album.titleKo && (
-                            <span className="dom-month-cal-artist-ko"> · {album.titleKo}</span>
-                          )}
-                        </div>
-                        {album.kind === "track" && album.albumTitle && (
-                          <div className="dom-from">{t("common.fromAlbum", { title: album.albumTitle })}</div>
-                        )}
-                      </div>
-                    )}
-                    {canAdd && (
-                      <div className="dom-month-cal-add">
-                        <span className="dom-month-cal-add-mark">＋</span>
-                        <span className="dom-month-cal-add-lbl">{t("common.logShort")}</span>
-                      </div>
-                    )}
-                  </>
-                )}
-              </button>
+                date={d}
+                inMonth={inMonth}
+                album={album}
+                isToday={isToday}
+                canAdd={canAdd}
+                onOpen={onOpen}
+                onAdd={onAdd}
+                onMove={onMove}
+              />
             );
           })}
         </div>
       </div>
     </div>
+  );
+}
+
+// One day of the month grid, with its own drop-target state so a drag hovering
+// it re-renders this cell rather than the whole month.
+function MonthCell({
+  date,
+  inMonth,
+  album,
+  isToday,
+  canAdd,
+  onOpen,
+  onAdd,
+  onMove,
+}: {
+  date: Date;
+  /** Days outside the viewed month are blacked out: no album, no date. */
+  inMonth: boolean;
+  album: Album | undefined;
+  isToday: boolean;
+  /** An empty in-month day up to today: offers "+ log". */
+  canAdd: boolean;
+  onOpen: (album: Album) => void;
+  onAdd: (date: string) => void;
+  onMove: (fromDate: string, toDate: string) => void;
+}) {
+  const t = useT();
+  const dayKey = fmtDate(date);
+  // Drag a logged album onto any in-month day: empty → move, filled → swap the
+  // two albums' dates.
+  const { dragOver, dropHandlers } = useAlbumDropTarget(dayKey, inMonth, onMove);
+
+  return (
+    <button
+      className="dom-month-cal-cell"
+      data-inmonth={inMonth ? "1" : "0"}
+      data-today={isToday ? "1" : "0"}
+      data-empty={album ? "0" : "1"}
+      data-add={canAdd ? "1" : "0"}
+      data-dragover={dragOver ? "1" : "0"}
+      draggable={Boolean(album)}
+      onDragStart={album ? (e) => setAlbumDragData(e, album) : undefined}
+      {...dropHandlers}
+      onClick={() => {
+        if (album) onOpen(album);
+        else if (canAdd) onAdd(dayKey);
+      }}
+      // Disable cells with no action (out-of-month, or in-month future
+      // empties) so they don't become keyboard tab stops; only album
+      // (open) and canAdd (log) cells stay focusable.
+      disabled={!album && !canAdd}
+    >
+      {inMonth && (
+        <>
+          <div className="dom-month-cal-date">
+            <span className="dom-month-cal-num">{date.getDate()}</span>
+            <span className="dom-month-cal-date-right">
+              {isToday && <span className="dom-month-cal-today">{t("common.today")}</span>}
+              {album && album.rating > 0 && (
+                <span className="dom-month-cal-rating">
+                  <span className="dom-month-cal-rating-star">★</span>
+                  {album.rating}
+                </span>
+              )}
+            </span>
+          </div>
+          {album && (
+            <div className="dom-month-cal-cover">
+              <Cover album={album} size="100%" sizes={COVER_SIZES} />
+            </div>
+          )}
+          {album && (
+            <div className="dom-month-cal-info">
+              <div className="dom-month-cal-title">{album.title}</div>
+              <div className="dom-month-cal-artist">
+                {album.artist}
+                {album.titleKo && (
+                  <span className="dom-month-cal-artist-ko"> · {album.titleKo}</span>
+                )}
+              </div>
+              {album.kind === "track" && album.albumTitle && (
+                <div className="dom-from">{t("common.fromAlbum", { title: album.albumTitle })}</div>
+              )}
+            </div>
+          )}
+          {canAdd && (
+            <div className="dom-month-cal-add">
+              <span className="dom-month-cal-add-mark">＋</span>
+              <span className="dom-month-cal-add-lbl">{t("common.logShort")}</span>
+            </div>
+          )}
+        </>
+      )}
+    </button>
   );
 }

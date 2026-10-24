@@ -11,7 +11,6 @@ See [`mobile/README.md`](./mobile/README.md) for dev and TestFlight instructions
 - React 19
 - TypeScript
 - Tailwind CSS v4
-- Zustand for editor state
 - TanStack Query for server state
 - Supabase (auth + Postgres, queried directly via supabase-js with RLS)
 - lucide-react icons
@@ -34,10 +33,11 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 Copy `.env.example` to `.env.local` and fill in the values you need.
 
 Auth and cross-device journal persistence need a Supabase project: set the two
-`NEXT_PUBLIC_SUPABASE_*` values, then run the SQL in
-[`supabase/migrations/0001_journal_entries.sql`](./supabase/migrations/0001_journal_entries.sql)
-once (Supabase Dashboard → SQL editor). The table is queried directly from the
-client with supabase-js; the RLS policies in that file are the authorization layer.
+`NEXT_PUBLIC_SUPABASE_*` values, then run every file in
+[`supabase/migrations/`](./supabase/migrations/README.md) once, in filename
+order (Supabase Dashboard → SQL editor). The tables are queried directly from
+the client with supabase-js; the RLS policies in those files are the
+authorization layer.
 
 Without Supabase keys the app runs unauthenticated and persists to localStorage.
 
@@ -48,7 +48,16 @@ npm run dev
 npm run build
 npm run lint
 npm run typecheck
+npm test
 ```
+
+`npm test` runs the Vitest unit tests (`src/**/*.test.ts`) once; `npx vitest`
+watches instead.
+
+CI ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) runs typecheck,
+lint, tests and `next build` on every pull request and every push to `main` /
+`develop`. It builds without Supabase keys, so it proves the app compiles, not
+that it reaches a real project.
 
 ## Docker
 
@@ -66,7 +75,7 @@ The current PNG export is client-side through `html-to-image`. For production sh
 
 Remote album artwork can fail browser-side PNG export when the image host blocks CORS. Cache or proxy album covers through your own route or Supabase Storage before exporting final images.
 
-The `/api/music/search` route proxies the free [iTunes Search API](https://performance-partners.apple.com/search-api) — no API key or auth required. Catalog IDs are Apple Music IDs, so it can later be swapped for the paid Apple Music API without client changes. Albums added from search are stored locally (localStorage) and overlaid on the static catalog.
+The `/api/music/search` route proxies the free [iTunes Search API](https://performance-partners.apple.com/search-api) — no API key or auth required. Catalog IDs are Apple Music IDs, so it can later be swapped for the paid Apple Music API without client changes. An album picked from search is saved with its journal entry: in Supabase when signed in, in localStorage in local mode (no Supabase keys), and only in memory for guests.
 
 ## Installable App
 

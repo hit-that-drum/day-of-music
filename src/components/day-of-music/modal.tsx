@@ -16,10 +16,14 @@
 import {
   useEffect,
   useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 
+import { useEscapeLayer } from "@/lib/day-of-music/escape-layers";
 import { useT } from "@/lib/day-of-music/i18n";
 import { PHONE_QUERY, REDUCED_MOTION_QUERY } from "@/lib/day-of-music/phone";
 
@@ -51,20 +55,35 @@ export function focusUnlessPhone(el: HTMLElement | null) {
   el.closest<HTMLElement>(".dom-modal")?.focus({ preventScroll: true });
 }
 
+// What Tab can land on inside a panel (visibility is checked separately).
+const TABBABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), ' +
+  'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 type Sample = { y: number; t: number };
 type Drag = { id: number; startY: number; dy: number; samples: Sample[] };
 
+// The dialog's accessible name: its visible title when it has one (so the two
+// can't drift apart), otherwise a label of its own.
+type ModalName =
+  | { /** Accessible dialog name (aria-label). */ label: string; labelledBy?: undefined }
+  | { /** id of the visible title (aria-labelledby). */ labelledBy: string; label?: undefined };
+
 export function Modal({
   label,
+  labelledBy,
   onClose,
   className,
+  width,
   children,
-}: {
-  /** Accessible dialog name (aria-label). */
-  label: string;
+}: ModalName & {
   onClose: () => void;
   /** Extra class(es) on the panel wrapper, for modal-specific layout. */
   className?: string;
+  /** Max width in px when narrower than the shared default (--dom-modal-w on
+   *  .dom-scrim) — so the ✕, which floats over the panel's right edge, lines
+   *  up with a small dialog too. */
+  width?: number;
   children: ReactNode;
 }) {
   const t = useT();
@@ -74,13 +93,57 @@ export function Modal({
   // drag or settle can cancel it (a stale one would reset the transition).
   const settleRef = useRef<(() => void) | null>(null);
 
+  // Escape closes this modal unless something opened over it is still open.
+  useEscapeLayer(onClose);
+
+  // Focus enters the dialog when it opens and goes back to its opener when it
+  // closes; otherwise keyboard and screen-reader users stay on — or return to
+  // — whatever sits behind the scrim. The opener is read as the dialog first
+  // renders, before a field's focusUnlessPhone ref can move focus inside.
+  const [opener] = useState(() =>
+    typeof document === "undefined" ? null : (document.activeElement as HTMLElement | null),
+  );
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+    // A field may already have it (focusUnlessPhone); otherwise the panel.
+    if (!sheet.contains(document.activeElement)) sheet.focus({ preventScroll: true });
+    return () => {
+      // Only when focus went down with this dialog: never take it from a
+      // dialog that opened in the same commit (Day Detail → Replace → Add).
+      const lost = !document.activeElement || document.activeElement === document.body;
+      if (opener?.isConnected && (lost || sheet.contains(document.activeElement))) {
+        opener.focus();
+      }
+    };
+  }, [opener]);
+
+  // Tab stays in the dialog: past the last control it wraps to the first, and
+  // Shift+Tab the other way. aria-modal hides the board behind the scrim from
+  // screen readers, but not from the keyboard.
+  function onPanelKeyDown(e: ReactKeyboardEvent<HTMLDivElement>) {
+    const sheet = sheetRef.current;
+    if (e.key !== "Tab" || !sheet) return;
+    // A dialog opened inside this one (the public-link confirm) keeps its own.
+    if ((e.target as Element).closest(".dom-modal") !== sheet) return;
+    const tabbables = Array.from(sheet.querySelectorAll<HTMLElement>(TABBABLE)).filter(
+      (el) => el.getClientRects().length > 0,
+    );
+    const first = tabbables[0];
+    const last = tabbables[tabbables.length - 1];
+    if (!first || !last) {
+      e.preventDefault();
+      return;
     }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+    const active = document.activeElement;
+    if (e.shiftKey && (active === first || active === sheet)) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
 
   // Return the sheet to rest. Clearing the inline transform matters: a
   // transformed .dom-modal is the containing block for fixed descendants
@@ -181,18 +244,18 @@ export function Modal({
   }
 
   return (
-    <div
-      className="dom-scrim"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label={label}
-    >
+    <div className="dom-scrim" onClick={onClose} role="presentation">
       <div
         ref={sheetRef}
         className={className ? `dom-modal ${className}` : "dom-modal"}
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        aria-labelledby={labelledBy}
+        style={width ? ({ "--dom-modal-w": `${width}px` } as CSSProperties) : undefined}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={onPanelKeyDown}
       >
         <div
           className="dom-modal-bar"

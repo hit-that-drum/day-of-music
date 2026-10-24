@@ -1,0 +1,65 @@
+.dom-stage {
+  /* Editorial-theme defaults so pages that don't set a theme inline (auth
+     cards, legal pages) still resolve every font and color var. The app and
+     share frames override these inline per chosen theme. The fonts are
+     TYPE_PAIRS.editorial in lib/day-of-music/appearance.ts. */
+  --font-display: "Spectral", Georgia, serif;
+  --font-body: "Spectral", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --bg: #efe6d2;
+  --panel: #f6efe0;
+  --ink: #1a1612;
+  --ink2: #564a36;
+  --ink3: #8a7a5d;
+  --line: #1a1612;
+  --lineSoft: rgba(26, 22, 18, 0.22);
+  --accent: #7a3b2e;
+  --chip: rgba(26, 22, 18, 0.06);
+  --coverShadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --coverRadius: 0px;
+  background: #d8c9a8;
+  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: var(--font-body);
+  color: var(--ink, #1a1612);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Base resets live in a cascade layer so every component rule — regardless of
+   specificity — beats them. Layered styles always lose to unlayered author
+   styles, so a single-class rule like .dom-tab or .dom-month-cal-cell can set
+   border/padding without out-specifying the reset. Never move these out of the
+   layer, and never add :not() exclusions for specificity's sake — that arms
+   race is what kept breaking the monthly calendar. */
+@layer dom-reset {
+  .dom-root * {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+  /* Bare-button reset — strips native chrome from icon/nav/cell buttons so
+     they can be styled from scratch. .dom-btn and .dom-modal-close stay
+     excluded so they keep UA defaults for anything their own rules don't set
+     (e.g. centered text). */
+  .dom-root button:not(.dom-btn):not(.dom-modal-close) {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    text-align: left;
+  }
+  .dom-root input,
+  .dom-root textarea {
+    font: inherit;
+    color: inherit;
+  }
+  .dom-root ol,
+  .dom-root ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}

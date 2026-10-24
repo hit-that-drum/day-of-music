@@ -1,0 +1,42 @@
+/* ── Mobile shell hooks (all widths) ───────────────────────────────────────
+   New selectors only. Phone chrome is rendered unconditionally and switched on
+   in the mobile shell (27-mobile-shell.css); here it is inert so desktop is
+   byte-identical. */
+.dom-topbar-m,
+.dom-tabbar,
+.dom-week-jump,
+.dom-guest-banner-short,
+.dom-guest-banner .dom-guest-banner-cta-short,
+.dom-guest-dismiss,
+.dom-wp-loc {
+  display: none;
+}
+.dom-board-actions,
+.dom-month-arrows,
+.dom-month-ctas {
+  display: contents;
+}
+/* WeekPicker renders both the legacy EN/KO labels (desktop) and localized
+   ones (phones). The legacy wrapper reproduces .dom-wp-dow-cell's column. */
+.dom-wp-dow-cell .dom-wp-legacy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* More sheet body — the Modal's child panel (surface from .dom-modal-panel,
+   like .dom-addflow / .dom-detail). All widths so the panel survives a resize
+   past 760px with the sheet open (its only trigger is phone-only, so desktop
+   never renders it otherwise). */
+.dom-sheet-body {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 16px 12px;
+}
+/* The one sheet-rise keyframe, shared by every phone bottom sheet. */
+@keyframes dom-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}

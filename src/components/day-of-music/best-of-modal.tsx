@@ -11,38 +11,32 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
-import { DOW, DOW_KO, parseDate } from "@/lib/day-of-music/data";
-import { useThemes, useActiveTheme } from "@/lib/day-of-music/themes";
-import { DEFAULT_USERNAME, useProfile } from "@/lib/day-of-music/profile";
-import { useT } from "@/lib/day-of-music/i18n";
+import { parseDate } from "@/lib/day-of-music/data";
+import { findTheme, formatThemeLabel, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
+import { displayHandle, useProfile } from "@/lib/day-of-music/profile";
+import { useDateNames, useT } from "@/lib/day-of-music/i18n";
+import { useBestOf } from "@/lib/day-of-music/best-of";
 import {
-  firstRound,
-  pairWinners,
+  advance,
+  createTourney,
+  findSavedChampion,
+  roundStage,
   shuffle,
-  useBestOf,
   type BestOfMethod,
   type Contender,
-  type Match,
-} from "@/lib/day-of-music/best-of";
+  type Tourney,
+} from "@/lib/day-of-music/best-of-bracket";
 import { saveCardAsImage } from "@/lib/day-of-music/save-card";
 import { Button, Stars } from "@/components/day-of-music/atoms";
 import { Cover } from "@/components/day-of-music/cover";
 import { Modal } from "@/components/day-of-music/modal";
 
-type Tourney = {
-  round: number;
-  matches: Match<Contender>[];
-  /** Byes to append after this round's winners (round 1 only). */
-  byes: Contender[];
-  mi: number; // current match index within `matches`
-  winners: Contender[]; // winners chosen so far this round
-};
-
 type State =
   | { phase: "empty" }
   | { phase: "options" }
-  | { phase: "play"; method: BestOfMethod; tour: Tourney }
+  | { phase: "play"; method: BestOfMethod; tour: Tourney<Contender> }
   | { phase: "champion"; champion: Contender; method: BestOfMethod | null; saved: boolean };
 
 export function BestOfModal({
@@ -80,15 +74,14 @@ export function BestOfModal({
   const bestOf = useBestOf();
   const posterRef = useRef<HTMLDivElement>(null);
 
-  const activeThemeObj = themes.find((x) => x.id === activeTheme) ?? themes[0];
-  const themeLabel = `${activeThemeObj?.emoji ?? "🎧"} ${activeThemeObj?.name ?? "Daily"}`;
-  const handle = username.trim() || DEFAULT_USERNAME;
+  const themeLabel = formatThemeLabel(findTheme(themes, activeTheme));
+  const handle = displayHandle(username);
 
   // Snapshot the starting phase at mount (the modal only mounts when opened):
   // a saved result → show it; 0 contenders → empty; 1 → auto-champion; else pick.
   const [state, setState] = useState<State>(() => {
     const saved = bestOf.get(storeKey);
-    const savedWinner = saved && contenders.find((c) => c.date === saved.winnerDate);
+    const savedWinner = findSavedChampion(saved, contenders);
     if (saved && savedWinner) {
       return { phase: "champion", champion: savedWinner, method: saved.method, saved: true };
     }
@@ -99,8 +92,9 @@ export function BestOfModal({
     return { phase: "options" };
   });
 
-  // Persist a freshly-decided champion (skips the already-saved case). Covers
-  // the N=1 auto-champion (mount) and, via `state`, guards against re-writes.
+  // Persist the N=1 auto-champion decided at mount (a bracket's champion is
+  // saved where it's picked). The ref keeps it to one write — StrictMode's
+  // second run included — until a redo starts a new tournament.
   const persistedRef = useRef(false);
   useEffect(() => {
     if (state.phase !== "champion" || state.saved || persistedRef.current) return;
@@ -110,45 +104,27 @@ export function BestOfModal({
       method: state.method ?? "sequential",
       decidedAt: new Date().toISOString(),
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.phase]);
+  }, [state, storeKey, bestOf]);
 
   function start(method: BestOfMethod) {
     const seeded = method === "random" ? shuffle(contenders) : contenders;
-    const { matches, byes } = firstRound(seeded);
-    setState({ phase: "play", method, tour: { round: 1, matches, byes, mi: 0, winners: [] } });
+    setState({ phase: "play", method, tour: createTourney(seeded) });
   }
 
   function pick(winner: Contender) {
     if (state.phase !== "play") return;
-    const { round, matches, byes, mi, winners } = state.tour;
-    const nextWinners = [...winners, winner];
-
-    // More matches left in this round → advance to the next match.
-    if (mi + 1 < matches.length) {
-      setState({ ...state, tour: { ...state.tour, mi: mi + 1, winners: nextWinners } });
+    const next = advance(state.tour, winner);
+    if (next.kind === "next") {
+      setState({ ...state, tour: next.tour });
       return;
     }
-
-    // Round complete: winners then byes advance (byes trail, so the last seed
-    // meets the last winner).
-    const advancing = [...nextWinners, ...byes];
-    if (advancing.length === 1) {
-      const champ = advancing[0];
-      persistedRef.current = true;
-      bestOf.set(storeKey, {
-        winnerDate: champ.date,
-        method: state.method,
-        decidedAt: new Date().toISOString(),
-      });
-      setState({ phase: "champion", champion: champ, method: state.method, saved: true });
-      return;
-    }
-    setState({
-      phase: "play",
+    persistedRef.current = true;
+    bestOf.set(storeKey, {
+      winnerDate: next.champion.date,
       method: state.method,
-      tour: { round: round + 1, matches: pairWinners(advancing), byes: [], mi: 0, winners: [] },
+      decidedAt: new Date().toISOString(),
     });
+    setState({ phase: "champion", champion: next.champion, method: state.method, saved: true });
   }
 
   function redo() {
@@ -157,26 +133,26 @@ export function BestOfModal({
     setState({ phase: "options" });
   }
 
-  function handleSaveImage() {
+  async function handleSaveImage() {
     if (!posterRef.current) return;
-    void saveCardAsImage(posterRef.current, fileName);
+    if (await saveCardAsImage(posterRef.current, fileName)) toast.success(t("share.imageSaved"));
+    else toast.error(t("share.imageFailed"));
   }
 
-  // Name the round by how many contenders enter it (byes included), so a round
-  // with a bye is labelled by its true stage — e.g. 1 match + 1 bye = 3 entrants
-  // is a semifinal, not a "final".
-  const roundName = (tour: Tourney): string => {
-    const entrants = tour.matches.length * 2 + tour.byes.length;
-    if (entrants <= 2) return t("bow.final");
-    if (entrants <= 4) return t("bow.semifinal");
+  // Labelled by its true stage (see roundStage): a round with a bye isn't
+  // named by its match count.
+  const roundName = (tour: Tourney<Contender>): string => {
+    const stage = roundStage(tour);
+    if (stage === "final") return t("bow.final");
+    if (stage === "semifinal") return t("bow.semifinal");
     return t("bow.round", { n: tour.round });
   };
 
   return (
-    <Modal label={title} onClose={onClose} className="dom-bow">
-      <div className="dom-bow-inner">
+    <Modal label={title} onClose={onClose} width={760}>
+      <div className="dom-modal-panel dom-bow-inner">
         <div className="dom-bow-hd">
-          <span className="dom-bow-kicker">{title}</span>
+          <span className="dom-eyebrow">{title}</span>
           <h2 className="dom-bow-week">
             {themeLabel} · {periodLabel}
           </h2>
@@ -238,7 +214,7 @@ export function BestOfModal({
                   {t("bow.redo")}
                 </Button>
               )}
-              <Button onClick={handleSaveImage}>{t("bow.saveImage")}</Button>
+              <Button onClick={handleSaveImage}>{t("share.saveImage")}</Button>
             </div>
           </div>
         )}
@@ -249,9 +225,8 @@ export function BestOfModal({
 
 // A single day in a matchup. `onPick` present → it's a clickable choice.
 function ContenderCard({ c, onPick }: { c: Contender; onPick?: (c: Contender) => void }) {
+  const names = useDateNames();
   const d = parseDate(c.date);
-  const dow = DOW[d.getDay()];
-  const dowKo = DOW_KO[d.getDay()];
   const inner = (
     <>
       <div className="dom-bow-card-cover">
@@ -259,7 +234,7 @@ function ContenderCard({ c, onPick }: { c: Contender; onPick?: (c: Contender) =>
       </div>
       <div className="dom-bow-card-meta">
         <div className="dom-bow-card-day">
-          {dow} <span className="dom-bow-card-dow-ko">{dowKo}</span> · {d.getMonth() + 1}/{d.getDate()}
+          {names.weekdayShort(d)} · {d.getMonth() + 1}/{d.getDate()}
         </div>
         <div className="dom-title">{c.album.title}</div>
         <div className="dom-artist">{c.album.artist}</div>
@@ -293,8 +268,8 @@ function ChampionPoster({
   handle: string;
   kicker: string;
 }) {
+  const names = useDateNames();
   const d = parseDate(c.date);
-  const dow = DOW[d.getDay()];
   return (
     <div className="dom-bow-champion" ref={ref}>
       <div className="dom-bow-champ-hd">
@@ -307,7 +282,7 @@ function ChampionPoster({
       </div>
       <div className="dom-bow-champ-meta">
         <div className="dom-bow-champ-day">
-          {dow} · {d.getFullYear()}.{String(d.getMonth() + 1).padStart(2, "0")}.
+          {names.weekdayShort(d)} · {d.getFullYear()}.{String(d.getMonth() + 1).padStart(2, "0")}.
           {String(d.getDate()).padStart(2, "0")}
         </div>
         <div className="dom-bow-champ-title">{c.album.title}</div>

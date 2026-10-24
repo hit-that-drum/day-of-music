@@ -1,14 +1,19 @@
 // password.ts — single source of truth for the client-side password policy.
-// Shared by the signup form and the "change password" flow so both show the
-// same live checklist. This is first-line UX only; the authoritative minimum
-// (length 8) is also enforced by Supabase server-side.
+// Shared by the signup form and the "change password" flow through
+// <PasswordRules> (components/day-of-music/password-rules.tsx); each rule's
+// label is the pw.<id> message. This is first-line UX only; the authoritative
+// minimum (length 8) is also enforced by Supabase server-side.
 
-export type PasswordRule = { id: string; label: string; test: (pw: string) => boolean };
+export type PasswordRule = {
+  /** Also the i18n key suffix: the checklist renders t(`pw.${id}`). */
+  id: "length" | "letter" | "number";
+  test: (pw: string) => boolean;
+};
 
 export const PASSWORD_RULES: PasswordRule[] = [
-  { id: "length", label: "At least 8 characters", test: (pw) => pw.length >= 8 },
-  { id: "letter", label: "Contains a letter", test: (pw) => /\p{L}/u.test(pw) },
-  { id: "number", label: "Contains a number", test: (pw) => /\d/.test(pw) },
+  { id: "length", test: (pw) => pw.length >= 8 },
+  { id: "letter", test: (pw) => /\p{L}/u.test(pw) },
+  { id: "number", test: (pw) => /\d/.test(pw) },
 ];
 
 /** Rules the password fails, in policy order. Empty array means it passes. */

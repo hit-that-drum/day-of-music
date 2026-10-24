@@ -3,6 +3,8 @@
 // holds a raw string; `makeJsonStore` (de)serializes any JSON-able value. Both
 // fall back to a default on the server and when storage is unavailable.
 
+import { useSyncExternalStore } from "react";
+
 // Every read below degrades to its default when storage is blocked, which is
 // the right behaviour per-store but adds up to a badly broken app: the session
 // supabase-js keeps here vanishes on reload, and the active theme resets to
@@ -26,12 +28,18 @@ export function isLocalStorageAvailable(): boolean {
   return storageWritable;
 }
 
-type Store<T> = {
+export type Store<T> = {
   getSnapshot: () => T;
   getServerSnapshot: () => T;
   subscribe: (cb: () => void) => () => void;
   set: (next: T) => void;
 };
+
+/** Read a store in a component: the server snapshot (the fallback) during SSR
+ *  and hydration, the stored value right after — no hydration mismatch. */
+export function useStore<T>(store: Store<T>): T {
+  return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
+}
 
 // Shared machinery: lazy-init snapshot, listener set, and a set() that writes
 // through to storage and notifies subscribers. `load`/`save` adapt the value
@@ -100,13 +108,21 @@ export function makeStringStore(
   );
 }
 
-export function makeJsonStore<T>(key: string, fallback: T): Store<T> {
+export function makeJsonStore<T>(
+  key: string,
+  fallback: T,
+  // Optional: shape the parsed blob into a T (e.g. drop retired keys or fill in
+  // ones added since it was saved). Throwing here falls back like bad JSON does.
+  normalize?: (saved: unknown) => T,
+): Store<T> {
   return makeStore<T>(
     () => {
       if (typeof window === "undefined") return fallback;
       try {
         const raw = window.localStorage.getItem(key);
-        return raw ? (JSON.parse(raw) as T) : fallback;
+        if (!raw) return fallback;
+        const saved: unknown = JSON.parse(raw);
+        return normalize ? normalize(saved) : (saved as T);
       } catch {
         return fallback;
       }

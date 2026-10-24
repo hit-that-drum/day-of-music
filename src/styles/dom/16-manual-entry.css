@@ -1,0 +1,176 @@
+/* ── Manual entry (music not on Apple Music) ─────────────────────────────── */
+.dom-addflow-manual-link {
+  flex: none;
+  margin-top: 4px;
+  padding: 10px;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+.dom-addflow-manual-link:hover {
+  background-color: var(--chip);
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.dom-addflow-manual-back,
+.dom-addflow-manual-removeimg {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.dom-addflow-manual-back:hover,
+.dom-addflow-manual-removeimg:hover {
+  color: var(--ink);
+}
+.dom-addflow-manual-cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.dom-addflow-imagedrop {
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px dashed var(--line);
+  background-color: var(--chip);
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+.dom-addflow-imagedrop:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.dom-addflow-imagedrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.dom-addflow-weeknav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dom-addflow-weeknav-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--lineSoft);
+  background: transparent;
+  color: var(--ink2);
+  cursor: pointer;
+  font-size: 14px;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+.dom-addflow-weeknav-btn:hover {
+  background-color: var(--chip);
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.dom-addflow-weeknav-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+}
+.dom-addflow-selected {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.dom-addflow-datestack {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.dom-addflow-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 4px;
+  border: 1px solid var(--lineSoft);
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
+}
+.dom-addflow-date:hover {
+  background-color: var(--chip);
+}
+.dom-addflow-date[data-active="1"] {
+  background-color: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.dom-addflow-date-num {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+}
+.dom-addflow-date-dow {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  opacity: 0.7;
+}
+.dom-addflow-preview {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--lineSoft);
+  margin-top: 6px;
+}
+.dom-addflow-preview-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+}
+.dom-addflow-preview-artist {
+  font-family: var(--font-display);
+  font-size: 12px;
+  opacity: 0.7;
+}
+.dom-addflow-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 6px;
+  margin-top: auto;
+}

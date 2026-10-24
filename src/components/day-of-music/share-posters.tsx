@@ -4,17 +4,23 @@
 // payload back from a stored (or URL-encoded) snapshot — one renderer, so the
 // copied link can never drift from what the sharer saw.
 
-import type { Ref } from "react";
+import type { CSSProperties, Ref } from "react";
 
-import type { Album } from "@/lib/day-of-music/data";
+import { DOW_MON_FIRST, type Album } from "@/lib/day-of-music/data";
 import type {
   MonthSharePayload,
   SharedAlbum,
   StatsSharePayload,
   WeekSharePayload,
-} from "@/lib/day-of-music/share-links";
+} from "@/lib/day-of-music/share-payload";
 import { Cover } from "@/components/day-of-music/cover";
 import { MetaLine, Stars } from "@/components/day-of-music/atoms";
+
+// Poster covers are 148–164px wide at the export width (POSTER_WIDTH), so the
+// PNG (pixelRatio 2, save-card.ts) draws them at ≤328px and the 400px rendition
+// covers that. It's also the file the board's covers load on a desktop, so the
+// preview reuses it instead of fetching the 600px original.
+const POSTER_ARTWORK_WIDTH = 400;
 
 // Cover/MetaLine take a full Album; a snapshot album just lacks the fields
 // that never leave the device (note, tracks).
@@ -74,7 +80,7 @@ export function WeekPoster({
       {/* Week grid — identical markup/classes to the weekly board. */}
       <div
         className="dom-grid dom-share-week"
-        style={{ ["--cols" as string]: payload.cells.length }}
+        style={{ "--cols": payload.cells.length } as CSSProperties}
       >
         {payload.cells.map(({ date, dayNum, dow, outOfMonth, album }) => (
           <div
@@ -97,7 +103,7 @@ export function WeekPoster({
             ) : album ? (
               <div className="dom-day-body">
                 <div className="dom-cover-wrap">
-                  <Cover album={toAlbum(album)} size="100%" />
+                  <Cover album={toAlbum(album)} size="100%" artworkWidth={POSTER_ARTWORK_WIDTH} />
                 </div>
                 <div className="dom-day-meta">
                   <div className="dom-title">{album.title}</div>
@@ -123,7 +129,6 @@ export function WeekPoster({
   );
 }
 
-const MONTH_DOW = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const;
 const MONTH_DOW_KO = ["월", "화", "수", "목", "금", "토", "일"] as const;
 
 export function MonthPoster({
@@ -140,7 +145,7 @@ export function MonthPoster({
       {/* Month grid — identical markup/classes to the monthly board. */}
       <div className="dom-month-cal dom-share-monthcal">
         <div className="dom-month-cal-hd">
-          {MONTH_DOW.map((d, i) => (
+          {DOW_MON_FIRST.map((d, i) => (
             <div key={d} className="dom-month-cal-dow">
               <span>{d}</span>
               <span className="dom-month-cal-dowKo">{MONTH_DOW_KO[i]}</span>
@@ -173,7 +178,11 @@ export function MonthPoster({
                   </div>
                   {album && (
                     <div className="dom-month-cal-cover">
-                      <Cover album={toAlbum(album)} size="100%" />
+                      <Cover
+                        album={toAlbum(album)}
+                        size="100%"
+                        artworkWidth={POSTER_ARTWORK_WIDTH}
+                      />
                     </div>
                   )}
                   {album && (
@@ -224,26 +233,26 @@ export function StatsPoster({
       {/* Stats — identical card markup/classes to the My Logs recap. */}
       <div className="dom-theme-recap-grid">
         <div className="dom-stat dom-stat-compact">
-          <div className="dom-stat-label">albums</div>
+          <div className="dom-label">albums</div>
           <div className="dom-stat-num">{String(stats.total).padStart(2, "0")}</div>
           <div className="dom-stat-sub">{sub}</div>
         </div>
         <div className="dom-stat dom-stat-compact">
-          <div className="dom-stat-label">average</div>
+          <div className="dom-label">average</div>
           <div className="dom-stat-num">{stats.avgRating}</div>
           <div className="dom-stat-sub">
             <Stars value={Math.round(stats.avgRatingNum)} size={13} />
           </div>
         </div>
         <div className="dom-stat dom-stat-compact">
-          <div className="dom-stat-label">five-stars</div>
+          <div className="dom-label">five-stars</div>
           <div className="dom-stat-num">{fiveStarCount}</div>
           <div className="dom-stat-sub">
             {stats.total ? Math.round((fiveStarCount / stats.total) * 100) : 0}% of catalog
           </div>
         </div>
         <div className="dom-stat dom-stat-compact dom-theme-genre-card">
-          <div className="dom-stat-label">top genres</div>
+          <div className="dom-label">top genres</div>
           <div className="dom-bars">
             {stats.topGenres.length ? (
               stats.topGenres.map(([g, n]) => (
@@ -274,7 +283,7 @@ export function StatsPoster({
             {fives.map((a) => (
               <div key={`${a.theme}:${a.date}:${a.id}`} className="dom-fives-item">
                 <div>
-                  <Cover album={toAlbum(a)} size="100%" />
+                  <Cover album={toAlbum(a)} size="100%" artworkWidth={POSTER_ARTWORK_WIDTH} />
                 </div>
                 <div className="dom-fives-info">
                   <div className="dom-fives-title">{a.title}</div>
@@ -286,15 +295,11 @@ export function StatsPoster({
         </div>
       )}
 
-      <div className="dom-share-ft">
-        <div>
-          {stats.total} albums · {stats.genreCount} genres
-        </div>
-        <div className="dom-day-album-rating">
-          <span>★</span>
-          {stats.total ? stats.avgRatingNum.toFixed(1) : "—"}
-        </div>
-      </div>
+      <PosterFooter
+        count={stats.total}
+        genres={stats.genreCount}
+        avg={stats.total ? stats.avgRatingNum.toFixed(1) : "—"}
+      />
     </div>
   );
 }
