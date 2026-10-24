@@ -62,8 +62,6 @@
      and the address bar make 100vh a lie. */
   height: min(820px, calc(100vh - var(--dom-modal-chrome)));
   height: min(820px, calc(100dvh - var(--dom-modal-chrome)));
-  background-color: var(--panel);
-  border: 1px solid var(--line);
   padding: 32px 36px;
   display: flex;
   flex-direction: column;

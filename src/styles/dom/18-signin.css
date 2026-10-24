@@ -98,11 +98,8 @@
 }
 
 /* Delete-account confirm dialog (a 420px Modal, so the ✕ lines up with this
-   panel). It supplies its own panel chrome — .dom-modal itself is just the
-   transparent wrapper. */
+   panel; the surface is .dom-modal-panel). */
 .dom-danger-modal {
-  background-color: var(--panel);
-  border: 1px solid var(--line);
   padding: 28px 26px;
   display: flex;
   flex-direction: column;
@@ -130,8 +127,6 @@
   max-height: min(720px, calc(100vh - var(--dom-modal-chrome)));
   max-height: min(720px, calc(100dvh - var(--dom-modal-chrome)));
   overflow: hidden;
-  background-color: var(--panel);
-  border: 1px solid var(--line);
   padding: 28px;
   display: flex;
   flex-direction: column;

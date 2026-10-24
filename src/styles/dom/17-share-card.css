@@ -311,8 +311,6 @@
 .dom-public-link-modal {
   width: 100%;
   padding: 28px 26px;
-  border: 1px solid var(--line);
-  background-color: var(--panel);
   display: flex;
   flex-direction: column;
   gap: 14px;

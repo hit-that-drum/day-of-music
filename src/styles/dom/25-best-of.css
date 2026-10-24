@@ -1,9 +1,7 @@
 /* ── Best of Week (tournament modal) ───────────────────────────────────────
    Opened from the week header (SHARE WEEK's neighbour). Renders inside the
-   shared Modal chrome (760px); .dom-bow-inner is the panel surface. */
+   shared Modal chrome (760px); .dom-bow-inner is the panel. */
 .dom-bow-inner {
-  background-color: var(--panel);
-  border: 1px solid var(--line);
   padding: 28px 28px 24px;
 }
 .dom-bow-hd {

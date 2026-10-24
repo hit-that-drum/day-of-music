@@ -22,18 +22,16 @@
   flex-direction: column;
   align-items: center;
 }
-/* More sheet body — a child panel of the Modal (like .dom-addflow /
-   .dom-detail) that paints its own surface; .dom-modal itself is transparent.
-   All widths so the panel survives a resize past 760px with the sheet open
-   (its only trigger is phone-only, so desktop never renders it otherwise). */
+/* More sheet body — the Modal's child panel (surface from .dom-modal-panel,
+   like .dom-addflow / .dom-detail). All widths so the panel survives a resize
+   past 760px with the sheet open (its only trigger is phone-only, so desktop
+   never renders it otherwise). */
 .dom-sheet-body {
   flex: none;
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 16px 16px 12px;
-  background-color: var(--panel);
-  border: 1px solid var(--line);
 }
 /* The one sheet-rise keyframe, shared by every phone bottom sheet. */
 @keyframes dom-sheet-up {

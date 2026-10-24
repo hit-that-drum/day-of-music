@@ -91,14 +91,8 @@
   /* Child panels: the sheet carries the surface and the top rule now, so the
      panels drop their own 1px border (a double rule otherwise), use the phone
      gutter, and never flex-shrink inside the sheet column. (The More sheet's
-     .dom-sheet-body — mobile shell — is already a flex:none padded child
-     panel and needs nothing from here.) */
-  .dom-detail,
-  .dom-addflow,
-  .dom-bow-inner,
-  .dom-share-manager,
-  .dom-danger-modal,
-  .dom-public-link-modal {
+     .dom-sheet-body — mobile shell — already has its own padding.) */
+  .dom-modal-panel {
     border: 0;
     flex: none;
   }

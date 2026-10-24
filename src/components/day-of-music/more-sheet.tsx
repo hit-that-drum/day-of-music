@@ -62,7 +62,7 @@ export function MoreSheet({
       onClose={onClose}
       className="dom-sheet dom-more-sheet"
     >
-      <div className="dom-sheet-body">
+      <div className="dom-modal-panel dom-sheet-body">
         <div className="dom-section-label">{t("lang.label")}</div>
         <div
           className="dom-menu-langs"

@@ -230,7 +230,7 @@ function AccountActions({
             if (!delBusy) setConfirmOpen(false);
           }}
         >
-          <div className="dom-danger-modal">
+          <div className="dom-modal-panel dom-danger-modal">
             <h2 className="dom-danger-modal-title" id={deleteTitleId}>
               {t("profile.deleteAccount")}
             </h2>

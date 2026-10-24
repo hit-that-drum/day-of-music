@@ -401,12 +401,7 @@
     margin-bottom: 12px;
   }
 
-  /* More sheet body: surface/layout live in the all-widths hook group above;
-     inside the sheet the panel draws no edge of its own (the sheet has the
-     top rule) ─────────────────────────────────────────────────────────── */
-  .dom-sheet-body {
-    border: 0;
-  }
+  /* More sheet (its panel's layout is in the all-widths hooks) ──────────── */
   .dom-menu-langs {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));

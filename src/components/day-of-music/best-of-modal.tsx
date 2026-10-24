@@ -150,7 +150,7 @@ export function BestOfModal({
 
   return (
     <Modal label={title} onClose={onClose} width={760}>
-      <div className="dom-bow-inner">
+      <div className="dom-modal-panel dom-bow-inner">
         <div className="dom-bow-hd">
           <span className="dom-eyebrow">{title}</span>
           <h2 className="dom-bow-week">

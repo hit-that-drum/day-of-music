@@ -107,7 +107,7 @@ export function AddFlow({ onClose, onSave, initialDate }: AddFlowProps) {
 
   return (
     <Modal label={t("addflow.modalLabel")} onClose={onClose}>
-      <div className="dom-addflow">
+      <div className="dom-modal-panel dom-addflow">
         <div className="dom-addflow-eyebrow">{t("addflow.eyebrow")}</div>
         <h1 className="dom-addflow-title">{t("addflow.step", { step })}</h1>
 

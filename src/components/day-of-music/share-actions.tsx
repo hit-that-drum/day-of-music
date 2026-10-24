@@ -125,7 +125,7 @@ export function ShareActions({
             if (!busy) setConfirmOpen(false);
           }}
         >
-          <div className="dom-public-link-modal">
+          <div className="dom-modal-panel dom-public-link-modal">
             <span className="dom-label">{t("share.publicLinkLabel")}</span>
             {createdUrl ? (
               <>

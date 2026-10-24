@@ -173,7 +173,7 @@ function SharedLinksModal({ userId, onClose }: { userId: string; onClose: () => 
         if (!deletingId) onClose();
       }}
     >
-      <section className="dom-share-manager">
+      <section className="dom-modal-panel dom-share-manager">
         <header className="dom-share-manager-header">
           <div>
             <span className="dom-label">{t("profile.section.sharedLinks")}</span>

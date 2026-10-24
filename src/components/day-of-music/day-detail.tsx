@@ -192,7 +192,7 @@ export function DayDetail({ album, today, onClose, onUpdate, onMove, onEnrich, o
 
   return (
     <Modal label={t("daydetail.modalLabel", { title: album.title })} onClose={onClose}>
-      <div className="dom-detail">
+      <div className="dom-modal-panel dom-detail">
         <div className="dom-detail-left">
           <div className="dom-detail-cover">
             <Cover album={album} size="100%" />
