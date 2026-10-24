@@ -43,15 +43,27 @@ export type ITunesRow = {
 // way to the next rather than hold the whole response.
 const ITUNES_TIMEOUT_MS = 8_000;
 
+// Apple answers 403 (or 429) once this server is over its limit, ~20 calls a
+// minute shared by every listener (they all reach Apple from this server's IP).
+// Errors aren't cached and the routes try every store, so carrying on spends
+// 4-5 calls per search and only stretches the lockout. Stand down instead: for
+// a minute every call fails at once, the way an unreachable store does. Not on
+// 5xx — Apple's edge answers 502 to some malformed lookups, and one such
+// request mustn't pause the music search for everyone.
+const RATE_LIMIT_PAUSE_MS = 60_000;
+let pausedUntil = 0;
+
 /** One iTunes Search or Lookup request. Identical requests are cached for an
  *  hour (the rate limit is ~20 calls/min). Resolves to the response's rows, or
- *  null when the store couldn't be reached, timed out, or answered with an
- *  error. No lang is added: pass lang "en_us" for English text, or leave it
- *  out to get names in the store's own language. */
+ *  null when the store couldn't be reached, timed out, answered with an error,
+ *  or Apple is rate-limiting us (see RATE_LIMIT_PAUSE_MS). No lang is added:
+ *  pass lang "en_us" for English text, or leave it out to get names in the
+ *  store's own language. */
 export async function itunesFetch(
   endpoint: "search" | "lookup",
   params: Record<string, string>,
 ): Promise<ITunesRow[] | null> {
+  if (Date.now() < pausedUntil) return null;
   const url = new URL(`https://itunes.apple.com/${endpoint}`);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
   try {
@@ -60,6 +72,10 @@ export async function itunesFetch(
       next: { revalidate: 3600 },
       signal: AbortSignal.timeout(ITUNES_TIMEOUT_MS),
     });
+    if (resp.status === 403 || resp.status === 429) {
+      pausedUntil = Date.now() + RATE_LIMIT_PAUSE_MS;
+      return null;
+    }
     if (!resp.ok) return null;
     const body = JSON.parse(await resp.text()) as { results?: ITunesRow[] };
     return body.results ?? [];

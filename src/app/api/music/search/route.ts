@@ -26,10 +26,13 @@ import {
 } from "@/lib/day-of-music/itunes-lookup";
 import type { MusicSearchResult } from "@/lib/day-of-music/music-types";
 
+// Bounded: the route is public, and every distinct query spends the shared
+// iTunes budget and a Data Cache entry. 50 is the most the app's own client
+// asks for ("See all" in use-music-search.ts).
 const searchParamsSchema = z.object({
-  q: z.string().trim().min(1),
+  q: z.string().trim().min(1).max(200),
   type: z.enum(["album", "artist", "track"]).default("album"),
-  limit: z.coerce.number().int().min(1).max(200).default(12),
+  limit: z.coerce.number().int().min(1).max(50).default(12),
   country: countryParam,
 });
 

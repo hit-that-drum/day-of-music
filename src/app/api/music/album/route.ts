@@ -24,8 +24,9 @@ import type { AlbumDetail, TrackItem } from "@/lib/day-of-music/music-types";
 
 const lookupParamsSchema = z.object({
   // Accept either a bare collectionId ("1234567") or the app's prefixed form
-  // ("itunes-1234567"); we extract the digits below.
-  id: z.string().trim().min(1),
+  // ("itunes-1234567"); we extract the digits below. Bounded like the search
+  // params: the route is public.
+  id: z.string().trim().min(1).max(64),
   country: countryParam,
 });
 
