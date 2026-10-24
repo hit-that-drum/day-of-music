@@ -1,8 +1,26 @@
 import { describe, expect, it } from "vitest";
 
-import { artworkSrcSet } from "@/lib/day-of-music/artwork-size";
+import { artworkAt, artworkSrcSet } from "@/lib/day-of-music/artwork-size";
 
 const base = "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/07/60/ba/x/634904078164.png/";
+
+describe("artworkAt", () => {
+  it("asks Apple's CDN for a smaller rendition of the same artwork", () => {
+    expect(artworkAt(`${base}600x600bb.jpg`, 400)).toBe(`${base}400x400bb.jpg`);
+  });
+
+  it("never asks for one larger than what is stored", () => {
+    expect(artworkAt(`${base}300x300bb.jpg`, 400)).toBe(`${base}300x300bb.jpg`);
+    expect(artworkAt(`${base}400x400bb.jpg`, 400)).toBe(`${base}400x400bb.jpg`);
+  });
+
+  it("leaves every other picture alone", () => {
+    expect(artworkAt("data:image/jpeg;base64,AAAA", 400)).toBe("data:image/jpeg;base64,AAAA");
+    expect(artworkAt("https://example.com/a/600x600bb.jpg", 400)).toBe(
+      "https://example.com/a/600x600bb.jpg",
+    );
+  });
+});
 
 describe("artworkSrcSet", () => {
   it("offers smaller renditions of an Apple artwork URL, then the URL itself", () => {

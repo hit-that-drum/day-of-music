@@ -16,6 +16,12 @@ import type {
 import { Cover } from "@/components/day-of-music/cover";
 import { MetaLine, Stars } from "@/components/day-of-music/atoms";
 
+// Poster covers are 148–164px wide at the export width (POSTER_WIDTH), so the
+// PNG (pixelRatio 2, save-card.ts) draws them at ≤328px and the 400px rendition
+// covers that. It's also the file the board's covers load on a desktop, so the
+// preview reuses it instead of fetching the 600px original.
+const POSTER_ARTWORK_WIDTH = 400;
+
 // Cover/MetaLine take a full Album; a snapshot album just lacks the fields
 // that never leave the device (note, tracks).
 function toAlbum(a: SharedAlbum): Album {
@@ -97,7 +103,7 @@ export function WeekPoster({
             ) : album ? (
               <div className="dom-day-body">
                 <div className="dom-cover-wrap">
-                  <Cover album={toAlbum(album)} size="100%" />
+                  <Cover album={toAlbum(album)} size="100%" artworkWidth={POSTER_ARTWORK_WIDTH} />
                 </div>
                 <div className="dom-day-meta">
                   <div className="dom-title">{album.title}</div>
@@ -172,7 +178,11 @@ export function MonthPoster({
                   </div>
                   {album && (
                     <div className="dom-month-cal-cover">
-                      <Cover album={toAlbum(album)} size="100%" />
+                      <Cover
+                        album={toAlbum(album)}
+                        size="100%"
+                        artworkWidth={POSTER_ARTWORK_WIDTH}
+                      />
                     </div>
                   )}
                   {album && (
@@ -273,7 +283,7 @@ export function StatsPoster({
             {fives.map((a) => (
               <div key={`${a.theme}:${a.date}:${a.id}`} className="dom-fives-item">
                 <div>
-                  <Cover album={toAlbum(a)} size="100%" />
+                  <Cover album={toAlbum(a)} size="100%" artworkWidth={POSTER_ARTWORK_WIDTH} />
                 </div>
                 <div className="dom-fives-info">
                   <div className="dom-fives-title">{a.title}</div>
