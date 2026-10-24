@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useRef, useState, type CSSProperties, type DragEvent } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { ArrowLeft, ArrowRight, CalendarSearch } from "lucide-react";
 
 import {
@@ -14,6 +14,7 @@ import {
   type Album,
 } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
+import { setAlbumDragData, useAlbumDropTarget } from "@/lib/day-of-music/album-dnd";
 import { useBestOfWeekStatus, type BestOfStatus } from "@/lib/day-of-music/best-of";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { useNavSlide, useSwipeNav } from "@/lib/day-of-music/use-swipe-nav";
@@ -324,40 +325,8 @@ function DayCell({
   const names = useDateNames();
   const day = date.getDate();
   const dow = names.weekdayShort(date);
-  const [dragOver, setDragOver] = useState(false);
-
   // Any in-month day is a drop target (empty → move, filled → swap dates).
-  const handleDragOver = useCallback(
-    (e: DragEvent) => {
-      if (outOfMonth) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      setDragOver(true);
-    },
-    [outOfMonth],
-  );
-  const handleDrop = useCallback(
-    (e: DragEvent) => {
-      if (outOfMonth) return;
-      e.preventDefault();
-      setDragOver(false);
-      try {
-        const { from } = JSON.parse(e.dataTransfer.getData("text/plain")) as {
-          id: string;
-          from: string;
-        };
-        if (from) onMove(from, fmtDate(date));
-      } catch {
-        /* ignore non-album drops */
-      }
-    },
-    [outOfMonth, onMove, date],
-  );
-  // Only clear the highlight when the cursor actually leaves the cell — not when
-  // it moves onto a child (album button, cover image), which would flicker it.
-  const handleDragLeave = useCallback((e: DragEvent) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false);
-  }, []);
+  const { dragOver, dropHandlers } = useAlbumDropTarget(fmtDate(date), !outOfMonth, onMove);
 
   return (
     <div
@@ -367,9 +336,7 @@ function DayCell({
       data-empty={album ? "0" : "1"}
       data-outmonth={outOfMonth ? "1" : "0"}
       data-dragover={dragOver ? "1" : "0"}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      {...dropHandlers}
     >
       <div className="dom-day-hd">
         <span className="dom-day-num">{day}</span>
@@ -382,13 +349,7 @@ function DayCell({
         <button
           className="dom-day-body dom-day-draggable"
           draggable
-          onDragStart={(e) => {
-            e.dataTransfer.setData(
-              "text/plain",
-              JSON.stringify({ id: album.id, from: album.date }),
-            );
-            e.dataTransfer.effectAllowed = "move";
-          }}
+          onDragStart={(e) => setAlbumDragData(e, album)}
           onClick={() => onOpen(album)}
           aria-label={t("aria.openAlbum", { title: album.title })}
         >

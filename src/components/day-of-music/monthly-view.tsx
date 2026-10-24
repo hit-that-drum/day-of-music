@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/lib/day-of-music/data";
 import { periodSummary } from "@/lib/day-of-music/album-stats";
 import { useJournal } from "@/lib/day-of-music/use-journal";
+import { setAlbumDragData, useAlbumDropTarget } from "@/lib/day-of-music/album-dnd";
 import { useBestOfMonthStatus } from "@/lib/day-of-music/best-of";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
 import { useNavSlide, useSwipeNav } from "@/lib/day-of-music/use-swipe-nav";
@@ -59,8 +60,6 @@ export function MonthlyView({
   const t = useT();
   const names = useDateNames();
   const bestOf = useBestOfMonthStatus(anchor, splitByMonth, today);
-  // Date currently hovered as a drag-and-drop target (for highlight).
-  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   // The month being viewed follows `anchor`; `today` is only for highlighting.
   const year = anchor.getFullYear();
   const month = anchor.getMonth();
@@ -183,113 +182,115 @@ export function MonthlyView({
             // week view. Future days stay blank (can't log ahead).
             const canAdd = inMonth && !album && !isFuture;
             return (
-              <button
+              <MonthCell
                 key={i}
-                className="dom-month-cal-cell"
-                data-inmonth={inMonth ? "1" : "0"}
-                data-today={isToday ? "1" : "0"}
-                data-empty={album ? "0" : "1"}
-                data-add={canAdd ? "1" : "0"}
-                data-dragover={dragOverDate === dayKey ? "1" : "0"}
-                // Drag a logged album onto any in-month day: empty → move,
-                // filled → swap the two albums' dates.
-                draggable={Boolean(album)}
-                onDragStart={
-                  album
-                    ? (e) => {
-                        e.dataTransfer.setData(
-                          "text/plain",
-                          JSON.stringify({ id: album.id, from: album.date }),
-                        );
-                        e.dataTransfer.effectAllowed = "move";
-                      }
-                    : undefined
-                }
-                onDragOver={
-                  inMonth
-                    ? (e) => {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = "move";
-                        setDragOverDate(dayKey);
-                      }
-                    : undefined
-                }
-                onDragLeave={
-                  inMonth
-                    ? () => setDragOverDate((cur) => (cur === dayKey ? null : cur))
-                    : undefined
-                }
-                onDrop={
-                  inMonth
-                    ? (e) => {
-                        e.preventDefault();
-                        setDragOverDate(null);
-                        try {
-                          const { from } = JSON.parse(
-                            e.dataTransfer.getData("text/plain"),
-                          ) as { id: string; from: string };
-                          if (from) onMove(from, dayKey);
-                        } catch {
-                          /* ignore non-album drops */
-                        }
-                      }
-                    : undefined
-                }
-                onClick={() => {
-                  if (album) onOpen(album);
-                  else if (canAdd) onAdd(fmtDate(d));
-                }}
-                // Disable cells with no action (out-of-month, or in-month future
-                // empties) so they don't become keyboard tab stops; only album
-                // (open) and canAdd (log) cells stay focusable.
-                disabled={!album && !canAdd}
-              >
-                {inMonth && (
-                  <>
-                    <div className="dom-month-cal-date">
-                      <span className="dom-month-cal-num">{d.getDate()}</span>
-                      <span className="dom-month-cal-date-right">
-                        {isToday && <span className="dom-month-cal-today">{t("common.today")}</span>}
-                        {album && album.rating > 0 && (
-                          <span className="dom-month-cal-rating">
-                            <span className="dom-month-cal-rating-star">★</span>
-                            {album.rating}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                    {album && (
-                      <div className="dom-month-cal-cover">
-                        <Cover album={album} size="100%" />
-                      </div>
-                    )}
-                    {album && (
-                      <div className="dom-month-cal-info">
-                        <div className="dom-month-cal-title">{album.title}</div>
-                        <div className="dom-month-cal-artist">
-                          {album.artist}
-                          {album.titleKo && (
-                            <span className="dom-month-cal-artist-ko"> · {album.titleKo}</span>
-                          )}
-                        </div>
-                        {album.kind === "track" && album.albumTitle && (
-                          <div className="dom-from">{t("common.fromAlbum", { title: album.albumTitle })}</div>
-                        )}
-                      </div>
-                    )}
-                    {canAdd && (
-                      <div className="dom-month-cal-add">
-                        <span className="dom-month-cal-add-mark">＋</span>
-                        <span className="dom-month-cal-add-lbl">{t("common.logShort")}</span>
-                      </div>
-                    )}
-                  </>
-                )}
-              </button>
+                date={d}
+                inMonth={inMonth}
+                album={album}
+                isToday={isToday}
+                canAdd={canAdd}
+                onOpen={onOpen}
+                onAdd={onAdd}
+                onMove={onMove}
+              />
             );
           })}
         </div>
       </div>
     </div>
+  );
+}
+
+// One day of the month grid, with its own drop-target state so a drag hovering
+// it re-renders this cell rather than the whole month.
+function MonthCell({
+  date,
+  inMonth,
+  album,
+  isToday,
+  canAdd,
+  onOpen,
+  onAdd,
+  onMove,
+}: {
+  date: Date;
+  /** Days outside the viewed month are blacked out: no album, no date. */
+  inMonth: boolean;
+  album: Album | undefined;
+  isToday: boolean;
+  /** An empty in-month day up to today: offers "+ log". */
+  canAdd: boolean;
+  onOpen: (album: Album) => void;
+  onAdd: (date: string) => void;
+  onMove: (fromDate: string, toDate: string) => void;
+}) {
+  const t = useT();
+  const dayKey = fmtDate(date);
+  // Drag a logged album onto any in-month day: empty → move, filled → swap the
+  // two albums' dates.
+  const { dragOver, dropHandlers } = useAlbumDropTarget(dayKey, inMonth, onMove);
+
+  return (
+    <button
+      className="dom-month-cal-cell"
+      data-inmonth={inMonth ? "1" : "0"}
+      data-today={isToday ? "1" : "0"}
+      data-empty={album ? "0" : "1"}
+      data-add={canAdd ? "1" : "0"}
+      data-dragover={dragOver ? "1" : "0"}
+      draggable={Boolean(album)}
+      onDragStart={album ? (e) => setAlbumDragData(e, album) : undefined}
+      {...dropHandlers}
+      onClick={() => {
+        if (album) onOpen(album);
+        else if (canAdd) onAdd(dayKey);
+      }}
+      // Disable cells with no action (out-of-month, or in-month future
+      // empties) so they don't become keyboard tab stops; only album
+      // (open) and canAdd (log) cells stay focusable.
+      disabled={!album && !canAdd}
+    >
+      {inMonth && (
+        <>
+          <div className="dom-month-cal-date">
+            <span className="dom-month-cal-num">{date.getDate()}</span>
+            <span className="dom-month-cal-date-right">
+              {isToday && <span className="dom-month-cal-today">{t("common.today")}</span>}
+              {album && album.rating > 0 && (
+                <span className="dom-month-cal-rating">
+                  <span className="dom-month-cal-rating-star">★</span>
+                  {album.rating}
+                </span>
+              )}
+            </span>
+          </div>
+          {album && (
+            <div className="dom-month-cal-cover">
+              <Cover album={album} size="100%" />
+            </div>
+          )}
+          {album && (
+            <div className="dom-month-cal-info">
+              <div className="dom-month-cal-title">{album.title}</div>
+              <div className="dom-month-cal-artist">
+                {album.artist}
+                {album.titleKo && (
+                  <span className="dom-month-cal-artist-ko"> · {album.titleKo}</span>
+                )}
+              </div>
+              {album.kind === "track" && album.albumTitle && (
+                <div className="dom-from">{t("common.fromAlbum", { title: album.albumTitle })}</div>
+              )}
+            </div>
+          )}
+          {canAdd && (
+            <div className="dom-month-cal-add">
+              <span className="dom-month-cal-add-mark">＋</span>
+              <span className="dom-month-cal-add-lbl">{t("common.logShort")}</span>
+            </div>
+          )}
+        </>
+      )}
+    </button>
   );
 }
