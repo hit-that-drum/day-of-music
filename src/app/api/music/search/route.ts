@@ -6,6 +6,10 @@
 //
 // The iTunes catalog IDs are Apple Music catalog IDs, so this can later be
 // swapped for the (paid) Apple Music API without changing the client.
+//
+// `type` defaults to album, the only kind the app's own client (searchMusic)
+// asks for today. Artist and track searches are served, and localized the same
+// way, for callers that need them — kept on purpose (379bfab), not dead code.
 
 import { z } from "zod";
 
