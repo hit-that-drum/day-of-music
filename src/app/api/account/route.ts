@@ -2,9 +2,11 @@
 //
 // DELETE permanently removes the caller's account. Deleting a Supabase user
 // requires the service_role key, which bypasses RLS and must NEVER be shipped
-// to the browser — so it lives only here, in this server route. The FK
-// `on delete cascade` on journal_entries/shared_cards removes their data with
-// the user (see supabase/migrations/0001, 0006).
+// to the browser — so it lives only here, in this server route. Every table
+// that holds a user's data references auth.users with `on delete cascade`,
+// so their rows go with the user: journal_entries (migration 0001),
+// shared_cards (0006), private.shared_card_creation_events (0007_abuse_limits)
+// and best_of (0009). A new per-user table needs the same FK.
 
 import { createClient } from "@supabase/supabase-js";
 
@@ -47,7 +49,13 @@ export async function DELETE(request: Request) {
   });
   const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
   if (deleteError) {
-    return Response.json({ error: deleteError.message }, { status: 500 });
+    // The full error stays in the server log; the browser (which toasts the
+    // message) gets a fixed one instead of the auth server's internals.
+    console.error("account deletion failed", { userId: user.id, error: deleteError });
+    return Response.json(
+      { error: "Couldn't delete the account. Please try again." },
+      { status: 500 },
+    );
   }
 
   return Response.json({ ok: true });
