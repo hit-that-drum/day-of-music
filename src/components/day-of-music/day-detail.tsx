@@ -22,7 +22,7 @@ import { Cover } from "@/components/day-of-music/cover";
 import { RatingInput } from "@/components/day-of-music/rating-input";
 import { Button } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
-import { DayPicker, SwapConfirm } from "@/components/day-of-music/week-picker";
+import { DayPicker, SwapConfirm } from "@/components/day-of-music/day-picker";
 
 type Tab = "tracklist" | "journal" | "info";
 
