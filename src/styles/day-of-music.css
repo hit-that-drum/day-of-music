@@ -2,10 +2,13 @@
    set on .dom-root by lib/day-of-music/theme.ts. Ported from the design handoff. */
 
 .dom-stage {
-  --font-body: "Spectral", Georgia, serif;
   /* Editorial-theme defaults so pages/elements that don't run applyTheme
-     (auth cards, modals) still resolve every color var. applyTheme overrides
-     these inline per chosen theme. */
+     (auth cards, legal pages, modals) still resolve every font and color var.
+     applyTheme overrides these inline per chosen theme. The fonts are
+     TYPE_PAIRS.editorial in lib/day-of-music/theme.ts. */
+  --font-display: "Spectral", Georgia, serif;
+  --font-body: "Spectral", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --bg: #efe6d2;
   --panel: #f6efe0;
   --ink: #1a1612;
