@@ -16,18 +16,7 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  addDays,
-  fmtDate,
-  formatDisplayDate,
-  monthEnd,
-  monthStart,
-  parseDate,
-  segmentDays,
-  startOfWeek,
-  weekDays,
-  type Album,
-} from "@/lib/day-of-music/data";
+import { fmtDate, formatDisplayDate, parseDate, type Album } from "@/lib/day-of-music/data";
 import { AESTHETICS, themeStyleVars } from "@/lib/day-of-music/appearance";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { useT } from "@/lib/day-of-music/i18n";
@@ -41,6 +30,7 @@ import {
 } from "@/lib/day-of-music/local-store";
 import { rememberTimeZone } from "@/lib/day-of-music/today";
 import { useAuth } from "@/lib/day-of-music/auth-provider";
+import { useBoardNav } from "@/lib/day-of-music/use-board-nav";
 import { AddFlow, type NewEntry } from "@/components/day-of-music/add-flow";
 import { IconButton } from "@/components/day-of-music/atoms";
 import { BottomTabs } from "@/components/day-of-music/bottom-tabs";
@@ -94,20 +84,6 @@ const getStorageBlockedServer = () => false;
 // snapshot is false, so SSR renders the banner and the client flips after mount.
 const guestBannerDismissed = makeSessionFlagStore("dom.guestBanner.dismissed.v1");
 
-// First and last day of the anchor's Mon–Sun week that still belong to the
-// anchor's month. Used by week nav in split mode to step just past the visible
-// segment without materialising the whole 7-day array.
-function monthSegmentBounds(anchor: Date): { first: Date; last: Date } {
-  const ws = startOfWeek(anchor);
-  const weekEnd = addDays(ws, 6);
-  const first = monthStart(anchor);
-  const last = monthEnd(anchor);
-  return {
-    first: ws < first ? first : ws,
-    last: weekEnd > last ? last : weekEnd,
-  };
-}
-
 // The overlay open over the board — one at a time: opening one replaces the
 // other. Day Detail holds its slot and the album it opened on (not a copy):
 // the album is read from the journal on every render, and a different album
@@ -144,16 +120,9 @@ export function DayOfMusicApp({
   // everything derived from it keeps a stable identity.
   const today = useMemo(() => parseDate(todayKey), [todayKey]);
   const [screen, setScreen] = useState<ScreenId>("week");
-  // `anchor` is any day inside the currently-viewed page. The Monday-based
-  // `weekStart` and the visible `days` are derived from it (see below). null
-  // means "follow today": the board opens on today's week and still tracks it
-  // if the post-hydration correction moves today (first visit from a zone a
-  // day ahead of the server, across a week boundary). Once the user has
-  // navigated, the page they picked stays put — including a navigation that
-  // beats the correction (a click replayed during hydration), which keeps the
-  // server's week.
-  const [pickedAnchor, setAnchor] = useState<Date | null>(null);
-  const anchor = pickedAnchor ?? today;
+  // The page on screen and ←/→ (see use-board-nav.ts).
+  const { anchor, setAnchor, days, labelDate, prevWeek, nextWeek, prevMonth, nextMonth } =
+    useBoardNav(today, tweaks.weekSplit);
   const [overlay, setOverlay] = useState<Overlay | null>(null);
   // Stable, for the modals' onClose (Modal re-registers its Esc listener on change).
   const closeOverlay = useCallback(() => setOverlay(null), []);
@@ -178,60 +147,6 @@ export function DayOfMusicApp({
     () => themeStyleVars(tweaks.aesthetic, tweaks.typography) as CSSProperties,
     [tweaks.aesthetic, tweaks.typography],
   );
-
-  // Monday of the anchor's ISO week, and the full Mon–Sun strip.
-  const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
-  const fullWeek = useMemo(() => weekDays(weekStart), [weekStart]);
-
-  // The grid always shows the whole Mon–Sun week (7 cells). In split mode the
-  // cells belonging to the *other* month are blanked out by WeeklyGrid rather
-  // than removed, so the 7-column layout stays intact.
-  const days = fullWeek;
-
-  // Days that belong to the page's month. In split mode that's the subset
-  // matching the anchor's month; otherwise the whole week. Used for the label
-  // and the share card so they reflect only the labelled month.
-  const monthDays = useMemo(
-    () => segmentDays(fullWeek, anchor, tweaks.weekSplit),
-    [fullWeek, anchor, tweaks.weekSplit],
-  );
-
-  // The day whose month/week-number label the header shows: the first in-month
-  // day in split mode, otherwise the week's Monday.
-  const labelDate = monthDays[0] ?? weekStart;
-
-  // The updaters resolve a null (follow-today) anchor themselves: `a ?? today`.
-  const prevWeek = useCallback(() => {
-    setAnchor((a) => {
-      const cur = a ?? today;
-      // Step to the day before the current segment's first visible day.
-      return tweaks.weekSplit ? addDays(monthSegmentBounds(cur).first, -1) : addDays(cur, -7);
-    });
-  }, [tweaks.weekSplit, today]);
-
-  const nextWeek = useCallback(() => {
-    setAnchor((a) => {
-      const cur = a ?? today;
-      // Step to the day after the current segment's last visible day.
-      return tweaks.weekSplit ? addDays(monthSegmentBounds(cur).last, 1) : addDays(cur, 7);
-    });
-  }, [tweaks.weekSplit, today]);
-
-  // Month nav (Monthly view). Anchor on the 1st of the target month; native
-  // Date handles year rollover (month -1 / +12).
-  const prevMonth = useCallback(() => {
-    setAnchor((a) => {
-      const cur = a ?? today;
-      return new Date(cur.getFullYear(), cur.getMonth() - 1, 1);
-    });
-  }, [today]);
-
-  const nextMonth = useCallback(() => {
-    setAnchor((a) => {
-      const cur = a ?? today;
-      return new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
-    });
-  }, [today]);
 
   // Keyboard: ←/→ step the board when nothing is open over it. (Escape is each
   // overlay's own — see escape-layers.ts.)
@@ -307,7 +222,7 @@ export function DayOfMusicApp({
         if (!ok) toast.error(t("toast.moveFailed"));
       });
     },
-    [albumsByDate, moveSlot, screen, country, t],
+    [albumsByDate, moveSlot, screen, setAnchor, country, t],
   );
 
   // Replace: reopen the add-flow on the same day. Logging the new album at that
