@@ -51,6 +51,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
   );
   const [message, setMessage] = useState("");
   const t = useT();
+  // Empty in English, which shows just the wordmark (as the header does).
+  const tagline = t("brand.tagline");
 
   const altHref = mode === "signin" ? "/signup" : "/signin";
   const copy = {
@@ -102,7 +104,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <Link href="/" className="dom-signin-brand">
             <BrandMark />
             <span className="dom-brand-name">Day of Music</span>
-            <span className="dom-brand-ko">하루의 음악</span>
+            {tagline && <span className="dom-brand-ko">{tagline}</span>}
           </Link>
           <div className="dom-signin-eyebrow">{copy.eyebrow}</div>
           <h1 className="dom-signin-title">{copy.title}</h1>

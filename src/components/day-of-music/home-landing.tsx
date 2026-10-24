@@ -73,6 +73,8 @@ export function HomeLanding() {
   const rootRef = useRef<HTMLDivElement>(null);
   const { configured, user, signOut } = useAuth();
   const t = useT();
+  // Empty in English, which shows just the wordmark (as the header does).
+  const tagline = t("brand.tagline");
 
   useEffect(() => {
     ensureFonts();
@@ -86,7 +88,7 @@ export function HomeLanding() {
           <div className="dom-brand">
             <BrandMark />
             <span className="dom-brand-name">Day of Music</span>
-            <span className="dom-brand-ko">{t("brand.tagline")}</span>
+            {tagline && <span className="dom-brand-ko">{tagline}</span>}
           </div>
           <div className="dom-topbar-actions">
             {configured && user ? (
