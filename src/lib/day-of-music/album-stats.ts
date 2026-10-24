@@ -36,3 +36,21 @@ export function getAlbumStats<T extends Album>(albums: T[]): AlbumStats<T> {
     fives: albums.filter((a) => a.rating === 5),
   };
 }
+
+/** The numbers under a week or month card (and in the month header): albums
+ *  logged, distinct genres, and the average rating to one decimal — "—" when
+ *  nothing is logged. Field names match the share payload's `stats`, so a card
+ *  passes the result straight through. (The My Logs recap above keeps two
+ *  decimals; the period cards have always shown one.) */
+export function periodSummary(albums: Pick<Album, "genre" | "rating">[]): {
+  count: number;
+  genres: number;
+  avg: string;
+} {
+  const count = albums.length;
+  return {
+    count,
+    genres: new Set(albums.map((a) => normalizeGenre(a.genre)).filter(Boolean)).size,
+    avg: count ? (albums.reduce((s, a) => s + a.rating, 0) / count).toFixed(1) : "—",
+  };
+}

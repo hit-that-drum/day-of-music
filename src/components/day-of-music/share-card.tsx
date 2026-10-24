@@ -12,9 +12,9 @@ import {
   DOW,
   MONTHS_LONG,
   fmtDate,
-  normalizeGenre,
   weekOfMonth,
 } from "@/lib/day-of-music/data";
+import { periodSummary } from "@/lib/day-of-music/album-stats";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { DEFAULT_USERNAME, useProfile } from "@/lib/day-of-music/profile";
 import { useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
@@ -74,10 +74,6 @@ export function ShareCard({
 
     // Footer stats only count albums that belong to the labelled month.
     const week = cells.flatMap((c) => (c.album ? [c.album] : []));
-    const genreCount = new Set(week.map((a) => normalizeGenre(a.genre)).filter(Boolean)).size;
-    const avg = week.length
-      ? (week.reduce((s, a) => s + a.rating, 0) / week.length).toFixed(1)
-      : "—";
 
     return {
       v: 1,
@@ -87,7 +83,7 @@ export function ShareCard({
       themeLabel: themeEmoji ? `${themeEmoji} ${themeName}` : themeName,
       theme: readShareTheme(),
       cells,
-      stats: { count: week.length, genres: genreCount, avg },
+      stats: periodSummary(week),
     };
   }, [
     days,

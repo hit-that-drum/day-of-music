@@ -9,10 +9,10 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import {
   addDays,
   fmtDate,
-  normalizeGenre,
   startOfWeek,
   type Album,
 } from "@/lib/day-of-music/data";
+import { periodSummary } from "@/lib/day-of-music/album-stats";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { useBestOfMonthStatus } from "@/lib/day-of-music/best-of";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
@@ -86,13 +86,9 @@ export function MonthlyView({
     return d.month() === month && d.year() === year;
   });
 
-  const totalLogged = monthAlbums.length;
+  // The same numbers the month share card shows. avgRating is "—" when empty.
+  const { count: totalLogged, genres: genreCount, avg: avgRating } = periodSummary(monthAlbums);
   const completion = Math.round((totalLogged / lastOfMonth.date()) * 100);
-  const genreCount = new Set(monthAlbums.map((a) => normalizeGenre(a.genre)).filter(Boolean)).size;
-  // Average rating across the month (mirrors the share card). "—" when empty.
-  const avgRating = monthAlbums.length
-    ? (monthAlbums.reduce((s, a) => s + a.rating, 0) / monthAlbums.length).toFixed(1)
-    : "—";
 
   // The Best of Month button reports its state in colour, and explains any
   // blocker on click — mirroring the weekly button (see weekly-grid.tsx).

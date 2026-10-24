@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getAlbumStats } from "@/lib/day-of-music/album-stats";
+import { getAlbumStats, periodSummary } from "@/lib/day-of-music/album-stats";
 import type { Album } from "@/lib/day-of-music/data";
 
 function album(id: string, rating: number, genre: string): Album {
@@ -67,5 +67,17 @@ describe("getAlbumStats", () => {
     expect(stats.topTenGenres).toHaveLength(10);
     expect(stats.topTenGenres.at(0)).toEqual(["Genre 11", 12]);
     expect(stats.topTenGenres.at(-1)).toEqual(["Genre 2", 3]);
+  });
+});
+
+describe("periodSummary", () => {
+  it("shows a dash, not 0.0, for an empty week or month", () => {
+    expect(periodSummary([])).toEqual({ count: 0, genres: 0, avg: "—" });
+  });
+
+  it("counts distinct real genres and averages to one decimal", () => {
+    expect(
+      periodSummary([album("a", 5, "Rock"), album("b", 4, " Rock "), album("c", 4, "—")]),
+    ).toEqual({ count: 3, genres: 1, avg: "4.3" });
   });
 });

@@ -286,15 +286,11 @@ export function StatsPoster({
         </div>
       )}
 
-      <div className="dom-share-ft">
-        <div>
-          {stats.total} albums · {stats.genreCount} genres
-        </div>
-        <div className="dom-day-album-rating">
-          <span>★</span>
-          {stats.total ? stats.avgRatingNum.toFixed(1) : "—"}
-        </div>
-      </div>
+      <PosterFooter
+        count={stats.total}
+        genres={stats.genreCount}
+        avg={stats.total ? stats.avgRatingNum.toFixed(1) : "—"}
+      />
     </div>
   );
 }

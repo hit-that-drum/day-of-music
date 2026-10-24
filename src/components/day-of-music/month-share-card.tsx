@@ -13,9 +13,9 @@ import {
   MONTHS_LONG,
   addDays,
   fmtDate,
-  normalizeGenre,
   startOfWeek,
 } from "@/lib/day-of-music/data";
+import { periodSummary } from "@/lib/day-of-music/album-stats";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { DEFAULT_USERNAME, useProfile } from "@/lib/day-of-music/profile";
 import { useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
@@ -68,13 +68,6 @@ export function MonthShareCard({
       const d = dayjs(a.date);
       return d.month() === month && d.year() === year;
     });
-    const genreCount = new Set(
-      monthAlbums.map((a) => normalizeGenre(a.genre)).filter(Boolean),
-    ).size;
-    const avg = monthAlbums.length
-      ? (monthAlbums.reduce((s, a) => s + a.rating, 0) / monthAlbums.length).toFixed(1)
-      : "—";
-
     return {
       v: 1,
       kind: "month",
@@ -84,7 +77,7 @@ export function MonthShareCard({
       theme: readShareTheme(),
       numWeeks,
       cells,
-      stats: { count: monthAlbums.length, genres: genreCount, avg },
+      stats: periodSummary(monthAlbums),
     };
   }, [anchor, month, year, monthLabel, albums, albumsByDate, username, themeEmoji, themeName]);
 
