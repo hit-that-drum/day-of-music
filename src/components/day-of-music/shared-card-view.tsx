@@ -8,7 +8,7 @@ import Link from "next/link";
 
 import { POSTER_WIDTH } from "@/lib/day-of-music/poster-size";
 import { googleFontsHref, themeStyleVars } from "@/lib/day-of-music/theme";
-import type { SharePayload } from "@/lib/day-of-music/share-links";
+import type { SharePayload } from "@/lib/day-of-music/share-payload";
 import {
   MonthPoster,
   StatsPoster,

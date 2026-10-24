@@ -12,7 +12,7 @@ import {
   shareDescription,
   sharePayloadSchema,
   type SharePayload,
-} from "@/lib/day-of-music/share-links";
+} from "@/lib/day-of-music/share-payload";
 import { SharedCardView } from "@/components/day-of-music/shared-card-view";
 
 // Snapshots are looked up per request; nothing here is prerenderable.

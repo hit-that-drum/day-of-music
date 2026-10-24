@@ -8,8 +8,8 @@
 // the smallest step is too big does the cover drop back to the typographic
 // tile. Remote https artwork is left alone: it costs a few dozen bytes.
 
-import { isShareableArtwork } from "@/lib/day-of-music/share-links";
-import type { SharedAlbum, SharePayload } from "@/lib/day-of-music/share-links";
+import { isShareableArtwork } from "@/lib/day-of-music/share-payload";
+import type { SharedAlbum, SharePayload } from "@/lib/day-of-music/share-payload";
 
 /** Longest edge (px) tried in order. Posters render covers at ~150px (week)
  *  and ~110px (month), so 256 already carries more detail than they show. */

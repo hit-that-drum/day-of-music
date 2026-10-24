@@ -1,16 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { Album } from "@/lib/day-of-music/data";
+import { createGuestWeekLink, sanitizeAlbum } from "@/lib/day-of-music/share-links";
 import {
-  createGuestWeekLink,
   decodeGuestShareParam,
   isShareableArtwork,
-  sanitizeAlbum,
   sharePayloadSchema,
   weekSharePayloadSchema,
   type SharedAlbum,
   type WeekSharePayload,
-} from "@/lib/day-of-music/share-links";
+} from "@/lib/day-of-music/share-payload";
 
 const HTTPS_ART = "https://is1-ssl.mzstatic.com/image/thumb/x/600x600bb.jpg";
 

@@ -10,11 +10,8 @@ import { useId, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 
-import {
-  createGuestWeekLink,
-  createSharedCardLink,
-  type SharePayload,
-} from "@/lib/day-of-music/share-links";
+import { createGuestWeekLink, createSharedCardLink } from "@/lib/day-of-music/share-links";
+import type { SharePayload } from "@/lib/day-of-music/share-payload";
 import { useT } from "@/lib/day-of-music/i18n";
 import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { Button, buttonClass } from "@/components/day-of-music/atoms";

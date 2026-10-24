@@ -20,11 +20,8 @@ import { useJournal } from "@/lib/day-of-music/use-journal";
 import { DEFAULT_USERNAME, useProfile } from "@/lib/day-of-music/profile";
 import { useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
 import { saveCardAsImage, shareFileName } from "@/lib/day-of-music/save-card";
-import {
-  readShareTheme,
-  sanitizeAlbum,
-  type MonthSharePayload,
-} from "@/lib/day-of-music/share-links";
+import { readShareTheme, sanitizeAlbum } from "@/lib/day-of-music/share-links";
+import type { MonthSharePayload } from "@/lib/day-of-music/share-payload";
 import { MonthPoster } from "@/components/day-of-music/share-posters";
 import { PosterFit } from "@/components/day-of-music/poster-fit";
 import { ShareActions } from "@/components/day-of-music/share-actions";

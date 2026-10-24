@@ -12,7 +12,7 @@ import type {
   SharedAlbum,
   StatsSharePayload,
   WeekSharePayload,
-} from "@/lib/day-of-music/share-links";
+} from "@/lib/day-of-music/share-payload";
 import { Cover } from "@/components/day-of-music/cover";
 import { MetaLine, Stars } from "@/components/day-of-music/atoms";
 

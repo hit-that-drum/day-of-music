@@ -13,7 +13,7 @@ import {
   shareDescription,
   weekSharePayloadSchema,
   type WeekSharePayload,
-} from "@/lib/day-of-music/share-links";
+} from "@/lib/day-of-music/share-payload";
 import { SharedCardView } from "@/components/day-of-music/shared-card-view";
 
 export const dynamic = "force-dynamic";
