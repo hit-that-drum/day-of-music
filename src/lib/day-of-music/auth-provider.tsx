@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import type { Session, User } from "@supabase/supabase-js";
 
 import {
-  AUTH_CALL_TIMEOUT_MS,
+  SUPABASE_CALL_TIMEOUT_MS,
   getSupabaseBrowserClient,
   isSupabaseConfigured,
   withTimeout,
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Bounded for the same reason as signOut below: a getSession() that never
     // settles would leave `loading` true forever, and the whole app waits on it.
     // Treat a stalled read as "no session" rather than as "still deciding".
-    withTimeout(supabase.auth.getSession(), AUTH_CALL_TIMEOUT_MS, "getSession")
+    withTimeout(supabase.auth.getSession(), SUPABASE_CALL_TIMEOUT_MS, "getSession")
       .then(({ data }) => {
         if (!active) return;
         setSession(data.session);
@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await withTimeout(
         supabase.auth.signOut(),
-        AUTH_CALL_TIMEOUT_MS,
+        SUPABASE_CALL_TIMEOUT_MS,
         "signOut",
       );
       if (error) console.warn("signOut: server call failed", error);

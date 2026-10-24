@@ -29,7 +29,7 @@ import {
   payloadBytes,
 } from "@/lib/day-of-music/share-artwork";
 import { tweaksStore } from "@/lib/day-of-music/tweaks";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getSupabaseBrowserClient, runQuery } from "@/lib/supabase/client";
 
 // ── Building payloads ───────────────────────────────────────────────────────
 
@@ -118,10 +118,10 @@ export async function createSharedCardLink(
   // Uploaded covers ride inside the row, so shrink them to fit its size check
   // before the insert (a no-op for payloads that only point at https artwork).
   const stored = await fitArtwork(payload, payloadBytes, STORED_PAYLOAD_BUDGET);
-  const { error } = await supabase
-    .from("shared_cards")
-    .insert({ user_id: userId, token, kind: stored.kind, payload: stored });
-  if (error) throw new Error(error.message);
+  await runQuery(
+    "shared_cards insert",
+    supabase.from("shared_cards").insert({ user_id: userId, token, kind: stored.kind, payload: stored }),
+  );
   return `${window.location.origin}/s/${token}`;
 }
 

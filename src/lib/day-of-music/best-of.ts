@@ -21,11 +21,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { makeJsonStore, useStore } from "@/lib/day-of-music/local-store";
-import {
-  AUTH_CALL_TIMEOUT_MS,
-  getSupabaseBrowserClient,
-  withTimeout,
-} from "@/lib/supabase/client";
+import { getSupabaseBrowserClient, runQuery } from "@/lib/supabase/client";
 import { addDays, fmtDate, parseDate, startOfWeek, type Album } from "@/lib/day-of-music/data";
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { resolveActiveTheme, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
@@ -191,12 +187,10 @@ function rowsToMap(rows: BestOfRow[]): BestOfMap {
 async function fetchBestOf(userId: string | null): Promise<BestOfMap> {
   const supabase = getSupabaseBrowserClient();
   if (!supabase || !userId) return {};
-  const { data, error } = await withTimeout(
-    supabase.from("best_of").select("key, winner_date, method, decided_at"),
-    AUTH_CALL_TIMEOUT_MS,
+  const { data } = await runQuery(
     "best_of select",
+    supabase.from("best_of").select("key, winner_date, method, decided_at"),
   );
-  if (error) throw new Error(error.message);
   return rowsToMap(data as BestOfRow[]);
 }
 
@@ -224,17 +218,19 @@ export function useBestOf(): {
     mutationFn: async ({ key, result }: { key: string; result: BestOfResult }) => {
       const supabase = getSupabaseBrowserClient();
       if (!supabase || !userId) return;
-      const { error } = await supabase.from("best_of").upsert(
-        {
-          user_id: userId,
-          key,
-          winner_date: result.winnerDate,
-          method: result.method,
-          decided_at: result.decidedAt,
-        },
-        { onConflict: "user_id,key" },
+      await runQuery(
+        "best_of upsert",
+        supabase.from("best_of").upsert(
+          {
+            user_id: userId,
+            key,
+            winner_date: result.winnerDate,
+            method: result.method,
+            decided_at: result.decidedAt,
+          },
+          { onConflict: "user_id,key" },
+        ),
       );
-      if (error) throw new Error(error.message);
     },
     onMutate: ({ key, result }) => {
       const previous = queryClient.getQueryData<BestOfMap>(queryKey);
@@ -276,10 +272,10 @@ export function useBestOf(): {
     void (async () => {
       try {
         if (rows.length) {
-          const { error } = await supabase
-            .from("best_of")
-            .upsert(rows, { onConflict: "user_id,key" });
-          if (error) throw new Error(error.message);
+          await runQuery(
+            "best_of migration upsert",
+            supabase.from("best_of").upsert(rows, { onConflict: "user_id,key" }),
+          );
         }
         // Only drop the metadata once the rows are safely persisted.
         await updateUserMetadata({ bestOf: null });

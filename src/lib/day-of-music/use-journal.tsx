@@ -48,11 +48,7 @@ import {
   type JournalCache,
 } from "@/lib/day-of-music/journal-cache";
 import { useT } from "@/lib/day-of-music/i18n";
-import {
-  AUTH_CALL_TIMEOUT_MS,
-  getSupabaseBrowserClient,
-  withTimeout,
-} from "@/lib/supabase/client";
+import { getSupabaseBrowserClient, runQuery } from "@/lib/supabase/client";
 
 type PatchMap = Record<string, JournalPatch>;
 // Mutation variables. An upsert fills one or more (theme, album.date) slots of
@@ -150,15 +146,13 @@ async function fetchJournal(userId: string | null): Promise<JournalResponse> {
   // never released the promise stays pending, and a pending query renders as a
   // blank board forever — never as an error, so nothing reports it. A deadline
   // turns that into a failure the caller can actually show.
-  const { data, error } = await withTimeout(
+  const { data } = await runQuery(
+    "journal select",
     supabase
       .from("journal_entries")
       .select("album_id, date, rating, note, theme, album")
       .order("date"),
-    AUTH_CALL_TIMEOUT_MS,
-    "journal select",
   );
-  if (error) throw new Error(error.message);
 
   const rows = data as JournalRow[];
   return {
@@ -310,12 +304,10 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       // Bounded like fetchJournal: a write pending forever behind the auth Web
       // Lock would otherwise never reject, and moveSlot's write chain (below)
       // would stall every later move behind it.
-      const { error } = await withTimeout(
-        supabase.from("journal_entries").upsert(rows, { onConflict: "user_id,theme,date" }),
-        AUTH_CALL_TIMEOUT_MS,
+      await runQuery(
         "journal upsert",
+        supabase.from("journal_entries").upsert(rows, { onConflict: "user_id,theme,date" }),
       );
-      if (error) throw new Error(error.message);
     },
     onMutate: ({ slots, theme: lane, optimistic = true }) => {
       // moveSlot updates the cache itself (one atomic swap with a single
@@ -352,17 +344,15 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     mutationFn: async ({ date, theme: lane }: RemoveVars) => {
       const supabase = getSupabaseBrowserClient();
       if (guest || !supabase || !userId) return;
-      const { error } = await withTimeout(
+      await runQuery(
+        "journal delete",
         supabase
           .from("journal_entries")
           .delete()
           .eq("user_id", userId)
           .eq("theme", lane)
           .eq("date", date),
-        AUTH_CALL_TIMEOUT_MS,
-        "journal delete",
       );
-      if (error) throw new Error(error.message);
     },
     onMutate: ({ date, theme: lane, optimistic = true }) => {
       // moveSlot manages the cache atomically; skip the per-call update.

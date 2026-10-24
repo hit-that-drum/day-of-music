@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { withTimeout } from "@/lib/supabase/client";
+import { runQuery, SUPABASE_CALL_TIMEOUT_MS, withTimeout } from "@/lib/supabase/client";
 
 describe("withTimeout", () => {
   beforeEach(() => {
@@ -38,5 +38,33 @@ describe("withTimeout", () => {
       then: (onFulfilled, onRejected) => Promise.resolve(42).then(onFulfilled, onRejected),
     };
     await expect(withTimeout(builder, 1000, "select")).resolves.toBe(42);
+  });
+});
+
+describe("runQuery", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("resolves with the response when the query succeeds", async () => {
+    const response = { data: [{ id: 1 }], error: null, count: 1 };
+    await expect(runQuery("select", Promise.resolve(response))).resolves.toBe(response);
+  });
+
+  it("rejects with the message of an error response", async () => {
+    const response = { data: null, error: { message: "permission denied" } };
+    await expect(runQuery("insert", Promise.resolve(response))).rejects.toThrow("permission denied");
+  });
+
+  it("bounds a query that never settles by the shared call ceiling", async () => {
+    vi.useFakeTimers();
+    let message: string | undefined;
+    runQuery("journal select", new Promise<never>(() => {})).catch((e: Error) => {
+      message = e.message;
+    });
+    await vi.advanceTimersByTimeAsync(SUPABASE_CALL_TIMEOUT_MS);
+    expect(message).toBe(
+      `journal select timed out after ${SUPABASE_CALL_TIMEOUT_MS}ms (call never settled)`,
+    );
   });
 });
