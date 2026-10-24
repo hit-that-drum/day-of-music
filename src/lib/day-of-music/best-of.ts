@@ -16,11 +16,11 @@
 
 "use client";
 
-import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/lib/day-of-music/auth-provider";
-import { makeJsonStore } from "@/lib/day-of-music/local-store";
+import { makeJsonStore, useStore } from "@/lib/day-of-music/local-store";
 import {
   AUTH_CALL_TIMEOUT_MS,
   getSupabaseBrowserClient,
@@ -210,7 +210,7 @@ export function useBestOf(): {
   const { configured, user, updateUserMetadata } = useAuth();
   const userId = user?.id ?? null;
   const signedIn = configured && Boolean(user);
-  const local = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
+  const local = useStore(store);
   const queryClient = useQueryClient();
   const queryKey = useMemo(() => ["bestOf", userId ?? "anon"] as const, [userId]);
 

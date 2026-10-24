@@ -5,7 +5,6 @@
 
 "use client";
 
-import { useSyncExternalStore } from "react";
 import isoCountries from "i18n-iso-countries";
 import enLocale from "i18n-iso-countries/langs/en.json";
 import koLocale from "i18n-iso-countries/langs/ko.json";
@@ -14,7 +13,7 @@ import zhLocale from "i18n-iso-countries/langs/zh.json";
 import esLocale from "i18n-iso-countries/langs/es.json";
 
 import { useAuth } from "@/lib/day-of-music/auth-provider";
-import { makeStringStore } from "@/lib/day-of-music/local-store";
+import { makeStringStore, useStore } from "@/lib/day-of-music/local-store";
 import type { LanguagePref, Locale } from "@/lib/day-of-music/i18n";
 
 // Register a country-name catalog per supported UI language so the picker can
@@ -146,21 +145,9 @@ export function useProfile(): {
   synced: boolean;
 } {
   const { configured, user, updateUserMetadata } = useAuth();
-  const localUsername = useSyncExternalStore(
-    usernameStore.subscribe,
-    usernameStore.getSnapshot,
-    usernameStore.getServerSnapshot,
-  );
-  const localCountry = useSyncExternalStore(
-    countryStore.subscribe,
-    countryStore.getSnapshot,
-    countryStore.getServerSnapshot,
-  );
-  const localLanguage = useSyncExternalStore(
-    languageStore.subscribe,
-    languageStore.getSnapshot,
-    languageStore.getServerSnapshot,
-  );
+  const localUsername = useStore(usernameStore);
+  const localCountry = useStore(countryStore);
+  const localLanguage = useStore(languageStore);
 
   if (configured && user) {
     const meta = user.user_metadata ?? {};

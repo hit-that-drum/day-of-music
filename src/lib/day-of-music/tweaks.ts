@@ -1,11 +1,10 @@
 // tweaks.ts — the Tweaks panel settings (visual theme, typography, layout),
 // persisted per device so they survive reloads. Shared by the app shell, the
 // panel, and share-links (a share link snapshots the sharer's look).
-// No "use client": share-links.ts is also imported by the public /s pages.
+// Client-side only (it reads localStorage and exports a hook); imported by
+// client modules, share-links.ts included.
 
-import { useSyncExternalStore } from "react";
-
-import { makeJsonStore } from "@/lib/day-of-music/local-store";
+import { makeJsonStore, useStore } from "@/lib/day-of-music/local-store";
 import type { AestheticKey, TypeKey } from "@/lib/day-of-music/theme";
 
 export type Tweaks = {
@@ -39,11 +38,7 @@ export const tweaksStore = makeJsonStore<Tweaks>("dom.tweaks.v1", DEFAULT_TWEAKS
 });
 
 export function useTweaks(): Tweaks {
-  return useSyncExternalStore(
-    tweaksStore.subscribe,
-    tweaksStore.getSnapshot,
-    tweaksStore.getServerSnapshot,
-  );
+  return useStore(tweaksStore);
 }
 
 export function setTweak<K extends keyof Tweaks>(key: K, value: Tweaks[K]): void {

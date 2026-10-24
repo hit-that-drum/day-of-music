@@ -21,7 +21,11 @@ import { useCountry } from "@/lib/day-of-music/profile";
 import { useT } from "@/lib/day-of-music/i18n";
 import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
 import { useActiveTheme } from "@/lib/day-of-music/themes";
-import { isLocalStorageAvailable, makeSessionFlagStore } from "@/lib/day-of-music/local-store";
+import {
+  isLocalStorageAvailable,
+  makeSessionFlagStore,
+  useStore,
+} from "@/lib/day-of-music/local-store";
 import { rememberTimeZone } from "@/lib/day-of-music/today";
 import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { AddFlow, type NewEntry } from "@/components/day-of-music/add-flow";
@@ -391,11 +395,7 @@ export function DayOfMusicApp({
     getStorageBlockedServer,
   );
 
-  const guestDismissed = useSyncExternalStore(
-    guestBannerDismissed.subscribe,
-    guestBannerDismissed.getSnapshot,
-    guestBannerDismissed.getServerSnapshot,
-  );
+  const guestDismissed = useStore(guestBannerDismissed);
   const showGuestBanner = isGuest && !guestDismissed;
 
   return (

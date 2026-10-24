@@ -5,10 +5,9 @@
 
 "use client";
 
-import { useSyncExternalStore } from "react";
 
 import { useAuth } from "@/lib/day-of-music/auth-provider";
-import { makeJsonStore, makeStringStore } from "@/lib/day-of-music/local-store";
+import { makeJsonStore, makeStringStore, useStore } from "@/lib/day-of-music/local-store";
 
 export type Theme = { id: string; name: string; emoji: string };
 
@@ -53,11 +52,7 @@ export function useThemes(): {
   synced: boolean;
 } {
   const { configured, user, updateUserMetadata } = useAuth();
-  const localThemes = useSyncExternalStore(
-    localThemesStore.subscribe,
-    localThemesStore.getSnapshot,
-    localThemesStore.getServerSnapshot,
-  );
+  const localThemes = useStore(localThemesStore);
 
   if (configured && user) {
     const raw = user.user_metadata?.themes;
@@ -73,11 +68,7 @@ export function useThemes(): {
 
 /** The active theme id (which lane is being viewed) + setter. Per-device. */
 export function useActiveTheme(): { activeTheme: string; setActiveTheme: (id: string) => void } {
-  const activeTheme = useSyncExternalStore(
-    activeStore.subscribe,
-    activeStore.getSnapshot,
-    activeStore.getServerSnapshot,
-  );
+  const activeTheme = useStore(activeStore);
   return { activeTheme, setActiveTheme: activeStore.set };
 }
 
