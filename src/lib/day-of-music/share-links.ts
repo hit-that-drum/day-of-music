@@ -106,14 +106,19 @@ function randomToken(): string {
   return base64url(bytes);
 }
 
+function requireClient() {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) throw new Error("Supabase is not configured");
+  return supabase;
+}
+
 /** Store the snapshot under a fresh token and return the public URL.
  *  Every click mints a new link; old links keep their frozen snapshot. */
 export async function createSharedCardLink(
   userId: string,
   payload: SharePayload,
 ): Promise<string> {
-  const supabase = getSupabaseBrowserClient();
-  if (!supabase) throw new Error("Supabase is not configured");
+  const supabase = requireClient();
   const token = randomToken();
   // Uploaded covers ride inside the row, so shrink them to fit its size check
   // before the insert (a no-op for payloads that only point at https artwork).
@@ -122,7 +127,60 @@ export async function createSharedCardLink(
     "shared_cards insert",
     supabase.from("shared_cards").insert({ user_id: userId, token, kind: stored.kind, payload: stored }),
   );
+  return shareUrlForToken(token);
+}
+
+/** The public address of a stored link. */
+export function shareUrlForToken(token: string): string {
   return `${window.location.origin}/s/${token}`;
+}
+
+// ── Managing stored links (the Profile page) ────────────────────────────────
+
+/** How many links one account may keep. The database enforces it — the
+ *  shared-card trigger in 0007_abuse_limits.sql — so change the two together. */
+export const MAX_SHARED_CARDS = 200;
+
+/** A stored link as the manager lists it (public.shared_cards, snake_case). */
+export type SharedCardRow = {
+  id: string;
+  token: string;
+  kind: SharePayload["kind"];
+  created_at: string;
+};
+
+/** How many links the account holds — a count, no rows fetched. */
+export async function countSharedCards(userId: string): Promise<number> {
+  const { count } = await runQuery(
+    "shared_cards count",
+    requireClient()
+      .from("shared_cards")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId),
+  );
+  return count ?? 0;
+}
+
+/** The account's links, newest first (at most the cap, so all of them). */
+export async function listSharedCards(userId: string): Promise<SharedCardRow[]> {
+  const { data } = await runQuery(
+    "shared_cards list",
+    requireClient()
+      .from("shared_cards")
+      .select("id, token, kind, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(MAX_SHARED_CARDS),
+  );
+  return (data ?? []) as SharedCardRow[];
+}
+
+/** Delete one link; it stops resolving at once. */
+export async function deleteSharedCard(userId: string, id: string): Promise<void> {
+  await runQuery(
+    "shared_cards delete",
+    requireClient().from("shared_cards").delete().eq("id", id).eq("user_id", userId),
+  );
 }
 
 // ── Guest links (payload lives in the URL, nothing stored) ──────────────────

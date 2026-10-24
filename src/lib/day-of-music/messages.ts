@@ -184,7 +184,6 @@ export const MESSAGES = {
     es: "Cada cuenta puede guardar hasta {max} enlaces. Al eliminar uno, su dirección deja de abrirse al instante, pero las imágenes que otros ya guardaron no se borran.",
   },
   "profile.sharedLinks.loading": { en: "Loading share links…", ko: "공유 링크를 불러오는 중…", ja: "共有リンクを読み込み中…", zh: "正在加载分享链接…", es: "Cargando enlaces…" },
-  "profile.sharedLinks.unavailable": { en: "Share links aren't available. Check the Supabase settings.", ko: "공유 링크를 불러올 수 없습니다. Supabase 설정을 확인해 주세요.", ja: "共有リンクを読み込めません。Supabase の設定を確認してください。", zh: "无法加载分享链接。请检查 Supabase 设置。", es: "Los enlaces no están disponibles. Revisa la configuración de Supabase." },
   "profile.sharedLinks.loadFailed": { en: "Couldn't load share links. Please try again in a moment.", ko: "공유 링크를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.", ja: "共有リンクを読み込めませんでした。しばらくしてからもう一度お試しください。", zh: "无法加载分享链接。请稍后重试。", es: "No se pudieron cargar los enlaces. Inténtalo de nuevo en un momento." },
   "profile.sharedLinks.empty": { en: "You haven't created any share links yet.", ko: "아직 만든 공유 링크가 없습니다.", ja: "まだ共有リンクを作成していません。", zh: "你还没有创建分享链接。", es: "Aún no has creado enlaces compartidos." },
   // Rendered as profile.sharedLinks.kind.<shared_cards.kind>.
@@ -196,7 +195,6 @@ export const MESSAGES = {
   "profile.sharedLinks.delete": { en: "Delete link", ko: "링크 삭제", ja: "リンクを削除", zh: "删除链接", es: "Eliminar enlace" },
   "profile.sharedLinks.copied": { en: "Share link copied.", ko: "공유 링크를 복사했어요.", ja: "共有リンクをコピーしました。", zh: "已复制分享链接。", es: "Enlace copiado." },
   "profile.sharedLinks.copyFailed": { en: "Couldn't copy the link.", ko: "링크를 복사하지 못했습니다.", ja: "リンクをコピーできませんでした。", zh: "无法复制链接。", es: "No se pudo copiar el enlace." },
-  "profile.sharedLinks.deleteUnavailable": { en: "Share links can't be deleted right now.", ko: "공유 링크를 삭제할 수 없습니다.", ja: "共有リンクを削除できません。", zh: "目前无法删除分享链接。", es: "No se pueden eliminar enlaces ahora." },
   "profile.sharedLinks.deleteFailed": { en: "Couldn't delete the share link.", ko: "공유 링크를 삭제하지 못했습니다.", ja: "共有リンクを削除できませんでした。", zh: "无法删除分享链接。", es: "No se pudo eliminar el enlace." },
   "profile.sharedLinks.deleted": { en: "Share link deleted.", ko: "공유 링크가 삭제되었습니다.", ja: "共有リンクを削除しました。", zh: "分享链接已删除。", es: "Enlace eliminado." },
 

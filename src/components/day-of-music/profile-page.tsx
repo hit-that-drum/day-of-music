@@ -3,23 +3,19 @@
 
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/lib/day-of-music/auth-provider";
-import {
-  Button,
-  IconButton,
-  buttonClass,
-} from "@/components/day-of-music/atoms";
+import { Button, IconButton } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
 import { DomSelectField } from "@/components/day-of-music/dom-select";
 import { passwordIssues } from "@/lib/day-of-music/password";
 import { PasswordRules } from "@/components/day-of-music/password-rules";
 import { GoogleIcon, KakaoIcon } from "@/components/day-of-music/brand-icons";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { SharedLinksSummaryCard } from "@/components/day-of-music/shared-links-manager";
 import {
   countriesForLocale,
   DEFAULT_USERNAME,
@@ -28,7 +24,7 @@ import {
   type ProfilePatch,
 } from "@/lib/day-of-music/profile";
 import { useThemes, type Theme } from "@/lib/day-of-music/themes";
-import { dateTimeLong, useLanguage, useT, type Locale } from "@/lib/day-of-music/i18n";
+import { useLanguage, useT } from "@/lib/day-of-music/i18n";
 
 // Display labels for the OAuth providers we support (icons live in brand-icons).
 const PROVIDER_LABELS: Record<string, string> = {
@@ -285,313 +281,6 @@ function EmphasizedEmail({ template, email }: { template: string; email: string 
       <strong>{email}</strong>
       {after}
     </>
-  );
-}
-
-const MAX_SHARED_CARDS = 200;
-
-type SharedCardRow = {
-  id: string;
-  token: string;
-  kind: "week" | "month" | "stats";
-  created_at: string;
-};
-
-function SharedLinksSummaryCard({ userId }: { userId: string }) {
-  const [open, setOpen] = useState(false);
-  const [total, setTotal] = useState<number | null>(null);
-  const t = useT();
-
-  const loadTotal = useCallback(async () => {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
-
-    const { count, error } = await supabase
-      .from("shared_cards")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId);
-
-    if (!error) setTotal(count ?? 0);
-  }, [userId]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => void loadTotal(), 0);
-    return () => window.clearTimeout(timer);
-  }, [loadTotal]);
-
-  const usagePercent =
-    total === null ? 0 : Math.min(100, (total / MAX_SHARED_CARDS) * 100);
-
-  return (
-    <section className="dom-settings-card dom-share-summary-card">
-      <div className="dom-settings-label">{t("profile.section.sharedLinks")}</div>
-
-      <div className="dom-share-summary-main">
-        <div
-          className="dom-share-summary-count"
-          aria-live="polite"
-          aria-label={
-            total === null
-              ? t("profile.sharedLinks.countLoading")
-              : t("profile.sharedLinks.countAria", { count: total, max: MAX_SHARED_CARDS })
-          }
-        >
-          <strong>{total ?? "—"}</strong>
-          <span>/</span>
-          <strong>{MAX_SHARED_CARDS}</strong>
-        </div>
-        <div
-          className="dom-share-manager-meter"
-          role="progressbar"
-          aria-label={t("profile.sharedLinks.usageAria")}
-          aria-valuemin={0}
-          aria-valuemax={MAX_SHARED_CARDS}
-          aria-valuenow={total ?? undefined}
-        >
-          <span style={{ width: `${usagePercent}%` }} />
-        </div>
-      </div>
-
-      <p className="dom-settings-note">{t("profile.sharedLinks.note")}</p>
-
-      <div className="dom-share-summary-action">
-        <Button variant="ghost" onClick={() => setOpen(true)}>
-          {t("profile.sharedLinks.manage")}
-        </Button>
-      </div>
-
-      {open && (
-        <SharedLinksModal
-          userId={userId}
-          onTotalChange={setTotal}
-          onClose={() => setOpen(false)}
-        />
-      )}
-    </section>
-  );
-}
-
-function formatSharedCardDate(value: string, locale: Locale): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return dateTimeLong(locale, date);
-}
-
-function SharedLinksModal({
-  userId,
-  onTotalChange,
-  onClose,
-}: {
-  userId: string;
-  onTotalChange: (total: number) => void;
-  onClose: () => void;
-}) {
-  const [cards, setCards] = useState<SharedCardRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  // Which failure, not its text: the message is translated at render, so
-  // loadCards (an effect dependency) doesn't change with the language.
-  const [loadError, setLoadError] = useState<"unavailable" | "loadFailed" | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const t = useT();
-  const { locale } = useLanguage();
-  const titleId = useId();
-
-  const loadCards = useCallback(async () => {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) {
-      setLoadError("unavailable");
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setLoadError(null);
-    const { data, count, error } = await supabase
-      .from("shared_cards")
-      .select("id, token, kind, created_at", { count: "exact" })
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(MAX_SHARED_CARDS);
-
-    if (error) {
-      setLoadError("loadFailed");
-      setLoading(false);
-      return;
-    }
-
-    const nextTotal = count ?? data?.length ?? 0;
-    setCards((data ?? []) as SharedCardRow[]);
-    setTotal(nextTotal);
-    onTotalChange(nextTotal);
-    setLoading(false);
-  }, [onTotalChange, userId]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => void loadCards(), 0);
-    return () => window.clearTimeout(timer);
-  }, [loadCards]);
-
-  async function copyLink(token: string) {
-    try {
-      await navigator.clipboard.writeText(
-        `${window.location.origin}/s/${token}`,
-      );
-      toast.success(t("profile.sharedLinks.copied"));
-    } catch {
-      toast.error(t("profile.sharedLinks.copyFailed"));
-    }
-  }
-
-  async function deleteLink(id: string) {
-    if (deletingId) return;
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) {
-      toast.error(t("profile.sharedLinks.deleteUnavailable"));
-      return;
-    }
-
-    setDeletingId(id);
-    const { error } = await supabase
-      .from("shared_cards")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", userId);
-
-    if (error) {
-      toast.error(t("profile.sharedLinks.deleteFailed"));
-      setDeletingId(null);
-      return;
-    }
-
-    const nextTotal = Math.max(0, total - 1);
-    setCards((current) => current.filter((card) => card.id !== id));
-    setTotal(nextTotal);
-    onTotalChange(nextTotal);
-    setConfirmDeleteId(null);
-    setDeletingId(null);
-    toast.success(t("profile.sharedLinks.deleted"));
-  }
-
-  const usagePercent = Math.min(100, (total / MAX_SHARED_CARDS) * 100);
-
-  return (
-    <Modal
-      labelledBy={titleId}
-      className="dom-share-manager-wrap"
-      onClose={() => {
-        if (!deletingId) onClose();
-      }}
-    >
-      <section className="dom-share-manager">
-        <header className="dom-share-manager-header">
-          <div>
-            <span className="dom-settings-label">{t("profile.section.sharedLinks")}</span>
-            <h2 id={titleId}>{t("profile.sharedLinks.title")}</h2>
-          </div>
-          <strong className="dom-share-manager-count">
-            {total} / {MAX_SHARED_CARDS}
-          </strong>
-        </header>
-
-        <div
-          className="dom-share-manager-meter"
-          role="progressbar"
-          aria-label={t("profile.sharedLinks.usageAria")}
-          aria-valuemin={0}
-          aria-valuemax={MAX_SHARED_CARDS}
-          aria-valuenow={Math.min(total, MAX_SHARED_CARDS)}
-        >
-          <span style={{ width: `${usagePercent}%` }} />
-        </div>
-
-        <p className="dom-share-manager-note">
-          {t("profile.sharedLinks.limitNote", { max: MAX_SHARED_CARDS })}
-        </p>
-
-        {loading ? (
-          <div className="dom-share-manager-state" role="status">
-            {t("profile.sharedLinks.loading")}
-          </div>
-        ) : loadError ? (
-          <div className="dom-share-manager-state">
-            <p>{t(`profile.sharedLinks.${loadError}`)}</p>
-            <Button variant="ghost" size="sm" onClick={() => void loadCards()}>
-              {t("action.retry")}
-            </Button>
-          </div>
-        ) : cards.length === 0 ? (
-          <div className="dom-share-manager-state">
-            {t("profile.sharedLinks.empty")}
-          </div>
-        ) : (
-          <ul className="dom-share-list">
-            {cards.map((card) => {
-              const confirming = confirmDeleteId === card.id;
-              const deleting = deletingId === card.id;
-              return (
-                <li className="dom-share-list-item" key={card.id}>
-                  <div className="dom-share-list-info">
-                    <strong>{t(`profile.sharedLinks.kind.${card.kind}`)}</strong>
-                    <span>{formatSharedCardDate(card.created_at, locale)}</span>
-                    <code title={card.token}>…{card.token.slice(-8)}</code>
-                  </div>
-                  <div className="dom-share-list-actions">
-                    {confirming ? (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setConfirmDeleteId(null)}
-                          disabled={deleting}
-                        >
-                          {t("action.cancel")}
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => void deleteLink(card.id)}
-                          disabled={deleting}
-                        >
-                          {deleting ? t("action.deleting") : t("profile.sharedLinks.delete")}
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <a
-                          className={buttonClass("ghost", "sm")}
-                          href={`/s/${card.token}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {t("profile.sharedLinks.open")}
-                        </a>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => void copyLink(card.token)}
-                        >
-                          {t("profile.sharedLinks.copy")}
-                        </Button>
-                        <Button
-                          variant="danger-ghost"
-                          size="sm"
-                          onClick={() => setConfirmDeleteId(card.id)}
-                          disabled={Boolean(deletingId)}
-                        >
-                          {t("action.delete")}
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-    </Modal>
   );
 }
 
