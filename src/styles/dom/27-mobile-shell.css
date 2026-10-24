@@ -1,10 +1,9 @@
 /* ── Mobile app shell (≤760px) ─────────────────────────────────────────────
    Compact 1-row header (.dom-topbar-app), 5-tab fixed bottom bar, 1-line
    dismissible guest banner, board header rows, week-jump sheet, More sheet.
-   Appended last on purpose: several rules override same-specificity phone
-   rules in the ≤760 blocks above (topbar, theme select, week header) and base
-   rules that follow the Phone pass (guest banner). Tokens only; radius 0; 1px
-   rules. */
+   After the phone pass on purpose: several rules override same-specificity
+   phone-pass rules (topbar, theme select, week header). Tokens only; radius 0;
+   1px rules. */
 @media (max-width: 760px) {
   /* Header ─────────────────────────────────────────────────────────────── */
   .dom-topbar-app {

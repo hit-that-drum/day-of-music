@@ -2,7 +2,7 @@
    Two renderings of one field, switched by CSS (render both, never read the
    viewport in JS). .dom-move-native keeps the native date input for the
    desktop Journal tab; .dom-move-touch (phones — see the day-detail-move
-   section at the end of the file) is a designed trigger that borrows
+   section in 29-phone-landscape.css) is a designed trigger that borrows
    .dom-input's box, plus the week popover's calendar in day mode laid INLINE
    (static, full width, no backdrop) so .dom-detail-right's overflow can't
    clip it. */

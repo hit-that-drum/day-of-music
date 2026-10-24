@@ -1,9 +1,11 @@
 // day-of-music.ts — the app stylesheet, one file per section under ./dom/,
 // imported here in cascade order. Later files win ties between equally
-// specific rules, so the order is load-bearing (the phone, sheet and landscape
-// passes come last on purpose). Imported from JS rather than through CSS
-// @import: an @import would hand the files to Tailwind's PostCSS plugin, which
-// rewrites them (color-mix fallbacks), unlike how this sheet was always built.
+// specific rules, so the order is load-bearing: the ≤760 files (phone pass,
+// mobile shell, bottom sheets, landscape) come after every base file. A few
+// narrower tweaks (≤640 and below) stay beside their components. Imported from
+// JS rather than through CSS @import: an @import would hand the files to
+// Tailwind's PostCSS plugin, which rewrites them (color-mix fallbacks), unlike
+// how this sheet was always built.
 // Themes are applied via CSS variables set inline on .dom-stage from
 // lib/day-of-music/appearance.ts.
 
@@ -28,12 +30,12 @@ import "./dom/17-share-card.css";
 import "./dom/18-signin.css";
 import "./dom/19-tweaks-panel.css";
 import "./dom/20-responsive.css";
-import "./dom/21-phone-pass.css";
-import "./dom/22-home-landing.css";
-import "./dom/23-legal.css";
-import "./dom/24-empty-days.css";
-import "./dom/25-best-of.css";
-import "./dom/26-mobile-shell-hooks.css";
+import "./dom/21-home-landing.css";
+import "./dom/22-legal.css";
+import "./dom/23-empty-days.css";
+import "./dom/24-best-of.css";
+import "./dom/25-mobile-shell-hooks.css";
+import "./dom/26-phone-pass.css";
 import "./dom/27-mobile-shell.css";
 import "./dom/28-bottom-sheets.css";
 import "./dom/29-phone-landscape.css";

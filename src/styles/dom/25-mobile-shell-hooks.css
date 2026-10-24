@@ -1,6 +1,7 @@
 /* ── Mobile shell hooks (all widths) ───────────────────────────────────────
    New selectors only. Phone chrome is rendered unconditionally and switched on
-   in the ≤760 block below; here it is inert so desktop is byte-identical. */
+   in the mobile shell (27-mobile-shell.css); here it is inert so desktop is
+   byte-identical. */
 .dom-topbar-m,
 .dom-tabbar,
 .dom-week-jump,

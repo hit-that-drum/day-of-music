@@ -91,27 +91,6 @@
   gap: 8px;
   padding: 18px 28px 0;
 }
-@media (max-width: 760px) {
-  .dom-theme-select {
-    padding: 14px 16px 0;
-  }
-  .dom-select-field[data-variant="underline"][data-size="large"] .dom-select {
-    width: 100%;
-  }
-  .dom-root
-    .dom-select-field[data-variant="underline"][data-size="large"]
-    .dom-select-trigger {
-    font-size: 18px;
-  }
-  .dom-select-field[data-variant="underline"][data-size="large"]
-    .dom-select-value {
-    font-size: 18px;
-  }
-  .dom-select-field[data-variant="underline"][data-size="large"]
-    .dom-select-caret {
-    width: 48px;
-  }
-}
 
 /* Theme manager rows (Profile) */
 .dom-theme-editor-row {

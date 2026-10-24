@@ -111,25 +111,3 @@ a.dom-btn {
 .dom-signin-sub a {
   color: var(--ink);
 }
-
-/* Phone pass for the landing (kept here, after the base rules above, so the
-   overrides win the cascade). */
-@media (max-width: 760px) {
-  .dom-home-hero {
-    padding: 32px 4px 24px;
-  }
-  /* Four 120px tiles left ~90px of dead gutter beside them at 375. Two even
-     columns fill the row instead. */
-  .dom-home-covers {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-width: none;
-  }
-  .dom-home-footer {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-  .dom-home-legal {
-    flex-wrap: wrap;
-  }
-}

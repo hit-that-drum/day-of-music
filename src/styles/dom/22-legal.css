@@ -6,7 +6,9 @@
   font-family: var(--font-mono);
   gap: 18px;
 }
-.dom-legal-topbar {
+/* Two classes so it outranks the phone pass's single-column .dom-topbar: the
+   legal bar keeps brand and nav on one row down to 640px. */
+.dom-topbar.dom-legal-topbar {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 .dom-legal-back {
@@ -192,7 +194,7 @@
 }
 
 @media (max-width: 640px) {
-  .dom-legal-topbar {
+  .dom-topbar.dom-legal-topbar {
     grid-template-columns: 1fr;
   }
   .dom-legal-nav {
@@ -210,9 +212,5 @@
   .dom-legal-table th,
   .dom-legal-table td {
     word-break: normal;
-  }
-  .dom-home-footer {
-    align-items: flex-start;
-    flex-direction: column;
   }
 }

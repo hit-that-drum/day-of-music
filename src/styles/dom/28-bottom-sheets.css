@@ -2,14 +2,14 @@
    Every overlay Modal (modal.tsx) is a bottom sheet on a phone: the scrim
    anchors .dom-modal to the bottom edge, .dom-modal becomes the sheet surface
    AND the scroller, and .dom-modal-bar (drag handle + ✕) is a sticky header
-   band. Lives this late in the file on purpose — it overrides base rules that
-   are declared after the Phone pass (Best of Week at ~4339+), and equal-
-   specificity overrides only win by source order. Desktop never sees any of
-   this: the band is display:contents there and the ✕ keeps its absolute slot.
-   The slide-up keyframe (dom-sheet-up) is defined once, in the mobile shell
-   hooks above. Z-ladder: 40 dropdown < 45 tab bar < 50 scrim (the sheet is
-   inside the scrim, so it covers the tab bar) < 60 tweaks < 70/71 week picker
-   < 80/81 poster zoom. */
+   band. After the phone pass and the mobile shell on purpose — it overrides
+   rules of equal specificity declared before it (Best of Week's ≤640 panel
+   padding, the ≤1100 Day Detail), which only works by source order. Desktop
+   never sees any of this: the band is display:contents there and the ✕ keeps
+   its absolute slot. The slide-up keyframe (dom-sheet-up) is defined once, in
+   the mobile shell hooks. Z-ladder: 40 dropdown < 45 tab bar < 50 scrim (the
+   sheet is inside the scrim, so it covers the tab bar) < 60 tweaks < 70/71
+   week picker < 80/81 poster zoom. */
 @media (max-width: 760px) {
   /* Scrim: bottom-anchored, no padding, no scrolling — the sheet scrolls. The
      chrome token now means "what a panel may NOT use": the 8dvh peek of page

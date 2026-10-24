@@ -40,8 +40,8 @@
 .dom-modal-close:hover {
   background-color: var(--chip);
 }
-/* Sheet header band — phones only (see "Bottom sheets (≤760px)" near the end
-   of the file). On desktop it generates no box at all, so the ✕ keeps its
+/* Sheet header band — phones only (see 28-bottom-sheets.css). On desktop it
+   generates no box at all, so the ✕ keeps its
    absolute slot in .dom-modal's reserved gap exactly as before. */
 .dom-modal-bar {
   display: contents;
