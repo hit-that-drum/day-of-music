@@ -27,6 +27,7 @@ import { addDays, fmtDate, parseDate, startOfWeek, type Album } from "@/lib/day-
 import { useJournal } from "@/lib/day-of-music/use-journal";
 import { resolveActiveTheme, useActiveTheme, useThemes } from "@/lib/day-of-music/themes";
 import { useT } from "@/lib/day-of-music/i18n";
+import { readUserMetadata } from "@/lib/day-of-music/user-metadata";
 
 export type BestOfMethod = "sequential" | "random";
 export type BestOfPeriod = "week" | "month" | "year";
@@ -251,7 +252,7 @@ export function useBestOf(): {
   const remote = query.data;
   useEffect(() => {
     if (!signedIn || !userId || migrated.current || !remote) return;
-    const legacy = (user?.user_metadata?.bestOf as BestOfMap | undefined) ?? null;
+    const legacy = (user && readUserMetadata(user).bestOf) ?? null;
     if (!legacy || !Object.keys(legacy).length) return;
     migrated.current = true;
 

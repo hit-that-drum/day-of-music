@@ -8,6 +8,7 @@
 
 import { useAuth, type AuthResult } from "@/lib/day-of-music/auth-provider";
 import { makeJsonStore, makeStringStore, useStore } from "@/lib/day-of-music/local-store";
+import { readUserMetadata } from "@/lib/day-of-music/user-metadata";
 
 export type Theme = { id: string; name: string; emoji: string };
 
@@ -56,8 +57,8 @@ export function useThemes(): {
   const localThemes = useStore(localThemesStore);
 
   if (configured && user) {
-    const raw = user.user_metadata?.themes;
-    const themes = Array.isArray(raw) && raw.length ? (raw as Theme[]) : DEFAULT_THEMES;
+    const saved = readUserMetadata(user).themes;
+    const themes = saved?.length ? saved : DEFAULT_THEMES;
     return { themes, saveThemes: (t) => updateUserMetadata({ themes: t }), synced: true };
   }
   return {

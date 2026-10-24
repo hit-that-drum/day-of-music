@@ -14,6 +14,7 @@ import esLocale from "i18n-iso-countries/langs/es.json";
 
 import { useAuth, type AuthResult } from "@/lib/day-of-music/auth-provider";
 import { makeStringStore, useStore } from "@/lib/day-of-music/local-store";
+import { readUserMetadata } from "@/lib/day-of-music/user-metadata";
 import type { LanguagePref, Locale } from "@/lib/day-of-music/i18n-core";
 
 // Register a country-name catalog per supported UI language so the picker can
@@ -152,12 +153,12 @@ export function useProfile(): {
   const localLanguage = useStore(languageStore);
 
   if (configured && user) {
-    const meta = user.user_metadata ?? {};
+    const meta = readUserMetadata(user);
     return {
-      username: (meta.username as string | undefined) ?? "",
+      username: meta.username ?? "",
       // No saved country yet → fall back to the locale's storefront, not US.
-      country: (meta.country as string | undefined) ?? detectStorefront(),
-      language: (meta.language as LanguagePref | undefined) ?? DEFAULT_LANGUAGE,
+      country: meta.country ?? detectStorefront(),
+      language: meta.language ?? DEFAULT_LANGUAGE,
       save: (patch) => updateUserMetadata(patch),
       synced: true,
     };

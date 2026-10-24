@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import type { Session, User } from "@supabase/supabase-js";
 
 import { useIdleSignOut } from "@/lib/day-of-music/use-idle-sign-out";
+import type { UserMetadata } from "@/lib/day-of-music/user-metadata";
 import {
   SUPABASE_CALL_TIMEOUT_MS,
   getSupabaseBrowserClient,
@@ -44,7 +45,7 @@ type AuthContextValue = {
   /** Permanently delete the account + its data (server route, service role). */
   deleteAccount: () => Promise<AuthResult>;
   /** Merge keys into the account's user_metadata so profile prefs sync. */
-  updateUserMetadata: (patch: Record<string, unknown>) => Promise<AuthResult>;
+  updateUserMetadata: (patch: Partial<UserMetadata>) => Promise<AuthResult>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -185,7 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null };
   }, []);
 
-  const updateUserMetadata = useCallback(async (patch: Record<string, unknown>) => {
+  const updateUserMetadata = useCallback(async (patch: Partial<UserMetadata>) => {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return { error: "Supabase is not configured." };
     // GoTrue merges these keys into user_metadata.
