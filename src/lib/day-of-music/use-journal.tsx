@@ -34,7 +34,7 @@ import {
   useActiveTheme,
   useThemes,
 } from "@/lib/day-of-music/themes";
-import { useAuth } from "@/components/day-of-music/auth-provider";
+import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { useT } from "@/lib/day-of-music/i18n";
 import {
   AUTH_CALL_TIMEOUT_MS,

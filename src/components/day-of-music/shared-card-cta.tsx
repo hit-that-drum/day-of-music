@@ -7,7 +7,7 @@
 import Link from "next/link";
 
 import { buttonClass } from "@/components/day-of-music/atoms";
-import { useAuth } from "@/components/day-of-music/auth-provider";
+import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { useT } from "@/lib/day-of-music/i18n";
 
 export function SharedCardCta() {

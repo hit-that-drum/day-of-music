@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
-import { useAuth } from "@/components/day-of-music/auth-provider";
+import { useAuth } from "@/lib/day-of-music/auth-provider";
 import {
   Button,
   IconButton,

@@ -7,7 +7,7 @@
 
 import { useSyncExternalStore } from "react";
 
-import { useAuth } from "@/components/day-of-music/auth-provider";
+import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { makeJsonStore, makeStringStore } from "@/lib/day-of-music/local-store";
 
 export type Theme = { id: string; name: string; emoji: string };

@@ -7,7 +7,7 @@ import { Fragment, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { useAuth } from "@/components/day-of-music/auth-provider";
+import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { BrandMark, Button } from "@/components/day-of-music/atoms";
 import { passwordIssues } from "@/lib/day-of-music/password";
 import { PasswordRules } from "@/components/day-of-music/password-rules";

@@ -13,6 +13,23 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-shadow": ["error", { allow: ["_"] }],
     },
   },
+  {
+    // lib/ is the layer components build on; it must not reach back up.
+    files: ["src/lib/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/components/*"],
+              message: "lib/ must not depend on components/ — move the shared piece into lib/.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

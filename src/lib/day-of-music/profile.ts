@@ -13,7 +13,7 @@ import jaLocale from "i18n-iso-countries/langs/ja.json";
 import zhLocale from "i18n-iso-countries/langs/zh.json";
 import esLocale from "i18n-iso-countries/langs/es.json";
 
-import { useAuth } from "@/components/day-of-music/auth-provider";
+import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { makeStringStore } from "@/lib/day-of-music/local-store";
 import type { LanguagePref, Locale } from "@/lib/day-of-music/i18n";
 

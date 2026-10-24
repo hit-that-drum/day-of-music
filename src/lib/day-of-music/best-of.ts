@@ -19,7 +19,7 @@
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { useAuth } from "@/components/day-of-music/auth-provider";
+import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { makeJsonStore } from "@/lib/day-of-music/local-store";
 import {
   AUTH_CALL_TIMEOUT_MS,

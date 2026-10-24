@@ -16,7 +16,7 @@ import {
   type SharePayload,
 } from "@/lib/day-of-music/share-links";
 import { useT } from "@/lib/day-of-music/i18n";
-import { useAuth } from "@/components/day-of-music/auth-provider";
+import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { Button, buttonClass } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
 

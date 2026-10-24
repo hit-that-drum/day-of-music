@@ -9,7 +9,7 @@ import Link from "next/link";
 import type { Album } from "@/lib/day-of-music/data";
 import { applyTheme, ensureFonts } from "@/lib/day-of-music/theme";
 import { useT } from "@/lib/day-of-music/i18n";
-import { useAuth } from "@/components/day-of-music/auth-provider";
+import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { BrandMark } from "@/components/day-of-music/atoms";
 import { Button, buttonClass } from "@/components/day-of-music/atoms";
 import { Cover } from "@/components/day-of-music/cover";

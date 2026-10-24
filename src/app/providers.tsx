@@ -5,7 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "sonner";
 
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
-import { AuthProvider } from "@/components/day-of-music/auth-provider";
+import { AuthProvider } from "@/lib/day-of-music/auth-provider";
 import { PHONE_QUERY } from "@/lib/day-of-music/phone";
 import { JournalProvider } from "@/lib/day-of-music/use-journal";
 

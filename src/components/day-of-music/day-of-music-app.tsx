@@ -23,7 +23,7 @@ import { useJournal, type JournalAlbum } from "@/lib/day-of-music/use-journal";
 import { useActiveTheme } from "@/lib/day-of-music/themes";
 import { isLocalStorageAvailable, makeSessionFlagStore } from "@/lib/day-of-music/local-store";
 import { rememberTimeZone } from "@/lib/day-of-music/today";
-import { useAuth } from "@/components/day-of-music/auth-provider";
+import { useAuth } from "@/lib/day-of-music/auth-provider";
 import { AddFlow, type NewEntry } from "@/components/day-of-music/add-flow";
 import { IconButton } from "@/components/day-of-music/atoms";
 import { BottomTabs } from "@/components/day-of-music/bottom-tabs";
