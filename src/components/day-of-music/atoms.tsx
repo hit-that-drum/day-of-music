@@ -86,13 +86,17 @@ export function Stars({
   size?: number;
   color?: string;
 }) {
+  // One image named by its value: the five glyphs always read "★★★★★"
+  // otherwise. A number, not words — this also renders in the hook-free
+  // posters and the server-rendered share page, where there is no t().
   return (
-    <span style={{ display: "inline-flex", gap: size * 0.1 }}>
+    <span role="img" aria-label={`${value} / 5`} style={{ display: "inline-flex", gap: size * 0.1 }}>
       {Array.from({ length: 5 }, (_, i) => {
         const on = i + 1 <= value;
         return (
           <span
             key={i}
+            aria-hidden="true"
             style={{
               color: on ? color || "var(--ink)" : "var(--lineSoft)",
               fontSize: size,
