@@ -15,13 +15,6 @@
   gap: 10px;
   margin-bottom: 12px;
 }
-.dom-signin-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ink3);
-}
 .dom-signin-title {
   font-family: var(--font-display);
   font-weight: 500;

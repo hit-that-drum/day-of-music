@@ -87,8 +87,8 @@ export function SearchView({ onOpen }: { onOpen: (album: Album) => void }) {
 
   return (
     <div className="dom-search">
-      <div className="dom-week-hd">
-        <div className="dom-week-title">
+      <div className="dom-page-hd">
+        <div className="dom-page-title">
           <span className="dom-eyebrow">{t("journal.eyebrow")}</span>
           <h1>{t("journal.title")}</h1>
         </div>

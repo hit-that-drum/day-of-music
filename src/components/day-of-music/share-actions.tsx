@@ -126,7 +126,7 @@ export function ShareActions({
           }}
         >
           <div className="dom-public-link-modal">
-            <span className="dom-settings-label">{t("share.publicLinkLabel")}</span>
+            <span className="dom-label">{t("share.publicLinkLabel")}</span>
             {createdUrl ? (
               <>
                 <h2 id={confirmTitleId}>{t("share.createdTitle")}</h2>

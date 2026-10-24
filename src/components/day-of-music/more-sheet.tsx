@@ -63,7 +63,7 @@ export function MoreSheet({
       className="dom-sheet dom-more-sheet"
     >
       <div className="dom-sheet-body">
-        <div className="dom-tweak-section">{t("lang.label")}</div>
+        <div className="dom-section-label">{t("lang.label")}</div>
         <div
           className="dom-menu-langs"
           role="radiogroup"
@@ -92,7 +92,7 @@ export function MoreSheet({
           })}
         </div>
 
-        <div className="dom-tweak-section">{t("profile.section.account")}</div>
+        <div className="dom-section-label">{t("profile.section.account")}</div>
         {account ? (
           <div className="dom-menu-row">
             <span className="dom-account-email" title={account.email}>

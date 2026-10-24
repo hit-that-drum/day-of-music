@@ -223,26 +223,26 @@ export function StatsPoster({
       {/* Stats — identical card markup/classes to the My Logs recap. */}
       <div className="dom-theme-recap-grid">
         <div className="dom-stat dom-stat-compact">
-          <div className="dom-stat-label">albums</div>
+          <div className="dom-label">albums</div>
           <div className="dom-stat-num">{String(stats.total).padStart(2, "0")}</div>
           <div className="dom-stat-sub">{sub}</div>
         </div>
         <div className="dom-stat dom-stat-compact">
-          <div className="dom-stat-label">average</div>
+          <div className="dom-label">average</div>
           <div className="dom-stat-num">{stats.avgRating}</div>
           <div className="dom-stat-sub">
             <Stars value={Math.round(stats.avgRatingNum)} size={13} />
           </div>
         </div>
         <div className="dom-stat dom-stat-compact">
-          <div className="dom-stat-label">five-stars</div>
+          <div className="dom-label">five-stars</div>
           <div className="dom-stat-num">{fiveStarCount}</div>
           <div className="dom-stat-sub">
             {stats.total ? Math.round((fiveStarCount / stats.total) * 100) : 0}% of catalog
           </div>
         </div>
         <div className="dom-stat dom-stat-compact dom-theme-genre-card">
-          <div className="dom-stat-label">top genres</div>
+          <div className="dom-label">top genres</div>
           <div className="dom-bars">
             {stats.topGenres.length ? (
               stats.topGenres.map(([g, n]) => (

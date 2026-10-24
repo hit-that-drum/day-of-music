@@ -78,7 +78,7 @@ export function SharedLinksSummaryCard({ userId }: { userId: string }) {
 
   return (
     <section className="dom-settings-card dom-share-summary-card">
-      <div className="dom-settings-label">{t("profile.section.sharedLinks")}</div>
+      <div className="dom-label">{t("profile.section.sharedLinks")}</div>
 
       <div className="dom-share-summary-main">
         <div
@@ -176,7 +176,7 @@ function SharedLinksModal({ userId, onClose }: { userId: string; onClose: () => 
       <section className="dom-share-manager">
         <header className="dom-share-manager-header">
           <div>
-            <span className="dom-settings-label">{t("profile.section.sharedLinks")}</span>
+            <span className="dom-label">{t("profile.section.sharedLinks")}</span>
             <h2 id={titleId}>{t("profile.sharedLinks.title")}</h2>
           </div>
           <strong className="dom-share-manager-count">

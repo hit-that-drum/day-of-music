@@ -41,7 +41,8 @@
 .dom-tweaks-close:hover {
   background-color: var(--chip);
 }
-.dom-tweak-section {
+/* Section heading over a hairline; the More sheet uses it too. */
+.dom-section-label {
   font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.18em;

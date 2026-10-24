@@ -152,7 +152,7 @@ export function BestOfModal({
     <Modal label={title} onClose={onClose} width={760}>
       <div className="dom-bow-inner">
         <div className="dom-bow-hd">
-          <span className="dom-bow-kicker">{title}</span>
+          <span className="dom-eyebrow">{title}</span>
           <h2 className="dom-bow-week">
             {themeLabel} · {periodLabel}
           </h2>

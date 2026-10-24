@@ -18,7 +18,9 @@
   flex-direction: column;
   gap: 12px;
 }
-.dom-settings-label {
+/* Small caps label, shared beyond this page: settings sections, stat cards,
+   the share posters, the public-link dialog. */
+.dom-label {
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.16em;
@@ -112,13 +114,6 @@
 }
 .dom-stat-wide {
   grid-column: span 2;
-}
-.dom-stat-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--ink3);
 }
 .dom-stat-num {
   font-family: var(--font-display);

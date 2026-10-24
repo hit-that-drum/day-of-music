@@ -85,13 +85,13 @@ export function TweaksPanel({
       tabIndex={-1}
     >
       <div className="dom-tweaks-panel-hd">
-        <span className="dom-tweak-section dom-tweaks-panel-title">{t("tweaks.title")}</span>
+        <span className="dom-section-label dom-tweaks-panel-title">{t("tweaks.title")}</span>
         <button className="dom-tweaks-close" onClick={onClose} aria-label={t("modal.close")}>
           ✕
         </button>
       </div>
 
-      <div className="dom-tweak-section">{t("tweaks.aesthetic")}</div>
+      <div className="dom-section-label">{t("tweaks.aesthetic")}</div>
       <DomSelectField
         label={t("tweaks.theme")}
         value={tweaks.aesthetic}
@@ -109,7 +109,7 @@ export function TweaksPanel({
         labelClassName="dom-tweak-label"
       />
 
-      <div className="dom-tweak-section">{t("tweaks.layout")}</div>
+      <div className="dom-section-label">{t("tweaks.layout")}</div>
       <div className="dom-tweak-toggle-row">
         <span className="dom-tweak-label">{t("tweaks.splitWeeks")}</span>
         <button

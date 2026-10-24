@@ -11,7 +11,7 @@
   .dom-grid > * {
     min-height: 240px;
   }
-  .dom-week-title h1 {
+  .dom-page-title h1 {
     font-size: 32px;
   }
   .dom-stats-grid {
@@ -263,27 +263,27 @@
     border-top: 1px solid var(--lineSoft);
     margin-top: 2px;
   }
-  /* Week board only (.dom-week-hd-board): the grid's label cell already prints
+  /* Week board only (.dom-page-hd-board): the grid's label cell already prints
      "8월 · 4주차", so the title collapses to a 0-width box. It stays rendered
      (not display:none) because .dom-week-title-anchor hosts the WeekPicker,
      which the phone shows as a fixed bottom sheet. Journal / My Logs / Profile
      keep their heading. */
-  .dom-week-hd-board .dom-week-title {
+  .dom-page-hd-board .dom-page-title {
     display: block;
     flex: 0 0 0;
     width: 0;
     min-width: 0;
     overflow: visible;
   }
-  .dom-week-hd-board .dom-week-title > .dom-eyebrow,
-  .dom-week-hd-board .dom-week-title-btn {
+  .dom-page-hd-board .dom-page-title > .dom-eyebrow,
+  .dom-page-hd-board .dom-week-title-btn {
     display: none;
   }
-  .dom-week-hd {
+  .dom-page-hd {
     padding-bottom: 12px;
     margin-bottom: 16px;
   }
-  .dom-week-title h1 {
+  .dom-page-title h1 {
     font-size: 26px;
   }
 }

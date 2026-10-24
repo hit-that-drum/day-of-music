@@ -110,7 +110,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             <span className="dom-brand-name">Day of Music</span>
             {tagline && <span className="dom-brand-ko">{tagline}</span>}
           </Link>
-          <div className="dom-signin-eyebrow">{copy.eyebrow}</div>
+          <div className="dom-eyebrow">{copy.eyebrow}</div>
           <h1 className="dom-signin-title">{copy.title}</h1>
           <p className="dom-signin-sub">{copy.sub}</p>
 

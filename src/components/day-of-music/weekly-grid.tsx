@@ -234,8 +234,8 @@ function WeekHeader({
   const t = useT();
 
   return (
-    <div className="dom-week-hd dom-week-hd-board">
-      <div className="dom-week-title">
+    <div className="dom-page-hd dom-page-hd-board">
+      <div className="dom-page-title">
         <span className="dom-eyebrow">{t("week.eyebrow")}</span>
         <div className="dom-week-title-anchor">
           <button
@@ -275,7 +275,7 @@ function WeekHeader({
       {/* DOM order = phone visual order: [←] [jump] [→] then Best-of/Share. On
           desktop the jump button is display:none and .dom-board-actions is
           display:contents, so the flex row stays ← → Best-of Share. */}
-      <div className="dom-week-actions">
+      <div className="dom-page-actions">
         <IconButton icon={ArrowLeft} onClick={onPrev} aria-label={t("aria.prevWeek")} />
         <Button
           variant="ghost"

@@ -34,7 +34,7 @@ export default function PrivacyPage() {
 
         <main className="dom-legal">
           <div className="dom-legal-heading">
-            <p className="dom-signin-eyebrow">
+            <p className="dom-eyebrow">
               Privacy policy · 개인정보 처리방침
             </p>
             <h1>Day of Music 개인정보 처리방침</h1>

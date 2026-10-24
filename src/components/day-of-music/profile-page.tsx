@@ -50,8 +50,8 @@ export function ProfilePage() {
 
   return (
     <div className="dom-profile">
-      <div className="dom-week-hd">
-        <div className="dom-week-title">
+      <div className="dom-page-hd">
+        <div className="dom-page-title">
           <span className="dom-eyebrow">{t("profile.kicker")}</span>
           <h1>{t("profile.title")}</h1>
         </div>
@@ -59,7 +59,7 @@ export function ProfilePage() {
 
       <div className="dom-profile-settings">
         <section className="dom-settings-card">
-          <div className="dom-settings-label">{t("profile.section.account")}</div>
+          <div className="dom-label">{t("profile.section.account")}</div>
           {user ? (
             <>
               <div className="dom-settings-row">
@@ -100,7 +100,7 @@ export function ProfilePage() {
         </section>
 
         <section className="dom-settings-card">
-          <div className="dom-settings-label">{t("profile.section.preferences")}</div>
+          <div className="dom-label">{t("profile.section.preferences")}</div>
           {/* Re-seed the form whenever the canonical values change (auth load,
               after save, or device switch). */}
           <SettingsForm
@@ -113,7 +113,7 @@ export function ProfilePage() {
         </section>
 
         <section className="dom-settings-card">
-          <div className="dom-settings-label">{t("profile.section.themes")}</div>
+          <div className="dom-label">{t("profile.section.themes")}</div>
           <ThemeManager
             key={themes.map((theme) => theme.id).join("|")}
             initial={themes}

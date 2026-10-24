@@ -115,7 +115,7 @@ export function HomeLanding() {
           style={{ display: "grid", placeItems: "center" }}
         >
           <div className="dom-home-hero">
-            <div className="dom-signin-eyebrow">{t("home.eyebrow")}</div>
+            <div className="dom-eyebrow">{t("home.eyebrow")}</div>
             <h1 className="dom-home-title">
               {t("home.title")
                 .split("\n")

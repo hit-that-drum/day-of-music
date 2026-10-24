@@ -14,13 +14,6 @@
   margin-bottom: 20px;
   border-bottom: 1px solid var(--lineSoft);
 }
-.dom-bow-kicker {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ink3);
-}
 .dom-bow-week {
   font-family: var(--font-display);
   font-weight: 600;

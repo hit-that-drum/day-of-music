@@ -189,21 +189,21 @@
   .dom-week {
     padding: 12px 14px 32px;
   }
-  .dom-week-hd-board {
+  .dom-page-hd-board {
     align-items: center;
     gap: 0;
     padding-bottom: 10px;
     margin-bottom: 12px;
   }
-  .dom-week-hd-board .dom-week-actions {
+  .dom-page-hd-board .dom-page-actions {
     flex: 1;
     gap: 8px;
   }
-  .dom-week-hd-board .dom-iconbtn {
+  .dom-page-hd-board .dom-iconbtn {
     width: 44px;
     height: 44px;
   }
-  .dom-week-hd-board .dom-week-jump {
+  .dom-page-hd-board .dom-week-jump {
     display: inline-flex;
     flex: 1;
     min-width: 0;
@@ -216,7 +216,7 @@
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
-  .dom-week-hd-board .dom-board-actions {
+  .dom-page-hd-board .dom-board-actions {
     display: none;
   }
   /* Best-of + Share live in the phone-only label cell. */
@@ -386,14 +386,14 @@
   .dom-profile {
     padding: 12px 14px 20px;
   }
-  .dom-search .dom-week-hd,
-  .dom-profile .dom-week-hd {
+  .dom-search .dom-page-hd,
+  .dom-profile .dom-page-hd {
     align-items: flex-end;
     padding-bottom: 10px;
     margin-bottom: 12px;
   }
-  .dom-search .dom-week-title h1,
-  .dom-profile .dom-week-title h1 {
+  .dom-search .dom-page-title h1,
+  .dom-profile .dom-page-title h1 {
     font-size: 22px;
     margin-top: 4px;
   }

@@ -3,7 +3,7 @@
 .dom-week {
   padding: 24px 28px 48px;
 }
-.dom-week-hd {
+.dom-page-hd {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -12,7 +12,7 @@
   margin-bottom: 22px;
   border-bottom: 1px solid var(--line);
 }
-.dom-week-title h1 {
+.dom-page-title h1 {
   font-family: var(--font-display);
   font-weight: 500;
   letter-spacing: -0.03em;
@@ -27,7 +27,7 @@
   text-transform: uppercase;
   color: var(--ink3);
 }
-.dom-week-actions {
+.dom-page-actions {
   display: flex;
   gap: 8px;
   align-items: center;

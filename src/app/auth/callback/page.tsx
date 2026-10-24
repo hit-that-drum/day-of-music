@@ -84,7 +84,7 @@ export default function AuthCallbackPage() {
     <div className="dom-stage">
       <div className="dom-root" data-grid="1" style={{ placeItems: "center" }}>
         <div className="dom-signin" style={{ textAlign: "center" }}>
-          <div className="dom-signin-eyebrow">{t("auth.callback.eyebrow")}</div>
+          <div className="dom-eyebrow">{t("auth.callback.eyebrow")}</div>
           <p className="dom-signin-sub" style={{ margin: 0 }}>
             {t("auth.callback.body")}
           </p>

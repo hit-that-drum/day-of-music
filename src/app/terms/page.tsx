@@ -31,7 +31,7 @@ export default function TermsPage() {
 
         <main className="dom-legal">
           <div className="dom-legal-heading">
-            <p className="dom-signin-eyebrow">Terms of service · 이용약관</p>
+            <p className="dom-eyebrow">Terms of service · 이용약관</p>
             <h1>Day of Music 이용약관</h1>
             <p>시행일 {EFFECTIVE_DATE}</p>
           </div>
