@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   dateTimeLong,
+  effectiveLocale,
   monthDayShort,
   translate,
   weekdayRowMonFirst,
@@ -13,6 +14,15 @@ describe("translate", () => {
     expect(translate("ko", "toast.logged", { title: "Blue" })).toBe("Blue 기록됨");
     // No params: the template comes back as-is (profile-page splits on {email}).
     expect(translate("en", "profile.delete.typeEmail")).toBe("Type {email} to confirm.");
+  });
+});
+
+describe("effectiveLocale", () => {
+  it("follows the storefront on auto, and an explicit language otherwise", () => {
+    expect(effectiveLocale("auto", "KR")).toBe("ko");
+    expect(effectiveLocale("auto", "MX")).toBe("es");
+    expect(effectiveLocale("auto", "DE")).toBe("en");
+    expect(effectiveLocale("ja", "KR")).toBe("ja");
   });
 });
 

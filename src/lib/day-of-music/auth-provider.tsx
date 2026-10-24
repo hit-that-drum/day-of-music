@@ -17,8 +17,15 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Session, User } from "@supabase/supabase-js";
 
+import {
+  DEFAULT_LANGUAGE,
+  effectiveLocale,
+  translate,
+  type Locale,
+} from "@/lib/day-of-music/i18n-core";
+import { detectStorefront } from "@/lib/day-of-music/storefront";
 import { useIdleSignOut } from "@/lib/day-of-music/use-idle-sign-out";
-import type { UserMetadata } from "@/lib/day-of-music/user-metadata";
+import { readUserMetadata, type UserMetadata } from "@/lib/day-of-music/user-metadata";
 import {
   SUPABASE_CALL_TIMEOUT_MS,
   getSupabaseBrowserClient,
@@ -50,11 +57,23 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** The language an account reads the app in: useLanguage's rule, applied to
+ *  the account itself. AuthProvider sits above the profile hooks (they read
+ *  the account through it), so its own notices can't call useT. */
+function accountLocale(user: User | null): Locale {
+  const meta: UserMetadata = user ? readUserMetadata(user) : {};
+  return effectiveLocale(meta.language ?? DEFAULT_LANGUAGE, meta.country ?? detectStorefront());
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const configured = isSupabaseConfigured();
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(configured);
+  const user = session?.user ?? null;
+  // The sign-out notices below appear while the account is still the one on
+  // screen, so they speak its language.
+  const locale = useMemo(() => accountLocale(user), [user]);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -138,19 +157,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) console.warn("signOut: server call failed", error);
     } catch (e) {
       console.warn("signOut: did not complete", e);
-      toast.error("서버 로그아웃에 실패했지만 이 기기에서는 로그아웃했어요.");
+      toast.error(translate(locale, "auth.signOutLocalOnly"));
     } finally {
       setSession(null);
       // Send the user back to the sign-in page (mirrors /auth/callback's use of
       // router.replace so the signed-out state isn't left in history).
       router.replace("/signin");
     }
-  }, [router]);
+  }, [router, locale]);
 
   // Auto sign-out after an hour of no API activity (see use-idle-sign-out.ts).
   const signedIn = configured && Boolean(session);
   useIdleSignOut(signedIn, () => {
-    toast("장시간 활동이 없어 자동 로그아웃되었어요.");
+    toast(translate(locale, "auth.idleSignedOut"));
     void signOut();
   });
 
@@ -201,7 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       configured,
       loading,
-      user: session?.user ?? null,
+      user,
       accessToken: session?.access_token ?? null,
       signUpWithPassword,
       signInWithPassword,
@@ -215,6 +234,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       configured,
       loading,
       session,
+      user,
       signUpWithPassword,
       signInWithPassword,
       signInWithOAuth,

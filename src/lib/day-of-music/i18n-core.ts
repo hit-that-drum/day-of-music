@@ -9,6 +9,9 @@ export type Locale = "en" | "ko" | "ja" | "zh" | "es";
 export type LanguagePref = "auto" | Locale;
 
 export const DEFAULT_LOCALE: Locale = "en";
+// "auto" follows the storefront country (see localeForCountry below); an
+// explicit language chosen in the header replaces it.
+export const DEFAULT_LANGUAGE: LanguagePref = "auto";
 
 // Header switcher metadata. `label` is the short code shown to match the user's
 // mental model (EN/KO/JP/CN/SP); `native` is the endonym shown in the dropdown.
@@ -21,7 +24,7 @@ export const LOCALES: { code: Locale; label: string; native: string }[] = [
 ];
 
 // Country → default locale. `country` is always an Apple Music storefront
-// alpha-2 code (profile.ts's APPLE_STOREFRONTS is the single source); the two
+// alpha-2 code (storefront.ts's APPLE_STOREFRONTS is the single source); the two
 // groups below are subsets of it. If the storefront list changes, re-check only
 // these two sets.
 const CN_STOREFRONTS = new Set<string>(["CN", "HK", "TW", "MO"]); // 중국 / 홍콩 / 대만 / 마카오

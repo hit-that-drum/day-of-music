@@ -676,6 +676,21 @@ export const MESSAGES = {
     zh: "尚未配置登录 — 请在 .env.local 中添加 Supabase 密钥。",
     es: "El inicio de sesión aún no está configurado: añade las claves de Supabase a .env.local.",
   },
+  // Sign-out notices (AuthProvider).
+  "auth.signOutLocalOnly": {
+    en: "Couldn't reach the server, but you're signed out on this device.",
+    ko: "서버 로그아웃에 실패했지만 이 기기에서는 로그아웃했어요.",
+    ja: "サーバーからはログアウトできませんでしたが、この端末ではログアウトしました。",
+    zh: "无法从服务器退出登录，但已在此设备上退出。",
+    es: "No se pudo cerrar la sesión en el servidor, pero se cerró en este dispositivo.",
+  },
+  "auth.idleSignedOut": {
+    en: "You've been signed out after a long time without activity.",
+    ko: "장시간 활동이 없어 자동 로그아웃되었어요.",
+    ja: "長時間操作がなかったため、自動的にログアウトしました。",
+    zh: "由于长时间没有操作，已自动退出登录。",
+    es: "Se cerró tu sesión tras un largo periodo sin actividad.",
+  },
   "auth.terms": {
     en: "By creating an account, you agree to Day of Music's {terms} and can review the {privacy}.",
     ko: "계정을 만들면 Day of Music {terms}에 동의하는 것으로 보며, {privacy}을 확인할 수 있습니다.",
