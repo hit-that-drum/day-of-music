@@ -1,11 +1,11 @@
-// add-flow.tsx — Add / Log Album: a 3-step modal (find → pick day → rate + note).
-// Step 1 searches the music catalog via /api/music/search (a free iTunes Search
-// API proxy), or resolves a pasted Apple Music album link.
+// add-flow.tsx — Add / Log Album: a 3-step modal (find → pick days → rate +
+// note). Step 1 searches the music catalog through the iTunes proxy, resolves
+// a pasted Apple Music album link (use-music-search.ts), or takes a manual
+// entry for music that isn't on Apple Music.
 
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { Fragment, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 
 import {
   addDays,
@@ -16,18 +16,14 @@ import {
   type Album,
 } from "@/lib/day-of-music/data";
 import {
-  albumFromDetail,
-  albumFromSearchResult,
   albumFromManual,
   albumFromTrack,
-  fetchAlbumDetail,
-  parseAppleMusicLink,
-  searchMusic,
   type AlbumDetail,
 } from "@/lib/day-of-music/music-search";
 import { readManualArtwork } from "@/lib/day-of-music/manual-artwork";
 import { useCountry } from "@/lib/day-of-music/profile";
 import { useDateNames, useT } from "@/lib/day-of-music/i18n";
+import { useMusicSearch } from "@/lib/day-of-music/use-music-search";
 import { Cover } from "@/components/day-of-music/cover";
 import { RatingInput } from "@/components/day-of-music/rating-input";
 import { Button } from "@/components/day-of-music/atoms";
@@ -45,14 +41,13 @@ export type NewEntry = {
   album: Album;
 };
 
-function useDebounced(value: string, delayMs: number): string {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(t);
-  }, [value, delayMs]);
-  return debounced;
-}
+type Step = 1 | 2 | 3;
+
+// Manual entry: music that isn't on Apple Music (e.g. found on YouTube). The
+// cover is the user's own picture as a (downscaled) data URL, or null for the
+// typographic tile.
+type ManualFields = { title: string; artist: string; genre: string; art: string | null };
+const EMPTY_MANUAL: ManualFields = { title: "", artist: "", genre: "", art: null };
 
 type AddFlowProps = {
   onClose: () => void;
@@ -66,8 +61,7 @@ type AddFlowProps = {
 export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddFlowProps) {
   const t = useT();
   const names = useDateNames();
-  const [step, setStep] = useState(1);
-  const [query, setQuery] = useState("");
+  const [step, setStep] = useState<Step>(1);
   const [picked, setPicked] = useState<Album | null>(null);
   const initialDate = defaultDate ?? fmtDate(defaultWeekStart);
   // Days to log on. Multiple days can be selected so the same album is logged
@@ -90,110 +84,22 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
     });
   }
 
-  // Manual entry: log music that isn't on Apple Music (e.g. found on YouTube).
-  // The user types title + artist and can add their own cover picture.
   const [manualMode, setManualMode] = useState(false);
-  const [manualTitle, setManualTitle] = useState("");
-  const [manualArtist, setManualArtist] = useState("");
-  const [manualGenre, setManualGenre] = useState("");
-  // Cover image as a (downscaled) data URL, or null for the typographic tile.
-  const [manualArt, setManualArt] = useState<string | null>(null);
+  const [manual, setManual] = useState<ManualFields>(EMPTY_MANUAL);
   // Stable id for the manual album, created once per modal open.
   const [manualId] = useState(
     () => `manual-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
   );
 
-  function handlePickImage(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = ""; // allow re-picking the same file later
-    if (!file) return;
-    void readManualArtwork(file).then(setManualArt);
-  }
-
-  // Build a journal-ready Album from the manual fields.
-  const debouncedQuery = useDebounced(query.trim(), 300);
   // Search the user's preferred storefront first (server falls back to the
   // common stores after it).
   const country = useCountry();
-
-  // Compact by default (8 results); "See all" fetches a larger batch and
-  // reveals it with infinite scroll. Reset whenever the query changes.
-  const COMPACT_COUNT = 8;
-  const ALL_LIMIT = 50;
-  const PAGE = 12;
-  const [showAll, setShowAll] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(PAGE);
-  // Album whose tracklist is expanded for picking a single track.
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  // If the query is an Apple Music album link (or bare catalog id), resolve it
-  // directly via the lookup API instead of running a text search.
-  const pastedLink = parseAppleMusicLink(debouncedQuery);
-
-  const limit = showAll ? ALL_LIMIT : COMPACT_COUNT;
-  const search = useQuery({
-    queryKey: ["music-search", debouncedQuery, limit, country],
-    queryFn: () => searchMusic(debouncedQuery, { limit, country }),
-    enabled: debouncedQuery.length >= 2 && !pastedLink,
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-    // Keep the current results visible while a larger batch loads.
-    placeholderData: (prev) => prev,
-  });
-
-  const urlAlbum = useQuery({
-    // Look the album up in the storefront the link points at (e.g. KR), since
-    // an album may not exist in the default US store.
-    queryKey: ["music-url", pastedLink?.id, pastedLink?.country],
-    queryFn: () => fetchAlbumDetail(pastedLink!.id, { country: pastedLink!.country }),
-    enabled: Boolean(pastedLink),
-    staleTime: 5 * 60 * 1000,
-    // No retry: fetchAlbumDetail resolves null on failure instead of throwing.
-  });
-
-  // Tracklist of the expanded album, for picking a single track.
-  const expanded = useQuery({
-    queryKey: ["album-detail", expandedId, country],
-    queryFn: () => fetchAlbumDetail(expandedId!, { country }),
-    enabled: Boolean(expandedId),
-    staleTime: 5 * 60 * 1000,
-  });
-  const expandedDetail = expandedId ? expanded.data ?? null : null;
-
-  const allResults = useMemo(() => {
-    // Pasted-link mode: a single resolved album (or nothing yet).
-    if (pastedLink) {
-      return urlAlbum.data ? [albumFromDetail(urlAlbum.data)] : [];
-    }
-    // First of any repeated id only — results are keyed by id.
-    const seen = new Set<string>();
-    return (search.data ?? [])
-      .map(albumFromSearchResult)
-      .filter((a) => (seen.has(a.id) ? false : (seen.add(a.id), true)));
-  }, [pastedLink, urlAlbum.data, search.data]);
-
-  const results = showAll
-    ? allResults.slice(0, visibleCount)
-    : allResults.slice(0, COMPACT_COUNT);
-
-  const searching =
-    debouncedQuery.length >= 2 && (pastedLink ? urlAlbum.isFetching : search.isFetching);
-  // A pasted link that resolved to nothing → invalid/unavailable.
-  const urlNotFound = Boolean(pastedLink) && !urlAlbum.isFetching && !urlAlbum.data;
-  // Offer "See all" when the compact search came back full (likely more exist).
-  const canSeeAll =
-    !pastedLink && !showAll && (search.data?.length ?? 0) >= COMPACT_COUNT && !searching;
+  const music = useMusicSearch(country);
 
   // Infinite scroll: reveal more of the already-fetched batch near the bottom.
   function handleResultsScroll(e: React.UIEvent<HTMLDivElement>) {
-    if (!showAll) return;
     const el = e.currentTarget;
-    if (
-      el.scrollHeight - el.scrollTop - el.clientHeight < 80 &&
-      visibleCount < allResults.length
-    ) {
-      setVisibleCount((c) => Math.min(c + PAGE, allResults.length));
-    }
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) music.showMore();
   }
 
   // Show the week containing the currently-selected day, so a day picked from
@@ -224,17 +130,11 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
               className="dom-input"
               ref={focusUnlessPhone}
               placeholder={t("addflow.searchPlaceholder")}
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                // New query → back to the compact list.
-                setShowAll(false);
-                setVisibleCount(PAGE);
-                setExpandedId(null);
-              }}
+              value={music.query}
+              onChange={(e) => music.setQuery(e.target.value)}
             />
             <div className="dom-addflow-results" onScroll={handleResultsScroll}>
-              {results.map((a) => {
+              {music.results.map((a) => {
                 const expandable = a.id.startsWith("itunes-");
                 return (
                   <Fragment key={a.id}>
@@ -244,7 +144,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                       aria-pressed={picked?.id === a.id}
                       onClick={() => {
                         setPicked(a);
-                        setExpandedId(expandable ? a.id : null);
+                        music.setExpandedId(expandable ? a.id : null);
                       }}
                     >
                       <Cover album={a} size={56} />
@@ -256,10 +156,10 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                       </div>
                       {picked?.id === a.id && <span className="dom-addflow-check">✓</span>}
                     </button>
-                    {expandedId === a.id && (
+                    {music.expandedId === a.id && (
                       <TrackPanel
-                        detail={expandedDetail}
-                        loading={expanded.isFetching}
+                        detail={music.expandedDetail}
+                        loading={music.expandedLoading}
                         picked={picked}
                         onPick={setPicked}
                       />
@@ -267,33 +167,30 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                   </Fragment>
                 );
               })}
-              {canSeeAll && (
+              {music.canSeeAll && (
                 <button
                   type="button"
                   className="dom-addflow-seeall"
-                  onClick={() => {
-                    setShowAll(true);
-                    setVisibleCount(PAGE);
-                  }}
+                  onClick={music.seeAll}
                 >
                   {t("addflow.seeAll")}
                 </button>
               )}
-              {showAll && search.isFetching && (
+              {music.loadingMore && (
                 <div className="dom-addflow-empty">{t("addflow.loadingMore")}</div>
               )}
-              {searching && !results.length && (
+              {music.searching && !music.results.length && (
                 <div className="dom-addflow-empty">
-                  {pastedLink ? t("addflow.readingLink") : t("addflow.searching")}
+                  {music.pastedLink ? t("addflow.readingLink") : t("addflow.searching")}
                 </div>
               )}
-              {urlNotFound && (
+              {music.linkNotFound && (
                 <div className="dom-addflow-empty">{t("addflow.linkError")}</div>
               )}
-              {!pastedLink && query && !searching && !results.length && (
+              {music.noMatches && (
                 <div className="dom-addflow-empty">{t("addflow.noMatches")}</div>
               )}
-              {search.isError && (
+              {music.searchFailed && (
                 <div className="dom-addflow-empty">{t("addflow.searchUnavailable")}</div>
               )}
             </div>
@@ -308,66 +205,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
         )}
 
         {step === 1 && manualMode && (
-          <div className="dom-addflow-body">
-            <button
-              type="button"
-              className="dom-addflow-manual-back"
-              onClick={() => setManualMode(false)}
-            >
-              ← {t("addflow.manualBack")}
-            </button>
-
-            <label className="dom-addflow-label">{t("addflow.coverImage")}</label>
-            <div className="dom-addflow-manual-cover">
-              <label className="dom-addflow-imagedrop">
-                {manualArt ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={manualArt} alt={t("addflow.coverPreview")} />
-                ) : (
-                  <span>＋ {t("addflow.addPicture")}</span>
-                )}
-                <input type="file" accept="image/*" hidden onChange={handlePickImage} />
-              </label>
-              {manualArt && (
-                <button
-                  type="button"
-                  className="dom-addflow-manual-removeimg"
-                  onClick={() => setManualArt(null)}
-                >
-                  {t("addflow.removePicture")}
-                </button>
-              )}
-            </div>
-
-            <label className="dom-addflow-label">{t("field.title")}</label>
-            <input
-              className="dom-input"
-              ref={focusUnlessPhone}
-              placeholder={t("addflow.titlePlaceholder")}
-              value={manualTitle}
-              onChange={(e) => setManualTitle(e.target.value)}
-            />
-
-            <label className="dom-addflow-label" style={{ marginTop: 4 }}>
-              {t("field.artist")}
-            </label>
-            <input
-              className="dom-input"
-              placeholder={t("addflow.artistPlaceholder")}
-              value={manualArtist}
-              onChange={(e) => setManualArtist(e.target.value)}
-            />
-
-            <label className="dom-addflow-label" style={{ marginTop: 4 }}>
-              {t("field.genre")}
-            </label>
-            <input
-              className="dom-input"
-              placeholder={t("addflow.genrePlaceholder")}
-              value={manualGenre}
-              onChange={(e) => setManualGenre(e.target.value)}
-            />
-          </div>
+          <ManualEntryForm value={manual} onChange={setManual} onBack={() => setManualMode(false)} />
         )}
 
         {step === 2 && (
@@ -456,7 +294,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
 
         <div className="dom-addflow-actions">
           {step > 1 ? (
-            <Button variant="ghost" onClick={() => setStep(step - 1)}>
+            <Button variant="ghost" onClick={() => setStep(step === 3 ? 2 : 1)}>
               ← {t("action.back")}
             </Button>
           ) : (
@@ -465,7 +303,7 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
           {step < 3 ? (
             <Button
               disabled={
-                (step === 1 && (manualMode ? !manualTitle.trim() || !manualGenre.trim() : !picked)) ||
+                (step === 1 && (manualMode ? !manual.title.trim() || !manual.genre.trim() : !picked)) ||
                 (step === 2 && selectedDates.size === 0)
               }
               onClick={() => {
@@ -475,14 +313,14 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
                   setPicked(
                     albumFromManual({
                       id: manualId,
-                      title: manualTitle,
-                      artist: manualArtist,
-                      genre: manualGenre,
-                      artworkUrl: manualArt ?? undefined,
+                      title: manual.title,
+                      artist: manual.artist,
+                      genre: manual.genre,
+                      artworkUrl: manual.art ?? undefined,
                     }),
                   );
                 }
-                setStep(step + 1);
+                setStep(step === 1 ? 2 : 3);
               }}
             >
               {t("action.continue")} →
@@ -503,6 +341,87 @@ export function AddFlow({ onClose, onSave, defaultWeekStart, defaultDate }: AddF
         </div>
       </div>
     </Modal>
+  );
+}
+
+// Step 1's manual-entry fields. Controlled: AddFlow keeps the values and turns
+// them into the picked album when the user continues.
+function ManualEntryForm({
+  value,
+  onChange,
+  onBack,
+}: {
+  value: ManualFields;
+  onChange: Dispatch<SetStateAction<ManualFields>>;
+  onBack: () => void;
+}) {
+  const t = useT();
+  const set = (patch: Partial<ManualFields>) => onChange((m) => ({ ...m, ...patch }));
+
+  function handlePickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file later
+    if (!file) return;
+    void readManualArtwork(file).then((art) => set({ art }));
+  }
+
+  return (
+    <div className="dom-addflow-body">
+      <button type="button" className="dom-addflow-manual-back" onClick={onBack}>
+        ← {t("addflow.manualBack")}
+      </button>
+
+      <label className="dom-addflow-label">{t("addflow.coverImage")}</label>
+      <div className="dom-addflow-manual-cover">
+        <label className="dom-addflow-imagedrop">
+          {value.art ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={value.art} alt={t("addflow.coverPreview")} />
+          ) : (
+            <span>＋ {t("addflow.addPicture")}</span>
+          )}
+          <input type="file" accept="image/*" hidden onChange={handlePickImage} />
+        </label>
+        {value.art && (
+          <button
+            type="button"
+            className="dom-addflow-manual-removeimg"
+            onClick={() => set({ art: null })}
+          >
+            {t("addflow.removePicture")}
+          </button>
+        )}
+      </div>
+
+      <label className="dom-addflow-label">{t("field.title")}</label>
+      <input
+        className="dom-input"
+        ref={focusUnlessPhone}
+        placeholder={t("addflow.titlePlaceholder")}
+        value={value.title}
+        onChange={(e) => set({ title: e.target.value })}
+      />
+
+      <label className="dom-addflow-label" style={{ marginTop: 4 }}>
+        {t("field.artist")}
+      </label>
+      <input
+        className="dom-input"
+        placeholder={t("addflow.artistPlaceholder")}
+        value={value.artist}
+        onChange={(e) => set({ artist: e.target.value })}
+      />
+
+      <label className="dom-addflow-label" style={{ marginTop: 4 }}>
+        {t("field.genre")}
+      </label>
+      <input
+        className="dom-input"
+        placeholder={t("addflow.genrePlaceholder")}
+        value={value.genre}
+        onChange={(e) => set({ genre: e.target.value })}
+      />
+    </div>
   );
 }
 
