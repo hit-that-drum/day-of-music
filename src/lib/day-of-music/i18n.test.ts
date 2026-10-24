@@ -5,7 +5,7 @@ import {
   monthDayShort,
   translate,
   weekdayRowMonFirst,
-} from "@/lib/day-of-music/i18n";
+} from "@/lib/day-of-music/i18n-core";
 
 describe("translate", () => {
   it("fills {name} tokens and leaves unknown ones untouched", () => {

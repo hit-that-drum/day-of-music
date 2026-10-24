@@ -3,14 +3,14 @@
 // spot gaps). `satisfies Record<Locale, string>` per key makes a missing
 // translation a compile error, and MessageKey (below) does the same for an
 // unknown key at the t() call. `{name}` tokens are filled by translate() in
-// i18n.ts.
+// i18n-core.ts.
 //
 // Keys are namespaced by surface (nav.*, profile.*, share.*, …). Generic
 // actions that read the same everywhere live once (action.cancel, modal.close);
 // a label that only happens to match another today (a button and the title it
 // opens) keeps its own key so its translation can diverge.
 
-import type { Locale } from "@/lib/day-of-music/i18n";
+import type { Locale } from "@/lib/day-of-music/i18n-core";
 
 export const MESSAGES = {
   // ── Header nav ──────────────────────────────────────────────────────────

@@ -96,7 +96,7 @@ export function fmtDate(d: Date): string {
 // BCP-47 locale for a storefront/country region — the language most likely used
 // there — so dates render in that country's own notation (KR → "2023년 4월 4일",
 // US → "April 4, 2023", JP → "2023年4月4日"). Falls back to en-US.
-function localeForCountry(country: string | undefined): string {
+function intlTagForCountry(country: string | undefined): string {
   if (!country) return "en-US";
   try {
     return new Intl.Locale("und", { region: country.toUpperCase() }).maximize().toString();
@@ -119,7 +119,7 @@ export function formatDisplayDate(
   // Date-only: drop any time/zone so the displayed day can't shift across TZs.
   const d = typeof input === "string" ? parseDate(input.slice(0, 10)) : input;
   if (!d || Number.isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat(localeForCountry(country), {
+  return new Intl.DateTimeFormat(intlTagForCountry(country), {
     year: "numeric",
     month: style === "long" ? "long" : "short",
     day: "numeric",

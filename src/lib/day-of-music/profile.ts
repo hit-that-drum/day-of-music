@@ -14,7 +14,7 @@ import esLocale from "i18n-iso-countries/langs/es.json";
 
 import { useAuth, type AuthResult } from "@/lib/day-of-music/auth-provider";
 import { makeStringStore, useStore } from "@/lib/day-of-music/local-store";
-import type { LanguagePref, Locale } from "@/lib/day-of-music/i18n";
+import type { LanguagePref, Locale } from "@/lib/day-of-music/i18n-core";
 
 // Register a country-name catalog per supported UI language so the picker can
 // show each storefront in the reader's language (see countriesForLocale).
@@ -31,7 +31,7 @@ export function displayHandle(username: string): string {
   return username.trim() || DEFAULT_USERNAME;
 }
 export const DEFAULT_COUNTRY = "US";
-// "auto" follows the storefront country (see localeForCountry in i18n.ts); an
+// "auto" follows the storefront country (see localeForCountry in i18n-core.ts); an
 // explicit language chosen in the header replaces it.
 export const DEFAULT_LANGUAGE: LanguagePref = "auto";
 
