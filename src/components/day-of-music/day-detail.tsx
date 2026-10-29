@@ -217,8 +217,9 @@ function DayDetailPanel({
     return to ? `${name} — ${formatDisplayDate(to, country)}` : name;
   }
   // The keys step too, as ←/→ do on the board — unless the key belongs to
-  // something here: a text field, the tabs, or the date picker's grid (which
-  // moves its own focus and marks the key handled).
+  // something here: a text field, the tabs, the rating (handles its own keys),
+  // the date picker, or a pending swap / remove question, which a step would
+  // silently drop.
   const stepByKey = useEffectEvent((dir: Step) => {
     if (!unsaved) onStep(dir);
   });
@@ -227,7 +228,8 @@ function DayDetailPanel({
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
       const target = e.target instanceof Element ? e.target : null;
-      if (target?.closest("input, textarea, select, [contenteditable], [role='tablist']")) return;
+      const owned = "input, textarea, select, [contenteditable], [role='tablist'], .dom-wp, .dom-confirm";
+      if (target?.closest(owned)) return;
       stepByKey(e.key === "ArrowLeft" ? "prev" : "next");
     }
     window.addEventListener("keydown", onKey);
