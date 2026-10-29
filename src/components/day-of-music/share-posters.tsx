@@ -93,10 +93,18 @@ export function WeekPoster({
               <span className="dom-day-num">{dayNum}</span>
               <span className="dom-day-bar">|</span>
               <span className="dom-day-dow">{dow}</span>
-              <span className="dom-day-album-rating">
-                <span>★</span>
-                {album?.rating}
-              </span>
+              {/* Rated entries only — like the board; a number label, since
+                  posters have no t() (see Stars). */}
+              {album && album.rating > 0 && (
+                <span
+                  className="dom-day-album-rating"
+                  role="img"
+                  aria-label={`${album.rating} / 5`}
+                >
+                  <span>★</span>
+                  {album.rating}
+                </span>
+              )}
             </div>
             {outOfMonth ? (
               <div className="dom-day-body dom-day-empty dom-day-blank" aria-hidden="true" />

@@ -350,6 +350,17 @@ function DayCell({
         <span className="dom-day-num">{day}</span>
         <span className="dom-day-bar">|</span>
         <span className="dom-day-dow">{dow}</span>
+        {/* Same ★ slot as the week share poster; unrated entries leave it out. */}
+        {album && album.rating > 0 && (
+          <span
+            className="dom-day-album-rating"
+            role="img"
+            aria-label={t("aria.starsN", { n: album.rating })}
+          >
+            <span>★</span>
+            {album.rating}
+          </span>
+        )}
       </div>
       {outOfMonth ? (
         <div className="dom-day-body dom-day-empty dom-day-blank" aria-hidden="true" />

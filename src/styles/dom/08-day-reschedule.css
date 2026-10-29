@@ -181,10 +181,14 @@
   display: flex;
   flex-direction: column;
 }
+/* Fixed height so every day's bottom rule lands on one line: a rated day's ★
+   stands taller than the date text, and the share export's fallback font
+   varies the text's own height too — either would step the divider. */
 .dom-day-hd {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 6px;
+  height: 44px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--lineSoft);
   font-family: var(--font-mono);
@@ -223,7 +227,8 @@
   background-color: var(--accent);
   color: #fff;
 }
-.dom-day[data-today="1"] .dom-day-dow {
+.dom-day[data-today="1"] .dom-day-dow,
+.dom-day[data-today="1"] .dom-day-album-rating {
   color: #fff;
   opacity: 1;
 }
