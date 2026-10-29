@@ -45,6 +45,7 @@ import {
   normalizeAlbum,
   restoreSlots,
   slotAlbum,
+  slotsHoldingAlbum,
   type JournalCache,
 } from "@/lib/day-of-music/journal-cache";
 import { useT } from "@/lib/day-of-music/i18n";
@@ -500,11 +501,19 @@ export function JournalProvider({ children }: { children: ReactNode }) {
       // Only user-added (itunes) albums need lazy enrichment.
       if (!base || !base.id.startsWith("itunes-")) return;
       const merged = { ...base, ...patch };
-      // Re-saving the slot refreshes the album in the metadata pool (so every
-      // day showing it re-renders) and, when signed in, syncs the row.
-      upsertMutate({ slots: [merged], theme });
+      // Re-save every slot holding the album, in every lane — not just this
+      // day's. Each row stores its own copy of the metadata and a load keeps
+      // the last row's, so a copy left stale on another day won the refetch:
+      // the open detail looked unenriched again, re-enriched, and looped (an
+      // album logged on several days flickered and re-saved without end).
+      // Re-saving also refreshes the album in the metadata pool, so every day
+      // showing it re-renders.
+      const cache = queryClient.getQueryData<JournalResponse>(queryKey);
+      const lanes = cache ? slotsHoldingAlbum(cache, merged) : new Map<string, Album[]>();
+      if (lanes.size === 0) lanes.set(theme, [merged]);
+      for (const [lane, slots] of lanes) upsertMutate({ slots, theme: lane });
     },
-    [albumsByDate, upsertMutate, theme],
+    [albumsByDate, queryClient, queryKey, upsertMutate, theme],
   );
 
   const removeSlot = useCallback<JournalContextValue["removeSlot"]>(

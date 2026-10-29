@@ -15,6 +15,14 @@ import type { Album } from "@/lib/day-of-music/data";
 import { fetchAlbumDetail } from "@/lib/day-of-music/music-search";
 import { TRACKLIST_VERSION } from "@/lib/day-of-music/music-types";
 
+// Albums already enriched on this page load, per storefront and tracklist
+// version. Enriching writes the album, and the journal can hand the detail an
+// unenriched copy right back (a stored copy the write didn't reach winning the
+// refetch, or a failed write rolled back); answering that with another fetch +
+// write looped without end. Once per album per load is enough — a reload or a
+// storefront change tries again.
+const enriched = new Set<string>();
+
 export function useAlbumEnrichment(
   album: Album,
   country: string,
@@ -28,10 +36,13 @@ export function useAlbumEnrichment(
       (album.tracksCountry !== country || album.tracksVersion !== TRACKLIST_VERSION);
     const needsDate = !album.releaseDate;
     if (!needsTracks && !staleTracks && !needsDate) return;
+    const key = `${album.id}:${country}:${TRACKLIST_VERSION}`;
+    if (enriched.has(key)) return;
 
     let cancelled = false;
     fetchAlbumDetail(album.id, { country }).then((detail) => {
       if (cancelled || !detail) return;
+      enriched.add(key);
       const patch: Partial<Album> = {};
       if ((needsTracks || staleTracks) && detail.tracks.length) {
         patch.tracks = detail.tracks;

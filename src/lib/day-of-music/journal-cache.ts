@@ -86,6 +86,23 @@ export function applyUpsert(cache: JournalCache, album: Album, theme: string): J
   };
 }
 
+/** Every slot holding `meta`'s album — on any day, in any lane — as the albums
+ *  to re-save so they all carry `meta`, grouped by lane (one upsert per lane).
+ *  Each keeps its own date, rating and note. Album metadata belongs to the
+ *  album, but every journal row stores its own copy and a load keeps just one
+ *  per album id (the last row's, by date): re-saving only the open day's row
+ *  left the other days' older copies to win the next load. */
+export function slotsHoldingAlbum(cache: JournalCache, meta: AlbumMeta): Map<string, Album[]> {
+  const byLane = new Map<string, Album[]>();
+  for (const e of cache.entries) {
+    if (e.albumId !== meta.id) continue;
+    const slots = byLane.get(e.theme) ?? [];
+    slots.push(mergeEntry(meta, e));
+    byLane.set(e.theme, slots);
+  }
+  return byLane;
+}
+
 /** Clear the (theme, date) slot. The album's metadata stays in the pool. */
 export function applyRemove(cache: JournalCache, date: string, theme: string): JournalCache {
   return { ...cache, entries: cache.entries.filter((e) => !isSlot(e, theme, date)) };
