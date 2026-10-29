@@ -140,6 +140,13 @@
   .dom-detail-date {
     font-size: 40px;
   }
+  .dom-detail-daynav {
+    gap: 4px;
+  }
+  .dom-detail-daynav .dom-iconbtn {
+    width: 44px;
+    height: 44px;
+  }
   .dom-detail-right {
     flex: 1;
     min-height: 0;

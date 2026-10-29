@@ -225,6 +225,19 @@ export function DayOfMusicApp({
     [albumsByDate, moveSlot, screen, setAnchor, country, t],
   );
 
+  // Day Detail's ← / →: show the entry logged on `date` instead. The board
+  // under the modal follows (as after a move), so closing it lands on that
+  // day's week or month.
+  const handleNavigate = useCallback(
+    (date: string) => {
+      const album = albumsByDate[date];
+      if (!album) return;
+      setOverlay({ kind: "detail", date, albumId: album.id });
+      if (screen === "week" || screen === "month") setAnchor(parseDate(date));
+    },
+    [albumsByDate, screen, setAnchor],
+  );
+
   // Replace: reopen the add-flow on the same day. Logging the new album at that
   // date overwrites the slot, so no separate removal is needed.
   const handleReplace = useCallback((album: Album) => {
@@ -376,9 +389,10 @@ export function DayOfMusicApp({
         <BottomTabs screen={screen} onScreen={setScreen} />
       </div>
 
+      {/* No key: stepping to another day's entry keeps the modal mounted —
+          DayDetail keys its per-entry panel itself. */}
       {openAlbum && (
         <DayDetail
-          key={`${openAlbum.id}:${openAlbum.date}`}
           album={openAlbum}
           today={today}
           onClose={closeOverlay}
@@ -387,6 +401,7 @@ export function DayOfMusicApp({
           onEnrich={enrichSlot}
           onRemove={handleRemove}
           onReplace={handleReplace}
+          onNavigate={handleNavigate}
         />
       )}
       {overlay?.kind === "add" && (

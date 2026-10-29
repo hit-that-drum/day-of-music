@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   addDays,
+  adjacentDates,
   fmtDate,
   formatDisplayDate,
   isSameMonth,
@@ -13,6 +14,30 @@ import {
   startOfWeek,
   weekDays,
 } from "@/lib/day-of-music/data";
+
+describe("adjacentDates", () => {
+  // Logged days, unsorted, with gaps and a month boundary.
+  const logged = ["2026-10-24", "2026-10-20", "2026-11-02", "2026-10-21", "2026-09-30"];
+
+  it("finds the nearest logged day on each side, skipping empty days", () => {
+    expect(adjacentDates(logged, "2026-10-21")).toEqual({ prev: "2026-10-20", next: "2026-10-24" });
+    expect(adjacentDates(logged, "2026-10-24")).toEqual({ prev: "2026-10-21", next: "2026-11-02" });
+  });
+
+  it("crosses week and month boundaries", () => {
+    expect(adjacentDates(logged, "2026-10-20")).toEqual({ prev: "2026-09-30", next: "2026-10-21" });
+  });
+
+  it("is null past the first and last logged day", () => {
+    expect(adjacentDates(logged, "2026-09-30").prev).toBeNull();
+    expect(adjacentDates(logged, "2026-11-02").next).toBeNull();
+    expect(adjacentDates([], "2026-10-21")).toEqual({ prev: null, next: null });
+  });
+
+  it("works from a day that isn't logged itself", () => {
+    expect(adjacentDates(logged, "2026-10-22")).toEqual({ prev: "2026-10-21", next: "2026-10-24" });
+  });
+});
 
 describe("formatDisplayDate", () => {
   it("writes the date the way the storefront's country does", () => {
