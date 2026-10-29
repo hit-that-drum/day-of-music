@@ -164,14 +164,6 @@
   font-size: 13px;
   line-height: 1.3;
 }
-/* Fixed header height so every day's bottom border lands on the same line —
-   otherwise the export's fallback font gives headers uneven heights and the
-   divider looks stepped. */
-.dom-share-card .dom-share-week .dom-day-hd {
-  height: 44px;
-  align-items: center;
-  box-sizing: border-box;
-}
 .dom-share-card .dom-share-monthcal .dom-month-cal-cell:hover {
   background-color: transparent;
 }
