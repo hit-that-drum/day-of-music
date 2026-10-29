@@ -11,6 +11,7 @@ import {
   normalizeAlbum,
   restoreSlots,
   slotAlbum,
+  slotsHoldingAlbum,
   type JournalCache,
 } from "@/lib/day-of-music/journal-cache";
 
@@ -116,6 +117,60 @@ describe("applyUpsert", () => {
     const next = applyUpsert(base, again, "daily");
     expect(next.albums.filter((a) => a.id === "B")).toEqual([again]);
     expect(next.entries.filter((e) => e.albumId === "B")).toHaveLength(2);
+  });
+});
+
+describe("slotsHoldingAlbum", () => {
+  // "Still" logged on the 20th in two lanes and again later in "drive" — the
+  // later rows still carrying the old, track-less copy.
+  const stale = album("itunes-1", { title: "Still" });
+  const cache: JournalCache = {
+    entries: [
+      entry("itunes-1", "2026-10-20"),
+      entry("itunes-1", "2026-10-20", "drive", 4),
+      entry("itunes-1", "2026-10-25", "drive", 1),
+      entry("B", "2026-10-21"),
+    ],
+    albums: [stale, B, stale],
+  };
+  const enriched = album("itunes-1", { title: "Still", tracks: ["잔불 (Still)"], tracksVersion: 2 });
+
+  it("re-saves every slot holding the album, by lane, each keeping its own day", () => {
+    const lanes = slotsHoldingAlbum(cache, enriched);
+    expect([...lanes.keys()]).toEqual(["daily", "drive"]);
+    expect(lanes.get("daily")).toEqual([mergeEntry(enriched, cache.entries[0])]);
+    expect(lanes.get("drive")?.map((a) => [a.date, a.rating, a.note, a.tracks])).toEqual([
+      ["2026-10-20", 4, "itunes-1@2026-10-20", ["잔불 (Still)"]],
+      ["2026-10-25", 1, "itunes-1@2026-10-25", ["잔불 (Still)"]],
+    ]);
+  });
+
+  it("leaves no stale copy for a later row to win the next load", () => {
+    // The server keeps a copy of the album on each row; a load keeps the last
+    // row's (by date) as the album's metadata.
+    const rows = cache.entries
+      .filter((e) => e.albumId === "itunes-1")
+      .map((e) => ({ theme: e.theme, date: e.date, album: mergeEntry(stale, e) }));
+    const save = (lane: string, slot: Album) => {
+      const i = rows.findIndex((r) => r.theme === lane && r.date === slot.date);
+      rows[i] = { theme: lane, date: slot.date, album: slot };
+    };
+    const loadedTracks = () =>
+      [...rows].sort((a, b) => a.date.localeCompare(b.date)).at(-1)?.album.tracks;
+
+    // Re-saving only the open day's row: the 25th's stale copy still wins, so
+    // the detail looks unenriched again — the loop.
+    save("daily", mergeEntry(enriched, cache.entries[0]));
+    expect(loadedTracks()).toEqual([]);
+
+    for (const [lane, slots] of slotsHoldingAlbum(cache, enriched)) {
+      for (const slot of slots) save(lane, slot);
+    }
+    expect(loadedTracks()).toEqual(["잔불 (Still)"]);
+  });
+
+  it("is empty for an album no slot holds", () => {
+    expect(slotsHoldingAlbum(cache, album("itunes-2")).size).toBe(0);
   });
 });
 
