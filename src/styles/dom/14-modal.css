@@ -109,6 +109,17 @@
   color: var(--ink3);
   margin-top: 4px;
 }
+/* ← / → to the previous / next logged day, at the end of the date row. */
+.dom-detail-daynav {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.dom-detail-daynav .dom-iconbtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+  background-color: transparent;
+}
 .dom-detail-right {
   padding: 36px;
   display: flex;

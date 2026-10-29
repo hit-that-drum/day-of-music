@@ -345,6 +345,8 @@ export const MESSAGES = {
   "aria.nextWeek": { en: "Next week", ko: "다음 주", ja: "次の週", zh: "下一周", es: "Semana siguiente" },
   "aria.prevMonth": { en: "Previous month", ko: "이전 달", ja: "前の月", zh: "上个月", es: "Mes anterior" },
   "aria.nextMonth": { en: "Next month", ko: "다음 달", ja: "次の月", zh: "下个月", es: "Mes siguiente" },
+  "aria.prevEntry": { en: "Previous logged day", ko: "이전 기록", ja: "前の記録", zh: "上一条记录", es: "Registro anterior" },
+  "aria.nextEntry": { en: "Next logged day", ko: "다음 기록", ja: "次の記録", zh: "下一条记录", es: "Registro siguiente" },
   "aria.starsN": { en: "{n} stars", ko: "별 {n}개", ja: "{n}つ星", zh: "{n} 星", es: "{n} estrellas" },
   "aria.openAlbum": { en: "Open {title}", ko: "{title} 열기", ja: "{title}を開く", zh: "打开 {title}", es: "Abrir {title}" },
   "aria.logForDate": {
@@ -537,6 +539,7 @@ export const MESSAGES = {
   "daydetail.removeConfirm": { en: "Remove from this day?", ko: "이 날에서 삭제할까요?", ja: "この日から削除しますか？", zh: "从这一天移除？", es: "¿Quitar de este día?" },
   "daydetail.swapConfirm": { en: "Swap with 〈{title}〉 on {date}?", ko: "{date}의 〈{title}〉하고 자리를 바꿀까요?", ja: "{date}の〈{title}〉と入れ替えますか？", zh: "与 {date} 的〈{title}〉交换？", es: "¿Intercambiar con 〈{title}〉 del {date}?" },
   "daydetail.saveNoteFirst": { en: "Save your note before moving this entry", ko: "메모를 먼저 저장하면 날짜를 옮길 수 있어요", ja: "メモを保存してから日付を移動できます", zh: "先保存备注，再移动日期", es: "Guarda la nota antes de mover la fecha" },
+  "daydetail.saveBeforeStep": { en: "Save your changes before going to another day", ko: "변경 사항을 저장하면 다른 날로 넘어갈 수 있어요", ja: "変更を保存すると別の日に移動できます", zh: "保存更改后即可切换到其他日期", es: "Guarda los cambios antes de pasar a otro día" },
 
   // ── Weekly grid ─────────────────────────────────────────────────────────
   "week.eyebrow": { en: "weekly view", ko: "주간 큐레이션", ja: "週間ビュー", zh: "每周视图", es: "vista semanal" },

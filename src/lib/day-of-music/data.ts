@@ -162,6 +162,25 @@ export function weekOfMonth(d: Date): number {
   return Math.ceil((date.date() + mondayOffset) / 7);
 }
 
+/** The nearest of `dates` (YYYY-MM-DD, any order) before and after `date` —
+ *  e.g. the logged days Day Detail's ← / → step to, skipping empty ones. Null
+ *  where there is none. */
+export function adjacentDates(
+  dates: Iterable<string>,
+  date: string,
+): { prev: string | null; next: string | null } {
+  let prev: string | null = null;
+  let next: string | null = null;
+  for (const d of dates) {
+    if (d < date) {
+      if (prev === null || d > prev) prev = d;
+    } else if (d > date) {
+      if (next === null || d < next) next = d;
+    }
+  }
+  return { prev, next };
+}
+
 // ── Calendar shapes ─────────────────────────────────────────────────────────
 // The week strips and month grids the boards, pickers and posters lay out, in
 // one place so they can't disagree about which days a period covers.
