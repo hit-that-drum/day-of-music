@@ -391,9 +391,9 @@ function DayDetailPanel({
 
         {tab === "journal" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }} {...panelProps}>
-            {/* The release's facts first: release date and genre. Hand-typed
-                entries also edit their info (cover, title, artist, genre,
-                year) here. */}
+            {/* A small table first — release date, genre, and the rating (which
+                commits on each pick). Hand-typed entries also edit their info
+                (cover, title, artist, genre, year) here. */}
             <div className="dom-info-pane">
               {editingInfo ? (
                 <div className="dom-info-edit">
@@ -484,28 +484,27 @@ function DayDetailPanel({
                 <>
                   <InfoRow label={t("daydetail.released")} value={formatReleased(album, country)} />
                   <InfoRow label={t("field.genre")} value={normalizeGenre(album.genre) || "—"} />
-                  {isManual && (
-                    <div className="dom-info-edit-actions">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          resetInfoDraft();
-                          setEditingInfo(true);
-                        }}
-                      >
-                        {t("daydetail.reviseInfo")}
-                      </Button>
-                    </div>
-                  )}
                 </>
               )}
+              <div className="dom-info-row dom-info-row-rating">
+                <span className="dom-info-label">{t("field.rating")}</span>
+                <RatingInput value={album.rating} onChange={commitRating} label={t("field.rating")} />
+              </div>
+              {isManual && !editingInfo && (
+                <div className="dom-info-edit-actions">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      resetInfoDraft();
+                      setEditingInfo(true);
+                    }}
+                  >
+                    {t("daydetail.reviseInfo")}
+                  </Button>
+                </div>
+              )}
             </div>
-            <RatingInput
-              value={album.rating}
-              onChange={commitRating}
-              label={t("field.rating")}
-            />
             {/* Desktop rendering — the native field, unchanged visually; hidden ≤760. */}
             <div className="dom-edit-field dom-move-native">
               <label className="dom-edit-label" htmlFor={nativeDateId}>{t("daydetail.loggedOn")}</label>

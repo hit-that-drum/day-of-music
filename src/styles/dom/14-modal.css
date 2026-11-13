@@ -206,6 +206,10 @@
   padding: 10px 0;
   border-bottom: 1px solid var(--lineSoft);
 }
+/* The stars stand taller than a text value, so this row centres its label. */
+.dom-info-row-rating {
+  align-items: center;
+}
 .dom-info-label {
   font-family: var(--font-mono);
   font-size: 10px;
