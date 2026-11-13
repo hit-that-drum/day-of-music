@@ -37,8 +37,12 @@
   color: var(--ink);
   cursor: pointer;
 }
+/* Solid on hover: the ✕ floats over the scrim, so a translucent tint (like
+   --chip in every look) would let the page behind show through it. */
 .dom-modal-close:hover {
-  background-color: var(--chip);
+  border-color: var(--ink);
+  background-color: var(--ink);
+  color: var(--bg);
 }
 /* Sheet header band — phones only (see 28-bottom-sheets.css). On desktop it
    generates no box at all, so the ✕ keeps its
