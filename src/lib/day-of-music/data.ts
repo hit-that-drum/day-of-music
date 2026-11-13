@@ -54,10 +54,12 @@ export type Album = {
   tracks: string[];
   /** ISO 3166-1 alpha-2 storefront the `tracks` were fetched from. Lets the Day
    *  Detail re-localize a stale tracklist when the listener's store country
-   *  differs (e.g. tracks saved as US English, now viewing as KR). */
+   *  differs (e.g. tracks saved as US English, now viewing as KR). A single
+   *  track has no tracklist: there it's the store its `title` was named for. */
   tracksCountry?: string;
-  /** TRACKLIST_VERSION (music-types.ts) the `tracks` were fetched with. The Day
-   *  Detail re-fetches a tracklist saved by an older version of the route. */
+  /** TRACKLIST_VERSION (music-types.ts) the `tracks` were fetched with — for a
+   *  single track, its `title`. The Day Detail re-fetches names saved by an
+   *  older version of the route. */
   tracksVersion?: number;
 };
 
