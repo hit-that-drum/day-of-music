@@ -347,6 +347,8 @@ export const MESSAGES = {
   "aria.nextMonth": { en: "Next month", ko: "다음 달", ja: "次の月", zh: "下个月", es: "Mes siguiente" },
   "aria.prevEntry": { en: "Previous logged day", ko: "이전 기록", ja: "前の記録", zh: "上一条记录", es: "Registro anterior" },
   "aria.nextEntry": { en: "Next logged day", ko: "다음 기록", ja: "次の記録", zh: "下一条记录", es: "Registro siguiente" },
+  "aria.prevTheme": { en: "Previous theme", ko: "이전 테마", ja: "前のテーマ", zh: "上一个主题", es: "Tema anterior" },
+  "aria.nextTheme": { en: "Next theme", ko: "다음 테마", ja: "次のテーマ", zh: "下一个主题", es: "Tema siguiente" },
   "aria.starsN": { en: "{n} stars", ko: "별 {n}개", ja: "{n}つ星", zh: "{n} 星", es: "{n} estrellas" },
   "aria.openAlbum": { en: "Open {title}", ko: "{title} 열기", ja: "{title}を開く", zh: "打开 {title}", es: "Abrir {title}" },
   "aria.logForDate": {

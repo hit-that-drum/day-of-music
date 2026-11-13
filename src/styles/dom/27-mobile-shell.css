@@ -157,31 +157,26 @@
     inset: -5px;
   }
 
-  /* Theme select — 54px block (overrides the earlier ≤760 rules) ────────── */
-  .dom-theme-select {
+  /* Theme carousel — 54px block ───────────────────────────────────────── */
+  .dom-theme-carousel {
     padding: 10px 14px 0;
     gap: 0;
   }
-  .dom-theme-select .dom-select-field-label {
-    display: none; /* trigger carries aria-label via DomSelectField */
+  .dom-theme-carousel .dom-select-field-label {
+    display: none; /* still names the group (aria-labelledby) */
   }
-  /* Exact (0,5,0) / (0,4,0) copies of the base large-underline selectors so
-     they tie and win by order. */
-  .dom-root
-    .dom-theme-select[data-variant="underline"][data-size="large"]
-    .dom-select-trigger {
+  .dom-theme-carousel-bar {
     min-height: 44px;
-    font-size: 16px; /* iOS zoom guard */
+    /* A horizontal swipe is the carousel's (useSwipeNav); a vertical pan
+       still scrolls the page. */
+    touch-action: pan-y pinch-zoom;
   }
-  .dom-theme-select[data-variant="underline"][data-size="large"]
-    .dom-select-value {
+  .dom-theme-carousel-name {
     padding: 10px 0;
     font-size: 16px;
   }
-  .dom-theme-select[data-variant="underline"][data-size="large"]
-    .dom-select-caret {
+  .dom-theme-carousel-btn {
     width: 44px;
-    margin-left: 10px;
   }
 
   /* Week board header row: [←] [jump] [→] ─────────────────────────────── */
