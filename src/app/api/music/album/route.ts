@@ -15,6 +15,7 @@ import { badRequest, countryParam } from "@/app/api/music/_shared";
 import {
   hiResArtwork,
   itunesFetch,
+  localizeFromEdition,
   lookupByIds,
   storefrontsFor,
   withItunesCalls,
@@ -45,9 +46,11 @@ function lookupIn(store: string, lookupId: string): Promise<ITunesRow[] | null> 
   return itunesFetch("lookup", { id: lookupId, entity: "song", country: store, lang: "en_us" });
 }
 
+const songsOf = (r: ITunesRow[]) =>
+  r.filter((x) => x.wrapperType === "track" && x.kind === "song");
+
 function buildTrackItems(r: ITunesRow[], coll: ITunesRow): TrackItem[] {
-  return r
-    .filter((x) => x.wrapperType === "track" && x.kind === "song")
+  return songsOf(r)
     .sort(
       (a, b) =>
         (a.discNumber ?? 1) - (b.discNumber ?? 1) ||
@@ -75,7 +78,7 @@ async function findAlbumWithTracks(
   storefronts: string[],
   artist: string,
   name: string,
-): Promise<{ collection: ITunesRow; trackItems: TrackItem[] } | null> {
+): Promise<{ collection: ITunesRow; trackItems: TrackItem[]; songs: ITunesRow[] } | null> {
   if (!artist || !name) return null;
   for (const store of storefronts) {
     const albums = await itunesFetch("search", {
@@ -97,7 +100,7 @@ async function findAlbumWithTracks(
       const coll = r.find((x) => x.wrapperType === "collection");
       if (!coll) continue;
       const items = buildTrackItems(r, coll);
-      if (items.length > 0) return { collection: coll, trackItems: items };
+      if (items.length > 0) return { collection: coll, trackItems: items, songs: songsOf(r) };
     }
   }
   return null;
@@ -108,6 +111,8 @@ type ResolvedCollection = {
   /** The edition the tracklist comes from. */
   collection: ITunesRow;
   trackItems: TrackItem[];
+  /** The song rows the tracklist was built from. */
+  songs: ITunesRow[];
   /** The album as the first store that has it lists it — the listener's own,
    *  as the storefront list is country-first. Title/artist are shown from
    *  here even when the tracklist had to come from a fallback store, so a KR
@@ -139,6 +144,7 @@ async function resolveCollection(
       return {
         collection: coll,
         trackItems: items,
+        songs: songsOf(r),
         preferred: first.collection,
         preferredStore: first.store,
         trackStore: store,
@@ -149,6 +155,7 @@ async function resolveCollection(
   return {
     collection: first.collection,
     trackItems: [],
+    songs: [],
     preferred: first.collection,
     preferredStore: first.store,
     trackStore: undefined,
@@ -219,7 +226,7 @@ async function lookup(request: Request) {
     return Response.json({ error: "Album not found." }, { status: 404 });
   }
   const { preferred, preferredStore } = resolved;
-  let { collection, trackItems, trackStore } = resolved;
+  let { collection, trackItems, songs, trackStore } = resolved;
 
   // Some editions (regional masters, "single" variants) resolve to a collection
   // with no individually-available songs. If we got the album but no tracks,
@@ -233,16 +240,33 @@ async function lookup(request: Request) {
     if (alt) {
       collection = alt.collection;
       trackItems = alt.trackItems;
+      songs = alt.songs;
       trackStore = undefined; // sourced cross-store → not the listener's language
     }
   }
 
   // Title/artist from the listener's storefront when we found the album there;
   // the tracklist may still come from a fallback store.
-  const displayArtist = preferred.artistName ?? collection.artistName ?? "";
+  let displayArtist = preferred.artistName ?? collection.artistName ?? "";
 
+  // When the listener's store doesn't carry this album by id at all, it may
+  // still sell its own edition of it (JYP's catalog in KR — see
+  // itunes-lookup.ts): names come from there. Otherwise a tracklist from a
+  // fallback store is renamed by track id in the store that has the album.
   let localizedTitle: string | undefined;
-  if (trackStore !== preferredStore && trackItems.length > 0) {
+  const ownStore = country.toUpperCase();
+  const edition =
+    preferredStore !== ownStore && trackItems.length > 0
+      ? await localizeFromEdition(ownStore, collection, songs)
+      : null;
+  if (edition) {
+    trackItems = trackItems.map((t) => {
+      const named = edition.tracks.get(t.trackId);
+      return named ? { ...t, name: named.name, artist: named.artist ?? t.artist } : t;
+    });
+    localizedTitle = edition.title;
+    displayArtist = edition.artist ?? displayArtist;
+  } else if (trackStore !== preferredStore && trackItems.length > 0) {
     ({ trackItems, localizedTitle } = await relocalizeTracks(preferredStore, collection, trackItems));
   }
 
