@@ -25,7 +25,7 @@ import { Button, IconButton } from "@/components/day-of-music/atoms";
 import { Modal } from "@/components/day-of-music/modal";
 import { DayPicker, SwapConfirm } from "@/components/day-of-music/day-picker";
 
-type Tab = "tracklist" | "journal" | "info";
+type Tab = "tracklist" | "journal";
 
 type DayDetailProps = {
   album: Album;
@@ -165,7 +165,7 @@ function DayDetailPanel({
   const pickerId = useId();
   const tabsId = useId();
   // On whichever panel is showing — the tabs swap the panel out rather than
-  // hiding the other two, so one id serves all three.
+  // hiding the other one, so one id serves both.
   const panelProps = {
     role: "tabpanel",
     id: `${tabsId}-panel`,
@@ -343,7 +343,7 @@ function DayDetailPanel({
         )}
 
         <div className="dom-tabs" role="tablist" aria-label={t("daydetail.tabsAria")}>
-          {(["tracklist", "journal", "info"] as Tab[]).map((tabId) => (
+          {(["tracklist", "journal"] as Tab[]).map((tabId) => (
             <button
               key={tabId}
               type="button"
@@ -359,11 +359,7 @@ function DayDetailPanel({
                 setNativeSwap(null);
               }}
             >
-              {tabId === "tracklist"
-                ? t("daydetail.tabTracklist")
-                : tabId === "journal"
-                  ? t("daydetail.tabJournal")
-                  : t("daydetail.tabInfo")}
+              {tabId === "tracklist" ? t("daydetail.tabTracklist") : t("daydetail.tabJournal")}
             </button>
           ))}
         </div>
@@ -395,6 +391,116 @@ function DayDetailPanel({
 
         {tab === "journal" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }} {...panelProps}>
+            {/* The release's facts first: release date and genre. Hand-typed
+                entries also edit their info (cover, title, artist, genre,
+                year) here. */}
+            <div className="dom-info-pane">
+              {editingInfo ? (
+                <div className="dom-info-edit">
+                  {/* Only hand-typed entries own their cover picture — catalog
+                      albums keep the artwork that came with them. */}
+                  {isManual && (
+                    <div className="dom-edit-field">
+                      <span className="dom-edit-label">{t("field.cover")}</span>
+                      <div className="dom-cover-edit">
+                        <input
+                          id={artInputId}
+                          type="file"
+                          accept="image/*"
+                          hidden
+                          onChange={handlePickArt}
+                        />
+                        <label htmlFor={artInputId} className="dom-addflow-imagedrop">
+                          {info.art ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={info.art} alt={t("addflow.coverPreview")} />
+                          ) : (
+                            <span>＋ {t("addflow.addPicture")}</span>
+                          )}
+                        </label>
+                        {info.art && (
+                          <div className="dom-cover-edit-actions">
+                            <label
+                              htmlFor={artInputId}
+                              className="dom-addflow-manual-removeimg"
+                            >
+                              {t("addflow.changePicture")}
+                            </label>
+                            <button
+                              type="button"
+                              className="dom-addflow-manual-removeimg"
+                              onClick={() => editInfo({ art: null })}
+                            >
+                              {t("addflow.removePicture")}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <label className="dom-edit-field">
+                    <span className="dom-edit-label">{t("field.title")}</span>
+                    <input
+                      className="dom-input"
+                      value={info.title}
+                      onChange={(e) => editInfo({ title: e.target.value })}
+                    />
+                  </label>
+                  <label className="dom-edit-field">
+                    <span className="dom-edit-label">{t("field.artist")}</span>
+                    <input
+                      className="dom-input"
+                      value={info.artist}
+                      onChange={(e) => editInfo({ artist: e.target.value })}
+                    />
+                  </label>
+                  <label className="dom-edit-field">
+                    <span className="dom-edit-label">{t("field.genre")}</span>
+                    <input
+                      className="dom-input"
+                      value={info.genre}
+                      onChange={(e) => editInfo({ genre: e.target.value })}
+                    />
+                  </label>
+                  <label className="dom-edit-field">
+                    <span className="dom-edit-label">{t("field.year")}</span>
+                    <input
+                      className="dom-input"
+                      inputMode="numeric"
+                      value={info.year}
+                      onChange={(e) => editInfo({ year: e.target.value })}
+                    />
+                  </label>
+                  <div className="dom-info-edit-actions">
+                    <Button variant="ghost" size="sm" onClick={resetInfoDraft}>
+                      {t("action.cancel")}
+                    </Button>
+                    <Button size="sm" onClick={saveInfo} disabled={!infoDirty || !infoValid}>
+                      {t("daydetail.saveInfo")}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <InfoRow label={t("daydetail.released")} value={formatReleased(album, country)} />
+                  <InfoRow label={t("field.genre")} value={normalizeGenre(album.genre) || "—"} />
+                  {isManual && (
+                    <div className="dom-info-edit-actions">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          resetInfoDraft();
+                          setEditingInfo(true);
+                        }}
+                      >
+                        {t("daydetail.reviseInfo")}
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
             <RatingInput
               value={album.rating}
               onChange={commitRating}
@@ -481,126 +587,6 @@ function DayDetailPanel({
                 </Button>
               </div>
             </div>
-          </div>
-        )}
-
-        {tab === "info" && (
-          <div className="dom-info-pane" {...panelProps}>
-            {editingInfo ? (
-              <div className="dom-info-edit">
-                {/* Only hand-typed entries own their cover picture — catalog
-                    albums keep the artwork that came with them. */}
-                {isManual && (
-                  <div className="dom-edit-field">
-                    <span className="dom-edit-label">{t("field.cover")}</span>
-                    <div className="dom-cover-edit">
-                      <input
-                        id={artInputId}
-                        type="file"
-                        accept="image/*"
-                        hidden
-                        onChange={handlePickArt}
-                      />
-                      <label htmlFor={artInputId} className="dom-addflow-imagedrop">
-                        {info.art ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={info.art} alt={t("addflow.coverPreview")} />
-                        ) : (
-                          <span>＋ {t("addflow.addPicture")}</span>
-                        )}
-                      </label>
-                      {info.art && (
-                        <div className="dom-cover-edit-actions">
-                          <label
-                            htmlFor={artInputId}
-                            className="dom-addflow-manual-removeimg"
-                          >
-                            {t("addflow.changePicture")}
-                          </label>
-                          <button
-                            type="button"
-                            className="dom-addflow-manual-removeimg"
-                            onClick={() => editInfo({ art: null })}
-                          >
-                            {t("addflow.removePicture")}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                <label className="dom-edit-field">
-                  <span className="dom-edit-label">{t("field.title")}</span>
-                  <input
-                    className="dom-input"
-                    value={info.title}
-                    onChange={(e) => editInfo({ title: e.target.value })}
-                  />
-                </label>
-                <label className="dom-edit-field">
-                  <span className="dom-edit-label">{t("field.artist")}</span>
-                  <input
-                    className="dom-input"
-                    value={info.artist}
-                    onChange={(e) => editInfo({ artist: e.target.value })}
-                  />
-                </label>
-                <label className="dom-edit-field">
-                  <span className="dom-edit-label">{t("field.genre")}</span>
-                  <input
-                    className="dom-input"
-                    value={info.genre}
-                    onChange={(e) => editInfo({ genre: e.target.value })}
-                  />
-                </label>
-                <label className="dom-edit-field">
-                  <span className="dom-edit-label">{t("field.year")}</span>
-                  <input
-                    className="dom-input"
-                    inputMode="numeric"
-                    value={info.year}
-                    onChange={(e) => editInfo({ year: e.target.value })}
-                  />
-                </label>
-                <div className="dom-info-edit-actions">
-                  <Button variant="ghost" size="sm" onClick={resetInfoDraft}>
-                    {t("action.cancel")}
-                  </Button>
-                  <Button size="sm" onClick={saveInfo} disabled={!infoDirty || !infoValid}>
-                    {t("daydetail.saveInfo")}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <InfoRow label={t("daydetail.released")} value={formatReleased(album, country)} />
-                <InfoRow label={t("field.genre")} value={normalizeGenre(album.genre) || "—"} />
-                <InfoRow label={t("daydetail.format")} value={album.format} />
-                {album.kind === "track" ? (
-                  <>
-                    <InfoRow label={t("daydetail.type")} value={t("daydetail.trackValue")} />
-                    {album.albumTitle && <InfoRow label={t("daydetail.fromAlbumLabel")} value={album.albumTitle} />}
-                  </>
-                ) : (
-                  <InfoRow label={t("daydetail.tracks")} value={String(album.tracks.length)} />
-                )}
-                <InfoRow label={t("daydetail.loggedOn")} value={formatDisplayDate(album.date, country)} />
-                {isManual && (
-                  <div className="dom-info-edit-actions">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        resetInfoDraft();
-                        setEditingInfo(true);
-                      }}
-                    >
-                      {t("daydetail.reviseInfo")}
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
           </div>
         )}
 
