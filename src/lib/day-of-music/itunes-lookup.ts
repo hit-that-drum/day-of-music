@@ -16,6 +16,13 @@
 // carry is simply missing from the result. Artist rows stay romanized in every
 // store ("Ha Hyun Sang" even in KR), so an artist's name comes from their
 // album rows instead.
+//
+// Not every album has one id everywhere, though: the KR store sells JYP's
+// catalog (Wonder Girls, 2PM, TWICE…) as a Korean distributor's own edition,
+// with its own album and track ids — Wonder Girls' "REBOOT" is 1025660436
+// there and 1698940016 in the other stores. Looked up by id, the global edition
+// isn't in KR at all, so its songs are named from that edition instead (see
+// localizeFromEdition).
 
 import { AsyncLocalStorage } from "node:async_hooks";
 
@@ -39,6 +46,7 @@ export type ITunesRow = {
   trackCount?: number;
   discNumber?: number;
   trackNumber?: number;
+  trackTimeMillis?: number;
 };
 
 // Per request: the routes try store after store, so one that hangs must give
@@ -203,6 +211,118 @@ export async function localizeTracksInto<R extends Named>(
       ? { ...r, title: x.trackName, artist: x.artistName ?? r.artist }
       : r;
   });
+}
+
+/** One recording on two editions can differ in length by up to a second — they
+ *  were encoded apart ("Why So Lonely": 206,707 ms in the US, 207,693 in KR). */
+const SAME_LENGTH_MS = 3_000;
+
+/** An album name as two editions share it: case, spacing and a store's
+ *  " - Single" / " - EP" tag aside ("MOONLIGHT SUNRISE - Single" in the US is
+ *  "MOONLIGHT SUNRISE" in KR). */
+function editionName(name = ""): string {
+  return name
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/ - (single|ep)$/, "");
+}
+
+/** A song's place on its album: disc and track number. */
+function placeOf(row: ITunesRow): string | undefined {
+  return row.trackNumber == null ? undefined : `${row.discNumber ?? 1}-${row.trackNumber}`;
+}
+
+/** `tracks` matched to another edition's `songs` by place, keyed by track id:
+ *  the song in the same place, about as long. Null unless nearly every place
+ *  both editions fill agrees — a bonus track up front moves every song down
+ *  one, and then the places mustn't hand out their neighbours' names. */
+function matchByPlace(tracks: ITunesRow[], songs: ITunesRow[]): Map<number, ITunesRow> | null {
+  const songAt = new Map<string, ITunesRow>();
+  for (const song of songs) {
+    const place = placeOf(song);
+    if (place) songAt.set(place, song);
+  }
+  const matched = new Map<number, ITunesRow>();
+  let shared = 0;
+  for (const track of tracks) {
+    const place = placeOf(track);
+    const song = place ? songAt.get(place) : undefined;
+    if (!song || track.trackId == null) continue;
+    shared += 1;
+    if (
+      track.trackTimeMillis != null &&
+      song.trackTimeMillis != null &&
+      Math.abs(track.trackTimeMillis - song.trackTimeMillis) <= SAME_LENGTH_MS
+    ) {
+      matched.set(track.trackId, song);
+    }
+  }
+  return shared > 0 && matched.size >= shared * 0.8 ? matched : null;
+}
+
+/** An album's names as a store gives them on its own edition of it. */
+export type EditionNames = {
+  /** Track id (on the album asked about) → that song's name and artist. */
+  tracks: Map<number, { name: string; artist?: string }>;
+  title?: string;
+  artist?: string;
+};
+
+/** Name an album's songs (`tracks`, the song rows of `collection`) as `store`
+ *  names them on its own edition, for a store that doesn't carry this album by
+ *  id (see the top of this file). The edition is the artist's album there with
+ *  the same name; each song is the one in the same place on it, about as long.
+ *  Two requests, both per artist: the albums, then the songs — at most 200 of
+ *  them, which covers most artists; a song it leaves out (on TWICE's older
+ *  releases, say) keeps its name. Null when the store has no such edition or
+ *  its songs don't line up. */
+export async function localizeFromEdition(
+  store: string,
+  collection: ITunesRow,
+  tracks: ITunesRow[],
+): Promise<EditionNames | null> {
+  const name = editionName(collection.collectionName);
+  if (collection.artistId == null || !name || tracks.length === 0) return null;
+
+  const editions = (
+    await lookupByIds(store, [collection.artistId], { entity: "album", limit: "200" })
+  ).filter(
+    (x) =>
+      x.wrapperType === "collection" &&
+      x.collectionId != null &&
+      editionName(x.collectionName) === name,
+  );
+  if (editions.length === 0) return null;
+
+  const songs = await lookupByIds(store, [collection.artistId], {
+    entity: "song",
+    limit: "200",
+  });
+  let best: { edition: ITunesRow; matched: Map<number, ITunesRow> } | undefined;
+  for (const edition of editions) {
+    const matched = matchByPlace(
+      tracks,
+      songs.filter((x) => x.wrapperType === "track" && x.collectionId === edition.collectionId),
+    );
+    if (matched && matched.size > (best?.matched.size ?? 0)) best = { edition, matched };
+  }
+  if (!best) return null;
+
+  const named = new Map<number, { name: string; artist?: string }>();
+  for (const [trackId, song] of best.matched) {
+    const songName = song.trackCensoredName ?? song.trackName;
+    if (songName) named.set(trackId, { name: songName, artist: song.artistName });
+  }
+  // The song rows carry the album's localized name ("자몽살구클럽"); the album
+  // row may keep the romanized one.
+  const title = [...best.matched.values()].find((x) => x.collectionName)?.collectionName;
+  return {
+    tracks: named,
+    title: title ?? best.edition.collectionName,
+    artist: best.edition.artistName,
+  };
 }
 
 /** Name artist search results (ids are artist ids) as `store` names them on

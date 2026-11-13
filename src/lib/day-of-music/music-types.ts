@@ -5,10 +5,13 @@
 
 /** Version of the album route's track-title localization. Bump it when the
  *  route starts returning better-localized titles: the Day Detail stores it on
- *  each album (`tracksVersion`) and re-fetches a tracklist saved by an older
- *  version once. 2 = KR titles recovered by track id (KR tracklists saved
- *  before that are in the US store's English). */
-export const TRACKLIST_VERSION = 2;
+ *  each album (`tracksVersion`) — and on each single track, for its title —
+ *  and re-fetches names saved by an older version once. 2 = KR titles
+ *  recovered by track id (KR tracklists saved before that are in the US
+ *  store's English). 3 = KR titles for albums the KR store only sells as its
+ *  own edition, under other ids (JYP's catalog: "Faded Love" is "사랑이
+ *  떠나려 할 때" there), and single tracks renamed too. */
+export const TRACKLIST_VERSION = 3;
 
 /** One /api/music/search result: album-level metadata, no tracklist. */
 export type MusicSearchResult = {

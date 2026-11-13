@@ -498,8 +498,9 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   const enrichSlot = useCallback<JournalContextValue["enrichSlot"]>(
     (date, patch) => {
       const base = albumsByDate[date];
-      // Only user-added (itunes) albums need lazy enrichment.
-      if (!base || !base.id.startsWith("itunes-")) return;
+      // Only catalog albums and tracks (itunes / itrack ids) need lazy
+      // enrichment.
+      if (!base || !/^(itunes|itrack)-/.test(base.id)) return;
       const merged = { ...base, ...patch };
       // Re-save every slot holding the album, in every lane — not just this
       // day's. Each row stores its own copy of the metadata and a load keeps
