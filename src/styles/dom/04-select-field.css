@@ -86,10 +86,59 @@
   margin-left: 14px;
 }
 
-/* Theme selector (active lane) — sits at the top of the main panel. */
-.dom-theme-select {
+/* Theme carousel (active lane) — sits at the top of the main panel. The bar
+   keeps the underline select's look it replaced; its dark ‹ › squares (and a
+   swipe on phones) step through the lanes endlessly. Not clipped: the sliding
+   name stays inside the bar's padding, and the ‹ › focus ring stays visible. */
+.dom-theme-carousel {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   padding: 18px 28px 0;
+}
+.dom-theme-carousel-bar {
+  display: flex;
+  align-items: stretch;
+  width: min(420px, 100%);
+  min-height: 56px;
+  padding-left: 14px;
+  border-bottom: 1px solid var(--lineSoft);
+  background-color: var(--panel);
+  box-shadow: inset 0 -2px 0 var(--lineSoft);
+}
+.dom-theme-carousel-name {
+  flex: 1;
+  align-self: center;
+  padding: 13px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 22px;
+}
+.dom-theme-carousel-pos {
+  align-self: center;
+  margin: 0 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.dom-theme-carousel-btn {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  background-color: var(--ink);
+  color: var(--bg);
+}
+/* A hairline in the bar's colour splits the two dark squares. */
+.dom-theme-carousel-btn + .dom-theme-carousel-btn {
+  box-shadow: inset 1px 0 0 var(--panel);
+}
+.dom-theme-carousel-btn:hover,
+.dom-theme-carousel-btn:focus-visible {
+  background-color: var(--accent);
 }
 
 /* Theme manager rows (Profile) */

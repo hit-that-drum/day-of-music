@@ -1,6 +1,8 @@
 // use-swipe-nav.ts — phone-only navigation helpers for the Week and Month
 // boards: a horizontal-swipe recognizer (useSwipeNav) and the slide-in that
-// plays when the board's page changes (useNavSlide). Both render nothing.
+// plays when the board's page changes (useNavSlide). Both render nothing. The
+// theme carousel above the boards (theme-tabs.tsx) uses the same recognizer
+// and slide (slideIn).
 //
 // useSwipeNav — Pointer Events only: React registers touchstart/touchmove as
 // passive on the root, so a touchmove preventDefault would be a no-op, and we
@@ -209,6 +211,24 @@ const SLIDE_DISTANCE = 12; // px
 const SLIDE_DURATION = 200; // ms
 
 /**
+ * Slide `el` in from the side it came from: from the right when `dir` is 1
+ * (the next page or item), from the left when -1. Skipped under reduced
+ * motion; a second call inside the 200ms replaces the slide in flight.
+ */
+export function slideIn(el: HTMLElement, dir: 1 | -1): void {
+  if (typeof el.animate !== "function") return;
+  if (window.matchMedia(REDUCED_MOTION_QUERY).matches) return;
+  for (const a of el.getAnimations()) a.cancel();
+  el.animate(
+    [
+      { transform: `translateX(${SLIDE_DISTANCE * dir}px)`, opacity: 0 },
+      { transform: "none", opacity: 1 },
+    ],
+    { duration: SLIDE_DURATION, easing: "ease" },
+  );
+}
+
+/**
  * Animate `ref` sliding in from the side it came from whenever `navKey`
  * changes. `navKey` must compare lexically in time order (YYYY-MM-DD or
  * YYYY-MM): greater = later = "next" = enters from the right (+12px).
@@ -227,17 +247,7 @@ export function useNavSlide<T extends HTMLElement>(
     const dir = navKey > prevKey.current ? 1 : -1;
     prevKey.current = navKey;
     const el = ref.current;
-    if (!el || typeof el.animate !== "function") return;
-    if (!window.matchMedia(PHONE_QUERY).matches) return;
-    if (window.matchMedia(REDUCED_MOTION_QUERY).matches) return;
-    // A second navigation inside the 200ms replaces the in-flight slide.
-    for (const a of el.getAnimations()) a.cancel();
-    el.animate(
-      [
-        { transform: `translateX(${SLIDE_DISTANCE * dir}px)`, opacity: 0 },
-        { transform: "none", opacity: 1 },
-      ],
-      { duration: SLIDE_DURATION, easing: "ease" },
-    );
+    if (!el || !window.matchMedia(PHONE_QUERY).matches) return;
+    slideIn(el, dir);
   }, [ref, navKey]);
 }
