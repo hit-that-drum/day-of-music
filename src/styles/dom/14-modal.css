@@ -53,13 +53,14 @@
 .dom-detail {
   width: 100%;
   max-width: var(--dom-modal-w);
-  /* Fixed height so every tab (tracklist / journal / info) is the same size —
-     matched to the journal tab; taller content (long tracklist) scrolls inside.
+  /* Fixed height so both tabs (tracklist / journal) are the same size —
+     matched to the journal tab (release date and genre, rating, logged-on
+     date, note); taller content (a long tracklist or title) scrolls inside.
      --dom-modal-chrome is the scrim padding + close-button gap (see .dom-scrim);
      dvh so a mobile browser's collapsing address bar doesn't push the panel
      past the visible viewport. */
-  height: min(660px, calc(100vh - var(--dom-modal-chrome)));
-  height: min(660px, calc(100dvh - var(--dom-modal-chrome)));
+  height: min(760px, calc(100vh - var(--dom-modal-chrome)));
+  height: min(760px, calc(100dvh - var(--dom-modal-chrome)));
   display: grid;
   grid-template-columns: 460px minmax(0, 1fr);
   /* Bound the single row to the modal's height so the right column's
@@ -204,6 +205,10 @@
   gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid var(--lineSoft);
+}
+/* The stars stand taller than a text value, so this row centres its label. */
+.dom-info-row-rating {
+  align-items: center;
 }
 .dom-info-label {
   font-family: var(--font-mono);

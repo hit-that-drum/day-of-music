@@ -108,7 +108,7 @@
 
   /* Day Detail: the 460px cover column becomes a cover + date row on top, the
      right column is the scroller, Replace / Remove stick to its bottom. Fixed
-     height (not max-height) so the three tabs don't resize the sheet. */
+     height (not max-height) so the two tabs don't resize the sheet. */
   .dom-detail {
     display: flex;
     flex-direction: column;
